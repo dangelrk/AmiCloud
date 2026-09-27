@@ -32,7 +32,7 @@ Der Server liegt im Ordner `server/`:
 | `api.php` | REST-API für alle Client-Programme (Referenz: [api/API.md](api/API.md)) |
 | `web.php`, `web.css` | Weboberfläche: Anmelden, Dateien ansehen, hoch-/herunterladen, umbenennen, löschen, Ordner anlegen |
 | `includes/` | PHP-Klassen (per `.htaccess` für Browser gesperrt) |
-| `sql/schema.sql` | Datenbankschema für eine Neuinstallation |
+| `sql/schema.sql` | Datenbankschema für eine Neuinstallation (`sql/` per `.htaccess` für Browser gesperrt) |
 | `sql/migrate_001.sql` … `migrate_003.sql` | Nachrüsten älterer Installationen |
 | `config.php.example` | Vorlage für `config.php` |
 | `.htaccess` | sperrt `config.php` und `config.php.example` |
@@ -86,7 +86,12 @@ certbot legt den HTTPS-Block an und leitet HTTP auf HTTPS um.
 sudo mkdir -p /var/www/amicloud /var/amicloud-storage
 sudo cp -r server/. /var/www/amicloud/
 sudo cp /var/www/amicloud/config.php.example /var/www/amicloud/config.php
-sudo chown -R apache:apache /var/www/amicloud /var/amicloud-storage
+# Code gehört root, Apache darf nur lesen; config.php (Passwort) nur
+# für root und die Gruppe apache; schreiben darf Apache nur im Storage:
+sudo chown -R root:apache /var/www/amicloud
+sudo chmod -R u=rwX,g=rX,o= /var/www/amicloud
+sudo chmod 640 /var/www/amicloud/config.php
+sudo chown -R apache:apache /var/amicloud-storage
 sudo chmod 750 /var/amicloud-storage
 ```
 
