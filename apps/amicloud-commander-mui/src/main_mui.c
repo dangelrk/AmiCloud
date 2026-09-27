@@ -25,6 +25,7 @@
 #include "progress.h"
 #include "wbstartup.h"
 
+#include <stdio.h>
 #include <string.h>
 
 struct Library       *MUIMasterBase;
@@ -103,6 +104,30 @@ static void close_libs(void)
     MUIMasterBase = NULL;
 }
 
+/* A Workbench-launched GUI program has no console: without a requester a
+ * startup failure would just make it vanish. Uses MUI when available,
+ * falls back to a plain Intuition requester (e.g. MUI not installed) and
+ * additionally prints to stderr for a Shell launch. Call after
+ * open_libs() -- works with whatever that managed to open. */
+static void startup_error(int from_shell, const char *text)
+{
+    if (from_shell) fprintf(stderr, "amicloud-commander: %s\n", text);
+
+    if (MUIMasterBase && IntuitionBase) {
+        MUI_Request(NULL, NULL, 0, "AmiCloud Commander", "_OK", "%s", (char *)text);
+    } else if (IntuitionBase) {
+        struct EasyStruct es;
+        ULONG args[1];
+        es.es_StructSize   = sizeof(es);
+        es.es_Flags        = 0;
+        es.es_Title        = (UBYTE *)"AmiCloud Commander";
+        es.es_TextFormat   = (UBYTE *)"%s";
+        es.es_GadgetFormat = (UBYTE *)"OK";
+        args[0] = (ULONG)text;
+        EasyRequestArgs(NULL, &es, NULL, args);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     AcConfig cfg;
@@ -120,10 +145,9 @@ int main(int argc, char *argv[])
     if (!cfg.server[0] || !cfg.username[0] || !cfg.password[0]) {
         /* No MUI window yet at this point -- OpenLibrary first so
          * MUI_Request has something to talk to. */
-        if (open_libs())
-            MUI_Request(NULL, NULL, 0, "AmiCloud Commander",
-                       "_OK", "ENV:amicloud.cfg fehlt oder ist unvollstaendig "
-                              "(server/user/pass) - siehe amicloud.cfg.example.");
+        open_libs();
+        startup_error(argc > 0, "ENV:amicloud.cfg fehlt oder ist unvollstaendig "
+                                "(server/user/pass) - siehe amicloud.cfg.example.");
         close_libs();
         return 10;
     }
@@ -133,11 +157,21 @@ int main(int argc, char *argv[])
     }
 
     if (!open_libs()) {
+        startup_error(argc > 0, "muimaster.library V19 (MUI 3.8) oder neuer "
+                                "wird benoetigt.");
         close_libs();
         return 20;
     }
 
     if (!http_init()) {
+        char msg[400];
+        const char *why = http_last_error();
+        snprintf(msg, sizeof(msg),
+                 "Netzwerk-Initialisierung fehlgeschlagen%s%s\n\n"
+                 "Benoetigt werden ein laufender TCP/IP-Stack\n"
+                 "(bsdsocket.library) und AmiSSL 5.",
+                 *why ? ":\n" : ".", why);
+        startup_error(argc > 0, msg);
         close_libs();
         return 1;
     }

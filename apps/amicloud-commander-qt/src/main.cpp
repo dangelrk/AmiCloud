@@ -18,6 +18,7 @@ extern int ac_errors_to_stderr;
 }
 
 #include <QApplication>
+#include <QMessageBox>
 #include <cstring>
 #include <cstdlib>
 
@@ -71,6 +72,11 @@ int main(int argc, char *argv[])
     }
 
     if (http_init() == 0) {
+        const char *why = http_last_error();
+        QMessageBox::critical(nullptr, QApplication::applicationName(),
+            QObject::tr("Netzwerk-Initialisierung fehlgeschlagen%1")
+                .arg(*why ? QStringLiteral(":\n") + QString::fromUtf8(why)
+                          : QStringLiteral(".")));
         return 1;
     }
 
