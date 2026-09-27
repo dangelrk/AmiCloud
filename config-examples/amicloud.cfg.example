@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Ronny Krueger
 # AmiCloud-Konfiguration -- ein Format fuer alle AmiCloud-Programme.
 # Ablage:  Amiga: ENV:amicloud.cfg (dauerhaft: ENVARC:amicloud.cfg)
 #          PC:    ~/.amicloudrc     (oder jeweils -c <datei>)

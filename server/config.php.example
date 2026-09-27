@@ -1,4 +1,6 @@
 <?php
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Ronny Krueger
 /* AmiCloud server configuration — copy to config.php and fill in values */
 
 /* Lokale Zeitzone fuer alle Zeitstempel (list/info/status/setdate).
