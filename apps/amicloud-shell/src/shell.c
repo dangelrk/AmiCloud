@@ -247,11 +247,13 @@ static void print_help(void)
         "  lls|ldir|llist [pfad] [-n|-s|-d|-m]\n"
         "                               lokal auflisten (gleiche Flags wie ls;\n"
         "                               -m rechnet MD5 frisch, kein Cache)\n"
-        "  get [-r] <remote/muster> [lokal]\n"
+        "  get [-r] [-f] <remote/muster> [lokal]\n"
         "                               Datei/Ordner herunterladen\n"
-        "  put [-r] <lokal/muster> [remote]\n"
+        "  put [-r] [-f] <lokal/muster> [remote]\n"
         "                               Datei/Ordner hochladen\n"
-        "                               (Muster: * ? sowie #? ? ueberall)\n"
+        "                               (Muster: * ? sowie #? ? ueberall;\n"
+        "                               fragt vor dem Ueberschreiben,\n"
+        "                               -f ueberschreibt ohne Frage)\n"
         "  del|rm|delete [-r|-f] <pfad>\n"
         "                               loeschen (-r rekursiv, -f erzwingt)\n"
         "  mkdir|makedir <pfad>         Verzeichnis anlegen\n"
@@ -442,18 +444,58 @@ static void do_lls(char **tok, int n)
     localfs_closedir(d);
 }
 
+/* Overwrite-prompt metadata for the wildcard copies below (the same
+ * FileMeta panel_get_dir()/panel_put_dir() build for -r). */
+static void meta_from_entry(FileMeta *m, const AcEntry *ae)
+{
+    m->size = ae->size;
+    strncpy(m->date, ae->modified, sizeof(m->date) - 1);
+    m->date[sizeof(m->date) - 1] = '\0';
+    strncpy(m->md5, ae->md5, sizeof(m->md5) - 1);
+    m->md5[sizeof(m->md5) - 1] = '\0';
+}
+
+static const AcEntry *find_remote_file(const AcEntry *entries, int n, const char *name)
+{
+    int i;
+    for (i = 0; i < n; i++)
+        if (!entries[i].is_dir && strcmp(entries[i].name, name) == 0) return &entries[i];
+    return NULL;
+}
+
+/* 1 + *m filled if dir contains a plain file called name. */
+static int local_file_meta(const char *dir, const char *name, FileMeta *m)
+{
+    LocalDir *d = localfs_opendir(dir);
+    LocalDirEntry e;
+    int found = 0;
+    if (!d) return 0;
+    while (localfs_readdir(d, &e)) {
+        if (!e.is_dir && strcmp(e.name, name) == 0) {
+            m->size = e.size;
+            strncpy(m->date, e.modified, sizeof(m->date) - 1);
+            m->date[sizeof(m->date) - 1] = '\0';
+            m->md5[0] = '\0';
+            found = 1;
+            break;
+        }
+    }
+    localfs_closedir(d);
+    return found;
+}
+
 /* Wildcard-Zweig von `get`: pat/dirpart kommen bereits aus split_pattern().
  * Listet das Remote-Verzeichnis dirpart, holt jeden Treffer einzeln
  * (Verzeichnisse nur mit -r, sonst Warnung + Ueberspringen). */
 static void do_get_pattern(const AcConfig *eff,
                           const char *dirpart, const char *pat,
-                          const char *local_arg, int recursive)
+                          const char *local_arg, int recursive, int force)
 {
     char     rdir[AC_MAX_PATH], ldestdir[AC_MAX_PATH];
     Pattern *p;
     AcEntry *entries;
     int      i, ne, matches = 0;
-    CopyCtx  c; /* ask=0: shell get -r has always overwritten silently */
+    CopyCtx  c; /* ask = !force: prompts via ui_overwrite() on conflicts */
 
     cmd_resolve_path(eff, dirpart, rdir, sizeof(rdir));
     strncpy(ldestdir, (local_arg && *local_arg) ? local_arg : ".",
@@ -472,7 +514,7 @@ static void do_get_pattern(const AcConfig *eff,
 
     /* Pass 1: count matches (+ recurse-count matched directories) so y
      * and total_bytes are known before the first transfer (plan §17.1). */
-    copyctx_init(&c, 0);
+    copyctx_init(&c, !force);
     for (i = 0; i < ne; i++) {
         if (!pattern_match(p, entries[i].name)) continue;
         matches++;
@@ -500,9 +542,13 @@ static void do_get_pattern(const AcConfig *eff,
                     "amicloud: get: '%s' ist ein Verzeichnis (-r verwenden)\n",
                     entries[i].name);
         } else {
-            progress_prefix(&c.pr, entries[i].size);
-            if (cmd_get(eff, rchild, lchild) == 0) c.pr.ok++; else c.pr.err++;
+            FileMeta smeta, dmeta;
+            int have_dst = c.ask && local_file_meta(ldestdir, entries[i].name, &dmeta);
+            meta_from_entry(&smeta, &entries[i]);
+            panel_copy_file(PANEL_CLOUD, eff, rchild, PANEL_LOCAL, NULL, lchild,
+                            entries[i].name, &smeta, have_dst ? &dmeta : NULL, &c);
         }
+        if (c.cancelled) { printf("Abgebrochen.\n"); break; }
     }
     cmd_entries_free(entries);
     pattern_free(p);
@@ -525,13 +571,13 @@ static void do_get(ShellSession *s, char **tok, int n)
     pat = split_pattern(pa.pos[0], dirpart, sizeof(dirpart));
     if (pat) {
         do_get_pattern(&eff, dirpart, pat,
-                       pa.npos > 1 ? pa.pos[1] : NULL, pa.recursive);
+                       pa.npos > 1 ? pa.pos[1] : NULL, pa.recursive, pa.force);
         return;
     }
 
     if (pa.recursive) {
         char rfull[AC_MAX_PATH], lbuf[AC_MAX_PATH];
-        CopyCtx c; /* ask=0: shell get -r has always overwritten silently */
+        CopyCtx c; /* ask = !force: prompts via ui_overwrite() on conflicts */
 
         cmd_resolve_path(&eff, pa.pos[0], rfull, sizeof(rfull));
         if (pa.npos > 1) {
@@ -541,12 +587,13 @@ static void do_get(ShellSession *s, char **tok, int n)
             strncpy(lbuf, slash ? slash + 1 : rfull, sizeof(lbuf) - 1);
             lbuf[sizeof(lbuf) - 1] = '\0';
         }
-        copyctx_init(&c, 0);
+        copyctx_init(&c, !pa.force);
         count_remote_tree(&eff, rfull, &c.pr);
         panel_get_dir(&eff, rfull, lbuf, &c);
+        if (c.cancelled) printf("Abgebrochen.\n");
         printf("%d Datei(en) ok, %d Fehler\n", c.pr.ok, c.pr.err);
     } else {
-        cmd_get(&eff, pa.pos[0], pa.npos > 1 ? pa.pos[1] : NULL);
+        cmd_get_checked(&eff, pa.pos[0], pa.npos > 1 ? pa.pos[1] : NULL, pa.force);
     }
 }
 
@@ -554,15 +601,17 @@ static void do_get(ShellSession *s, char **tok, int n)
  * das lokale Verzeichnis dirpart statt einer Remote-Anfrage. */
 static void do_put_pattern(const AcConfig *eff,
                           const char *dirpart, const char *pat,
-                          const char *remote_arg, int recursive)
+                          const char *remote_arg, int recursive, int force)
 {
     const char *ldir = (dirpart && *dirpart) ? dirpart : ".";
     char        rdestdir[AC_MAX_PATH];
     LocalDir   *d;
     LocalDirEntry e;
     Pattern    *p;
-    CopyCtx     c; /* ask=0: shell put -r has always overwritten silently */
+    CopyCtx     c; /* ask = !force: prompts via ui_overwrite() on conflicts */
     int         matches = 0;
+    AcEntry    *dst_entries = NULL;
+    int         dst_n = 0;
 
     if (remote_arg && *remote_arg) {
         cmd_resolve_path(eff, remote_arg, rdestdir, sizeof(rdestdir));
@@ -577,7 +626,7 @@ static void do_put_pattern(const AcConfig *eff,
     /* Pass 1: count matches (+ recurse-count matched directories) — a
      * second local opendir()/readdir() pass is effectively free, unlike
      * the remote case (plan §17.1). */
-    copyctx_init(&c, 0);
+    copyctx_init(&c, !force);
     d = localfs_opendir(ldir);
     if (!d) {
         fprintf(stderr, "amicloud: put: kann %s nicht oeffnen\n", ldir);
@@ -600,6 +649,13 @@ static void do_put_pattern(const AcConfig *eff,
     }
     localfs_closedir(d);
 
+    /* One listing of the destination instead of a request per file:
+     * existence + size/date/MD5 for the overwrite prompt. cmd_is_dir()
+     * first, silently -- a destination that does not exist yet is the
+     * normal case, not an error (same as panel_put_dir()). */
+    if (c.ask && cmd_is_dir(eff, rdestdir))
+        cmd_list_raw(eff, rdestdir, &dst_entries, &dst_n);
+
     cmd_mkdir_quiet(eff, rdestdir);
 
     /* Pass 2: transfer. */
@@ -618,11 +674,20 @@ static void do_put_pattern(const AcConfig *eff,
                     "amicloud: put: '%s' ist ein Verzeichnis (-r verwenden)\n",
                     e.name);
         } else {
-            progress_prefix(&c.pr, e.size);
-            if (cmd_put(eff, lchild, rchild) == 0) c.pr.ok++; else c.pr.err++;
+            FileMeta smeta, dmeta;
+            const AcEntry *ae = find_remote_file(dst_entries, dst_n, e.name);
+            smeta.size = e.size;
+            strncpy(smeta.date, e.modified, sizeof(smeta.date) - 1);
+            smeta.date[sizeof(smeta.date) - 1] = '\0';
+            smeta.md5[0] = '\0';
+            if (ae) meta_from_entry(&dmeta, ae);
+            panel_copy_file(PANEL_LOCAL, NULL, lchild, PANEL_CLOUD, eff, rchild,
+                            e.name, &smeta, ae ? &dmeta : NULL, &c);
         }
+        if (c.cancelled) { printf("Abgebrochen.\n"); break; }
     }
     localfs_closedir(d);
+    cmd_entries_free(dst_entries);
     pattern_free(p);
 
     if (matches == 0) printf("Keine Treffer fuer '%s'\n", pat);
@@ -643,13 +708,13 @@ static void do_put(ShellSession *s, char **tok, int n)
     pat = split_pattern(pa.pos[0], dirpart, sizeof(dirpart));
     if (pat) {
         do_put_pattern(&eff, dirpart, pat,
-                       pa.npos > 1 ? pa.pos[1] : NULL, pa.recursive);
+                       pa.npos > 1 ? pa.pos[1] : NULL, pa.recursive, pa.force);
         return;
     }
 
     if (pa.recursive) {
         char rbuf[AC_MAX_PATH];
-        CopyCtx c; /* ask=0: shell put -r has always overwritten silently */
+        CopyCtx c; /* ask = !force: prompts via ui_overwrite() on conflicts */
 
         if (pa.npos > 1) {
             cmd_resolve_path(&eff, pa.pos[1], rbuf, sizeof(rbuf));
@@ -661,12 +726,13 @@ static void do_put(ShellSession *s, char **tok, int n)
 #endif
             cmd_resolve_path(&eff, slash ? slash + 1 : pa.pos[0], rbuf, sizeof(rbuf));
         }
-        copyctx_init(&c, 0);
+        copyctx_init(&c, !pa.force);
         count_local_tree(pa.pos[0], &c.pr);
         panel_put_dir(&eff, pa.pos[0], rbuf, &c);
+        if (c.cancelled) printf("Abgebrochen.\n");
         printf("%d Datei(en) ok, %d Fehler\n", c.pr.ok, c.pr.err);
     } else {
-        cmd_put(&eff, pa.pos[0], pa.npos > 1 ? pa.pos[1] : NULL);
+        cmd_put_checked(&eff, pa.pos[0], pa.npos > 1 ? pa.pos[1] : NULL, pa.force);
     }
 }
 
@@ -823,6 +889,17 @@ static int dispatch(ShellSession *s, char **tok, int n)
     return 1;
 }
 
+/* Line reader for prompts while commands are read from a file or pipe:
+ * no answer is possible there, so the prompt takes its safe choice
+ * (confirm: no, overwrite: cancel) -- see ui_set_line_reader(). */
+static int batch_no_answer(const char *prompt, char *buf, size_t bufsz)
+{
+    (void)buf; (void)bufsz;
+    printf("%s\n(keine Antwort moeglich, Befehle kommen aus einer Datei -- "
+           "-f/FORCE verwenden)\n", prompt);
+    return -1;
+}
+
 /* ------------------------------------------------------------------ */
 int shell_run(const AcConfig *cfg)
 {
@@ -846,6 +923,13 @@ int shell_run(const AcConfig *cfg)
      * echtes Terminal ist (Pipe/Redirect/Heredoc) — Rohmodus + eigene
      * History-Navigation ergeben dort keinen Sinn. */
     interactive = lineedit_init();
+    /* Answers to the overwrite/confirm prompts must come through the same
+     * input path as the commands: interactively via the line editor (the
+     * terminal is in raw mode for the whole session, so the stdio default
+     * would neither echo the answer nor, on the Amiga, see a line end);
+     * when commands come from a file or pipe, never read an answer at all
+     * -- it would swallow the next command line. */
+    ui_set_line_reader(interactive ? lineedit_readline : batch_no_answer);
 
     while (running) {
         int ntok;
@@ -874,6 +958,7 @@ int shell_run(const AcConfig *cfg)
         running = dispatch(&sess, tokens, ntok);
     }
 
+    ui_set_line_reader(NULL);
     if (interactive) lineedit_shutdown();
     return 0;
 }

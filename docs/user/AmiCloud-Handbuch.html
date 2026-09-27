@@ -438,8 +438,8 @@ Neustart.</p>
 <table>
 <tr><th>Befehl</th><th>Bedeutung</th></tr>
 <tr><td><code>list [pfad]</code></td><td>Verzeichnis auflisten</td></tr>
-<tr><td><code>get &lt;remote&gt; [lokal]</code></td><td>Datei herunterladen; ohne lokalen Namen unter ihrem Namen ins aktuelle Verzeichnis</td></tr>
-<tr><td><code>put &lt;lokal&gt; [remote]</code></td><td>Datei hochladen; ohne Zielangabe unter ihrem Namen in den Basis-Pfad</td></tr>
+<tr><td><code>get [-f] &lt;remote&gt; [lokal]</code></td><td>Datei herunterladen; ohne lokalen Namen unter ihrem Namen ins aktuelle Verzeichnis</td></tr>
+<tr><td><code>put [-f] &lt;lokal&gt; [remote]</code></td><td>Datei hochladen; ohne Zielangabe unter ihrem Namen in den Basis-Pfad</td></tr>
 <tr><td><code>del &lt;remote&gt;</code></td><td>Datei oder leeres Verzeichnis löschen</td></tr>
 <tr><td><code>info &lt;remote&gt;</code></td><td>Größe, Datum, MD5 usw. anzeigen</td></tr>
 <tr><td><code>mkdir &lt;pfad&gt;</code></td><td>Verzeichnis anlegen</td></tr>
@@ -463,6 +463,20 @@ amicloud info /archiv/ss-alt
 amicloud search '#?.txt' /
 amicloud -s https://amicloud.example.com -u bob -p geheim list</pre>
 
+<div class="callout"><strong>Überschreiben</strong><br>
+Gibt es das Ziel schon (bei <code>put</code> auf dem Server, bei
+<code>get</code> lokal), fragen beide nach
+(<code>'/bericht.txt' already exists on the server. Overwrite? [y/N]</code>);
+nur <code>y</code> überschreibt. Mit <code>-f</code> (auch
+<code>--force</code> oder <code>FORCE</code> direkt nach
+<code>get</code>/<code>put</code>) wird ohne Frage überschrieben. Ohne
+Eingabe (z.&nbsp;B. in Skripten) wird nichts überschrieben und
+<code>amicloud</code> endet mit Rückgabewert 1 – in Skripten also
+<code>-f</code> verwenden. <code>put</code> fragt dazu den Server einmal
+zusätzlich ab; ist das nicht möglich (Netz- oder Serverfehler), wird nichts
+übertragen. Ist das Ziel auf dem Server ein Verzeichnis, bricht
+<code>put</code> ab: den vollständigen Zielpfad samt Dateinamen angeben.</div>
+
 <p>Zielname: Ohne Zielangabe verwendet <code>put</code> den Teil hinter dem
 letzten <code>/</code> oder <code>:</code> – aus <code>DH0:bericht.txt</code>
 wird <code>/bericht.txt</code>, aus <code>DH0:texte/bericht.txt</code>
@@ -485,8 +499,8 @@ sich frühere Eingaben der Sitzung wiederholen.</p>
 <tr><td><code>lcd [pfad]</code></td><td>lokales Verzeichnis wechseln (ohne Pfad: zurück zum Startverzeichnis); <code>..</code> eine Ebene höher, <code>:</code> oder <code>\</code> Wurzel</td></tr>
 <tr><td><code>ls</code>|<code>dir</code>|<code>list [pfad] [-n|-s|-d|-m]</code></td><td>Remote-Verzeichnis auflisten</td></tr>
 <tr><td><code>lls</code>|<code>ldir</code>|<code>llist [pfad] [-n|-s|-d|-m]</code></td><td>lokales Verzeichnis auflisten</td></tr>
-<tr><td><code>get [-r] &lt;remote/muster&gt; [lokal]</code></td><td>herunterladen</td></tr>
-<tr><td><code>put [-r] &lt;lokal/muster&gt; [remote]</code></td><td>hochladen</td></tr>
+<tr><td><code>get [-r] [-f] &lt;remote/muster&gt; [lokal]</code></td><td>herunterladen (fragt vor dem Überschreiben)</td></tr>
+<tr><td><code>put [-r] [-f] &lt;lokal/muster&gt; [remote]</code></td><td>hochladen (fragt vor dem Überschreiben)</td></tr>
 <tr><td><code>del</code>|<code>rm</code>|<code>delete [-r|-f] &lt;pfad&gt;</code></td><td>löschen</td></tr>
 <tr><td><code>mkdir</code>|<code>makedir &lt;pfad&gt;</code></td><td>Verzeichnis anlegen</td></tr>
 <tr><td><code>rename</code>|<code>mv &lt;alt&gt; &lt;neu&gt;</code></td><td>umbenennen / verschieben</td></tr>
@@ -502,11 +516,23 @@ sich frühere Eingaben der Sitzung wiederholen.</p>
 berechnet); ohne Option Name, Größe, Datum und Typ. Gleichwertig sind
 <code>-r</code>, <code>--recursive</code>, <code>RECURSIVE</code>,
 <code>ALL</code> (rekursiv) sowie <code>-f</code>, <code>--force</code>,
-<code>FORCE</code> (ohne Rückfrage). Muster (<code>*</code> <code>?</code>
-<code>#?</code>) sind bei <code>get</code> und <code>put</code> erlaubt. Auf
-dem Amiga bedeutet <code>lcd ..</code> dasselbe wie <code>lcd /</code>.
-Befehle lassen sich auch aus einer Datei lesen:
-<code>amicloud-shell &lt;befehle.txt</code>.</p>
+<code>FORCE</code> (ohne Rückfrage: löschen bzw. überschreiben). Muster
+(<code>*</code> <code>?</code> <code>#?</code>) sind bei <code>get</code> und
+<code>put</code> erlaubt. Auf dem Amiga bedeutet <code>lcd ..</code>
+dasselbe wie <code>lcd /</code>. Befehle lassen sich auch aus einer Datei
+lesen: <code>amicloud-shell &lt;befehle.txt</code>.</p>
+
+<p><strong>Überschreiben:</strong> <code>get</code> und <code>put</code>
+fragen, bevor sie eine vorhandene Datei ersetzen. Bei einer einzelnen Datei
+genügt <code>y</code> oder <code>n</code>. Bei Mustern und <code>-r</code>
+zeigt die Shell Größe, Datum und – wenn bekannt – ob der Inhalt gleich ist,
+und bietet an: <code>y</code> überschreiben, <code>n</code> überspringen,
+<code>a</code> alle weiteren überschreiben, <code>s</code> alle weiteren
+überspringen, <code>c</code> ganzen Vorgang abbrechen; einfach Return
+überspringt. Mit <code>-f</code> wird ohne Frage überschrieben. Liest die
+Shell ihre Befehle aus einer Datei, ist keine Antwort möglich: Dann wird
+nichts überschrieben (Einzeldatei: nein, Muster/<code>-r</code>: Abbruch),
+und die Shell weist auf <code>-f</code> hin.</p>
 
 <pre>/&gt; cd archiv
 /archiv&gt; lcd RAM:

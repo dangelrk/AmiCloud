@@ -380,9 +380,11 @@ Optionen (vor dem Befehl):
 Befehle:
 
   list [pfad]              Verzeichnis auflisten
-  get <remote> [lokal]     Datei herunterladen; ohne lokalen Namen
+  get [-f] <remote> [lokal]
+                           Datei herunterladen; ohne lokalen Namen
                            unter ihrem Namen ins aktuelle Verzeichnis
-  put <lokal> [remote]     Datei hochladen; ohne Zielangabe unter
+  put [-f] <lokal> [remote]
+                           Datei hochladen; ohne Zielangabe unter
                            ihrem Namen in den Basis-Pfad
   del <remote>             Datei oder leeres Verzeichnis löschen
   info <remote>            Größe, Datum, MD5 usw. anzeigen
@@ -409,6 +411,18 @@ Beispiele:
   amicloud info /archiv/ss-alt
   amicloud search #?.txt /
   amicloud -s https://amicloud.example.com -u bob -p geheim list
+
+Überschreiben: Gibt es das Ziel schon (bei put auf dem Server, bei
+get lokal), fragen get und put nach:
+  '/bericht.txt' already exists on the server. Overwrite? [y/N]
+Nur "y" überschreibt. Mit -f (auch --force oder FORCE direkt nach
+get/put) wird ohne Frage überschrieben. Ohne Eingabe (z.B. in
+Skripten, stdin leer) wird nichts überschrieben und amicloud endet
+mit Rückgabewert 1 - in Skripten also -f verwenden. put fragt dazu
+den Server einmal zusätzlich ab; ist das nicht möglich (Netz- oder
+Serverfehler), wird nichts übertragen. Ist das Ziel auf dem Server
+ein Verzeichnis, bricht put mit einer Meldung ab: den vollständigen
+Zielpfad samt Dateinamen angeben.
 
 Zielname: Ohne Zielangabe verwendet put den Teil hinter dem letzten
 "/" oder ":" - aus DH0:bericht.txt wird /bericht.txt, aus
@@ -448,9 +462,9 @@ Befehle:
                               Remote-Verzeichnis auflisten
   lls|ldir|llist [pfad] [-n|-s|-d|-m]
                               lokales Verzeichnis auflisten
-  get [-r] <remote/muster> [lokal]
+  get [-r] [-f] <remote/muster> [lokal]
                               herunterladen
-  put [-r] <lokal/muster> [remote]
+  put [-r] [-f] <lokal/muster> [remote]
                               hochladen
   del|rm|delete [-r|-f] <pfad>
                               löschen
@@ -469,9 +483,21 @@ Listen-Optionen: -n nur Namen, -s mit Größe, -d mit Datum, -m mit MD5
 Datum und Typ.
 
 Gleichwertige Schreibweisen: -r, --recursive, RECURSIVE (auch ALL) für
-rekursiv; -f, --force, FORCE für löschen ohne Rückfrage. -r bei get und
-put überträgt ganze Verzeichnisbäume. Muster (* ? #?) sind bei get und
-put erlaubt.
+rekursiv; -f, --force, FORCE für "ohne Rückfrage" (löschen bzw.
+überschreiben). -r bei get und put überträgt ganze Verzeichnisbäume.
+Muster (* ? #?) sind bei get und put erlaubt.
+
+Überschreiben: get und put fragen, bevor sie eine vorhandene Datei
+ersetzen. Bei einer einzelnen Datei genügt y oder n. Bei Mustern und
+-r zeigt die Shell Größe, Datum und - wenn bekannt - ob der Inhalt
+gleich ist, und bietet an:
+  y  überschreiben        a  alle weiteren überschreiben
+  n  überspringen         s  alle weiteren überspringen
+  c  ganzen Vorgang abbrechen
+Einfach Return überspringt die Datei. Mit -f wird ohne Frage
+überschrieben. Liest die Shell ihre Befehle aus einer Datei, ist keine
+Antwort möglich: Dann wird nichts überschrieben (Einzeldatei: nein,
+Muster/-r: Abbruch), und die Shell weist auf -f hin.
 
 Kurzformen für lcd: ".." eine Ebene höher (auf dem Amiga wie "/"),
 ":" oder "\\" Wurzel des aktuellen Laufwerks.

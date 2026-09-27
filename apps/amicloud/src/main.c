@@ -34,6 +34,14 @@ static int cmd_search_print(const AcConfig *cfg, const char *root, const char *p
     return 0;
 }
 
+/* -f/--force/FORCE after get/put: overwrite an existing destination
+ * without asking (same spellings as amicloud-shell's flag). */
+static int is_force_flag(const char *t)
+{
+    return strcmp(t, "-f") == 0 || strcmp(t, "--force") == 0 ||
+           strcmp(t, "FORCE") == 0 || strcmp(t, "force") == 0;
+}
+
 int main(int argc, char **argv)
 {
     AcConfig cfg;
@@ -108,19 +116,23 @@ int main(int argc, char **argv)
         rc = cmd_list(&cfg, (i < argc) ? argv[i] : NULL);
 
     } else if (strcmp(cmd, "get") == 0) {
+        int force = 0;
+        if (i < argc && is_force_flag(argv[i])) { force = 1; i++; }
         if (i >= argc) { fprintf(stderr, "amicloud: get requires <remote>\n"); rc = 1; }
         else {
             const char *remote = argv[i++];
             const char *local  = (i < argc) ? argv[i] : NULL;
-            rc = cmd_get(&cfg, remote, local);
+            rc = cmd_get_checked(&cfg, remote, local, force);
         }
 
     } else if (strcmp(cmd, "put") == 0) {
+        int force = 0;
+        if (i < argc && is_force_flag(argv[i])) { force = 1; i++; }
         if (i >= argc) { fprintf(stderr, "amicloud: put requires <local>\n"); rc = 1; }
         else {
             const char *local  = argv[i++];
             const char *remote = (i < argc) ? argv[i] : NULL;
-            rc = cmd_put(&cfg, local, remote);
+            rc = cmd_put_checked(&cfg, local, remote, force);
         }
 
     } else if (strcmp(cmd, "del") == 0) {
