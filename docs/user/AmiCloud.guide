@@ -623,8 +623,7 @@ Extras (Prüfsumme, Suchen) und Hilfe. Dort erledigt F6 auch das
 Umbenennen, wenn beide Panels dieselbe Quelle zeigen, und F4 bietet
 zusätzlich die Wahl des Suchbereichs.
 
-Hinweis: Die MUI-Fassung ist auf echter Hardware noch wenig erprobt;
-die Programmversion meldet sich deshalb als "0.1 (unverified)".
+Hinweis: Die MUI-Fassung ist auf echter Hardware noch wenig erprobt.
 
 @endnode
 

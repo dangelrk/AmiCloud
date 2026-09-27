@@ -481,7 +481,8 @@ void MainWindow::doAbout()
 {
     QMessageBox::information(this, tr("Ueber AmiCloud Commander"),
         tr("AmiCloud Commander\nDual-pane AmiCloud file manager\n\n"
-           "Version " AC_VERSION "\n(c) AmiCloud"));
+           "Version " AC_VERSION "\n(C) 2026 Ronny Krueger\n"
+           "GNU General Public License v3 or later"));
 }
 
 void MainWindow::startJob(TransferJob::Op op, QVector<TransferJob::Item> items)

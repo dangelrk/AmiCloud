@@ -32,7 +32,7 @@
 #include <stdlib.h>
 
 long __stack = 65536;
-const char amiga_ver[] = "$VER: AmiCloudPrefs " AC_VERSION " (14.07.2026)";
+const char amiga_ver[] = "$VER: AmiCloudPrefs " AC_VERSION " (27.09.2026)";
 
 #define GID_SERVER    1
 #define GID_USER      2

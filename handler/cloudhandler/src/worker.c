@@ -47,7 +47,7 @@
 
 extern int ac_errors_to_stderr; /* http_amiga.c -- see apps/amicloud-commander-mui/src/main_mui.c for the same pattern */
 
-const char amiga_ver[] = "$VER: amicloud-worker 0.4-diag (11.07.2026)";
+const char amiga_ver[] = "$VER: amicloud-worker " AC_VERSION " (27.09.2026)";
 
 static AcConfig g_cfg;
 static int      g_net_ready = 0;

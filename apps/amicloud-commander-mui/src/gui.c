@@ -696,7 +696,8 @@ static void do_about(void)
      * main_mui.c and MUIA_Application_Version above). */
     MUI_Request(g_app, NULL, 0, "Ueber AmiCloud Commander", "_OK",
                "AmiCloud Commander\nDual-pane AmiCloud file manager\n\n"
-               "Version 0.1 (unverified)\n(c) AmiCloud");
+               "Version " AC_VERSION "\n(C) 2026 Ronny Krueger\n"
+               "GNU General Public License v3 or later");
 }
 
 /* Prüfsumme anzeigen — selection in the active panel, up to 20 lines.
@@ -1019,9 +1020,9 @@ int gui_run(const AcConfig *cfg)
 
     g_app = ApplicationObject,
         MUIA_Application_Title,       "AmiCloud Commander",
-        MUIA_Application_Version,     "$VER: amicloud-commander 0.1 (unverified)",
-        MUIA_Application_Copyright,   "AmiCloud",
-        MUIA_Application_Author,      "AmiCloud",
+        MUIA_Application_Version,     "$VER: amicloud-commander " AC_VERSION " (27.09.2026)",
+        MUIA_Application_Copyright,   "(C) 2026 Ronny Krueger",
+        MUIA_Application_Author,      "Ronny Krueger",
         MUIA_Application_Description, "Dual-pane AmiCloud file manager",
         MUIA_Application_Base,        "AMICLOUDCOMMANDER",
 
