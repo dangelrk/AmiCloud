@@ -58,6 +58,7 @@ Dir CLOUD:
 | [config-examples/README.md](config-examples/README.md) | Konfigurationsdateien, Ablageorte, Schlüssel |
 | [handler/cloudhandler/README.md](handler/cloudhandler/README.md) | Innenleben des `CLOUD:`-Handlers (englisch) |
 | [docs/adr/](docs/adr/), [docs/design/](docs/design/) | Architekturentscheidungen und historische Planungsdokumente |
+| [TODO.md](TODO.md) | bekannte offene Punkte |
 
 ## Verzeichnisse
 
