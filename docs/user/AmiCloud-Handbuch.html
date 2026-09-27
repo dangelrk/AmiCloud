@@ -463,13 +463,11 @@ amicloud info /archiv/ss-alt
 amicloud search '#?.txt' /
 amicloud -s https://amicloud.example.com -u bob -p geheim list</pre>
 
-<div class="callout"><strong>Amiga: put mit Laufwerksangabe</strong><br>
-Liegt die Datei direkt im Wurzelverzeichnis eines Laufwerks, das Ziel
-angeben: <code>put DH0:bericht.txt /bericht.txt</code>. Ohne Ziel lässt sich
-daraus kein gültiger Name bilden; <code>amicloud</code> bricht dann mit
-<code>put: cannot derive a remote name</code> ab, ohne etwas zu übertragen.
-Pfade mit Unterverzeichnis (<code>DH0:texte/bericht.txt</code>) funktionieren
-auch ohne Zielangabe.</div>
+<p>Zielname: Ohne Zielangabe verwendet <code>put</code> den Teil hinter dem
+letzten <code>/</code> oder <code>:</code> – aus <code>DH0:bericht.txt</code>
+wird <code>/bericht.txt</code>, aus <code>DH0:texte/bericht.txt</code>
+ebenfalls. Nur ein Pfad ohne Dateinamen (z.&nbsp;B. <code>DH0:</code>) wird
+abgelehnt.</p>
 
 <h2 id="shell">10. amicloud-shell – interaktive Shell <span class="platform-tag">Amiga + PC</span></h2>
 

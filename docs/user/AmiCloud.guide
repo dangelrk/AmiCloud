@@ -410,13 +410,10 @@ Beispiele:
   amicloud search #?.txt /
   amicloud -s https://amicloud.example.com -u bob -p geheim list
 
-Hinweis: Bei put mit einer Datei direkt im Wurzelverzeichnis eines
-Laufwerks (z.B. DH0:bericht.txt) das Ziel angeben:
-  put DH0:bericht.txt /bericht.txt
-Ohne Ziel lässt sich daraus kein gültiger Name bilden; amicloud
-bricht dann mit "put: cannot derive a remote name" ab, ohne etwas
-zu übertragen. Pfade mit Unterverzeichnis (DH0:texte/bericht.txt)
-funktionieren auch ohne Zielangabe.
+Zielname: Ohne Zielangabe verwendet put den Teil hinter dem letzten
+"/" oder ":" - aus DH0:bericht.txt wird /bericht.txt, aus
+DH0:texte/bericht.txt ebenfalls. Nur ein Pfad ohne Dateinamen
+(z.B. "DH0:") wird abgelehnt.
 
 Rückgabewert: 0 bei Erfolg, sonst ungleich 0.
 
