@@ -13,7 +13,8 @@ FailAt 21
 Echo ""
 Echo "AmiCloud deinstallieren"
 Echo "======================="
-Ask "Alle AmiCloud-Programme, den DOSDriver CLOUD und das Handbuch löschen? (y/n)"
+Echo "Entfernt alle AmiCloud-Programme, den DOSDriver CLOUD und das Handbuch."
+Ask "Fortfahren? (y/n)"
 If NOT WARN
   Echo "Abgebrochen, nichts gelöscht."
   Quit 0
@@ -61,7 +62,7 @@ If NOT WARN
 EndIf
 Echo "Programme, DOSDriver und Handbuch entfernt."
 
-Ask "Auch die Konfiguration ENV:amicloud.cfg und ENVARC:amicloud.cfg löschen? (y/n)"
+Ask "Auch ENV:amicloud.cfg und ENVARC:amicloud.cfg löschen? (y/n)"
 If WARN
   If EXISTS ENV:amicloud.cfg
     Delete ENV:amicloud.cfg QUIET

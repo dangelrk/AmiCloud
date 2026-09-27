@@ -28,33 +28,36 @@ Echo ""
 Echo "AmiCloud-Installation"
 Echo "====================="
 Echo "Benötigt: AmigaOS 3.x, TCP/IP-Stack (bsdsocket.library), AmiSSL 5,"
-Echo "für den Commander zusätzlich MUI 3.8. Antworten mit y (ja) oder n (nein)."
+Echo "für den Commander zusätzlich MUI 3.8."
+Echo "Antworten mit y (ja) oder n (nein)."
 Echo ""
 
 ; ---- Kommandozeilenprogramme ---------------------------------------------
-Ask "Kommandozeilenprogramme amicloud, amicloud-shell, cloudsync nach C: kopieren? (y/n)"
+Echo "Kommandozeilenprogramme: amicloud, amicloud-shell, cloudsync"
+Ask "Nach C: kopieren? (y/n)"
 If WARN
   Copy C/amicloud C/amicloud-shell C/cloudsync TO C: QUIET
   If ERROR
     Echo "FEHLER: Kopieren nach C: fehlgeschlagen."
     Set AC_FEHLER 1
   Else
-    Protect C:amicloud +rwed >NIL:
-    Protect C:amicloud-shell +rwed >NIL:
-    Protect C:cloudsync +rwed >NIL:
+    Protect >NIL: C:amicloud +rwed
+    Protect >NIL: C:amicloud-shell +rwed
+    Protect >NIL: C:cloudsync +rwed
     Echo "  C:amicloud, C:amicloud-shell, C:cloudsync installiert."
   EndIf
 EndIf
 
 ; ---- Commander (MUI) -----------------------------------------------------
-Ask "Dateimanager amicloud-commander (braucht MUI) nach SYS:Tools kopieren? (y/n)"
+Echo "Dateimanager amicloud-commander (braucht MUI)"
+Ask "Nach SYS:Tools kopieren? (y/n)"
 If WARN
   Copy C/amicloud-commander TO SYS:Tools/ QUIET
   If ERROR
     Echo "FEHLER: Kopieren nach SYS:Tools fehlgeschlagen."
     Set AC_FEHLER 1
   Else
-    Protect SYS:Tools/amicloud-commander +rwed >NIL:
+    Protect >NIL: SYS:Tools/amicloud-commander +rwed
     Echo "  SYS:Tools/amicloud-commander installiert (ohne Icon)."
   EndIf
 EndIf
@@ -67,33 +70,34 @@ If WARN
     Echo "FEHLER: Kopieren nach SYS:Prefs fehlgeschlagen."
     Set AC_FEHLER 1
   Else
-    Protect SYS:Prefs/AmiCloudPrefs +rwed >NIL:
+    Protect >NIL: SYS:Prefs/AmiCloudPrefs +rwed
     Set AC_PREFS 1
     Echo "  SYS:Prefs/AmiCloudPrefs installiert (ohne Icon)."
   EndIf
 EndIf
 
 ; ---- CLOUD:-Handler ------------------------------------------------------
-Ask "Laufwerk CLOUD: installieren (L:amicloud-handler, L:amicloud-worker, DOSDriver)? (y/n)"
+Echo "Laufwerk CLOUD: (L:amicloud-handler, L:amicloud-worker, DOSDriver)"
+Ask "Installieren? (y/n)"
 If WARN
   Copy C/amicloud-handler C/amicloud-worker TO L: QUIET
   If ERROR
     Echo "FEHLER: Kopieren nach L: fehlgeschlagen."
     Set AC_FEHLER 1
   Else
-    Protect L:amicloud-handler +rwed >NIL:
-    Protect L:amicloud-worker +rwed >NIL:
+    Protect >NIL: L:amicloud-handler +rwed
+    Protect >NIL: L:amicloud-worker +rwed
     Set AC_HANDLER 1
     Echo "  L:amicloud-handler und L:amicloud-worker installiert."
     If EXISTS DEVS:DOSDrivers/CLOUD
-      Echo "  DEVS:DOSDrivers/CLOUD ist schon vorhanden und bleibt unverändert."
+      Echo "  DEVS:DOSDrivers/CLOUD ist schon vorhanden, bleibt unverändert."
     Else
       Copy Storage/DOSDrivers/CLOUD TO DEVS:DOSDrivers/ QUIET
       If ERROR
         Echo "FEHLER: Kopieren nach DEVS:DOSDrivers fehlgeschlagen."
         Set AC_FEHLER 1
       Else
-        Echo "  DEVS:DOSDrivers/CLOUD installiert (wird ab jetzt beim Booten gemountet)."
+        Echo "  DEVS:DOSDrivers/CLOUD installiert (Mount ab jetzt beim Start)."
       EndIf
     EndIf
   EndIf
@@ -119,7 +123,8 @@ If NOT EXISTS ENV:amicloud.cfg
 EndIf
 
 If $AC_PREFS EQ 1
-  Ask "AmiCloudPrefs jetzt starten, um Server, Benutzer und Passwort einzutragen? (y/n)"
+  Echo "  In AmiCloudPrefs Server, Benutzer und Passwort eintragen."
+  Ask "AmiCloudPrefs jetzt starten? (y/n)"
   If WARN
     Echo "Im Fenster die Werte eintragen und Speichern wählen."
     SYS:Prefs/AmiCloudPrefs
@@ -130,11 +135,11 @@ EndIf
 If $AC_HANDLER EQ 1
   Assign >NIL: EXISTS CLOUD:
   If WARN
-    Ask "CLOUD: jetzt mounten? Die Konfiguration muss dafür fertig sein. (y/n)"
+    Ask "CLOUD: jetzt mounten? (Konfiguration muss fertig sein) (y/n)"
     If WARN
       Mount CLOUD:
       If ERROR
-        Echo "FEHLER: Mount CLOUD: ist fehlgeschlagen (siehe Handbuch, Fehlersuche)."
+        Echo "FEHLER: Mount CLOUD: fehlgeschlagen (Handbuch, Fehlersuche)."
         Set AC_FEHLER 1
       Else
         Echo "CLOUD: ist gemountet. Test: Dir CLOUD:"
@@ -149,7 +154,7 @@ EndIf
 ; ---- Handbuch ------------------------------------------------------------
 Assign >NIL: EXISTS HELP:
 If WARN
-  Echo "HELP: ist nicht zugewiesen, das Handbuch bleibt in Docs/AmiCloud.guide."
+  Echo "HELP: ist nicht zugewiesen, Handbuch bleibt in Docs/AmiCloud.guide."
 Else
   Copy Docs/AmiCloud.guide TO HELP: QUIET
   If ERROR
@@ -171,7 +176,7 @@ Echo "Nächste Schritte:"
 Echo "  1. Zugangsdaten eintragen: SYS:Prefs/AmiCloudPrefs (Speichern)"
 Echo "     oder ENVARC:amicloud.cfg mit einem Editor bearbeiten."
 Echo "  2. Verbindung testen:      amicloud list /"
-Echo "  3. Laufwerk:               Dir CLOUD:  (nach Neustart oder Mount CLOUD:)"
+Echo "  3. Laufwerk:  Dir CLOUD:  (nach Neustart oder Mount CLOUD:)"
 Echo "  4. Handbuch:               MultiView Docs/AmiCloud.guide"
 Echo ""
 
