@@ -70,7 +70,7 @@ Dir CLOUD:
 | `core/` | [AmiCloudCore](https://github.com/dangelrk/AmiCloudCore) als Git-Submodul: gemeinsame C-Bibliotheken und Buildlogik |
 | `config-examples/` | Beispielkonfiguration und Mountlist |
 | `install/amiga/` | Install-/Uninstall-Skript und ReadMe der Amiga-Schublade |
-| `scripts/` | `test_api.sh` (API-Testsuite), `run-fsuae.sh` (Test im Emulator) |
+| `scripts/` | `test_api.sh` (API-Testsuite); Emulator-Test per `make fsuae` (siehe BUILD.md) |
 | `Build-Amiga` | erzeugtes AmigaDOS-Skript zum nativen Bauen auf dem Amiga |
 
 ## Schwesterprojekte

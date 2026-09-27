@@ -45,6 +45,8 @@ die Liste):
 | `make dist-amiga` | Amiga-Installationsschublade `build/dist/AmiCloud/`, zusätzlich `build/AmiCloud.lha`, falls `lha` installiert ist |
 | `make build-amiga-script` | Das native Amiga-Buildskript `Build-Amiga` neu erzeugen |
 | `make verify-amiga-script` | … und auf dem Host mit vbcc gegenprüfen |
+| `make check-guide` | AmigaGuide-Handbuch in `docs/user/` prüfen (Knoten, Verweise, Latin-1, Zeilenlänge) |
+| `make fsuae [PROGS="…"]` | Amiga-Programme im Emulator FS-UAE testen (siehe unten) |
 | `make install` | Host-Programme aus `bin/pc/` nach `$(PREFIX)/bin` kopieren (`PREFIX=/usr/local`, `DESTDIR` wird unterstützt) |
 | `make clean` | Alle Build-Ergebnisse entfernen (`bin/`, `lib/`, `obj/`, `build/`) |
 
@@ -251,22 +253,23 @@ Amiga beschreibt [INSTALL.md](INSTALL.md#amiga).
 
 ## Testen im Emulator (FS-UAE)
 
-`scripts/run-fsuae.sh` kopiert Programme aus `bin/amiga/` in einen
-Freigabeordner und startet [FS-UAE](https://fs-uae.net/) mit einer
-Konfigurationsdatei. Es wird über Umgebungsvariablen eingestellt:
+`make fsuae` (Skript `core/tools/run-fsuae.sh`) kopiert Programme aus
+`bin/amiga/` in einen Freigabeordner und startet
+[FS-UAE](https://fs-uae.net/) mit einer Konfigurationsdatei. Es wird über
+Umgebungsvariablen eingestellt:
 
 | Variable | Bedeutung |
 |---|---|
 | `FSUAE_CONFIG` | `.fs-uae`-Konfigurationsdatei (Pflicht) |
-| `FSUAE_SHARED` | Host-Ordner, in den kopiert wird (Pflicht); muss in der FS-UAE-Konfiguration als Laufwerk eingebunden sein, z. B. `hard_drive_1 = …` mit `hard_drive_1_label = SHARED` |
+| `FSUAE_SHARED` | Host-Ordner, in den kopiert wird (Standard: `build/fsuae-shared`); muss in der FS-UAE-Konfiguration als Laufwerk eingebunden sein, z. B. `hard_drive_1 = …` mit `hard_drive_1_label = SHARED` |
 | `FSUAE_BIN` | FS-UAE-Programm; Standard: `fs-uae` aus dem `PATH`, auf macOS ersatzweise `/Applications/FS-UAE.app/Contents/MacOS/fs-uae` |
 
 ```sh
 make amiga
-FSUAE_CONFIG=$HOME/fs-uae/amiga.fs-uae FSUAE_SHARED=$HOME/fs-uae/shared \
-    scripts/run-fsuae.sh                       # alle Programme
-FSUAE_CONFIG=... FSUAE_SHARED=... \
-    scripts/run-fsuae.sh amicloud amicloud-shell   # nur diese
+export FSUAE_CONFIG=$HOME/fs-uae/amiga.fs-uae
+export FSUAE_SHARED=$HOME/fs-uae/shared
+make fsuae                                   # alle Programme
+make fsuae PROGS="amicloud amicloud-shell"   # nur diese
 ```
 
 Im Emulator liegen die Programme dann z. B. unter `SHARED:`. Für

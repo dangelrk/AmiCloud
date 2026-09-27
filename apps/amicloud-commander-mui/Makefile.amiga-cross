@@ -64,8 +64,8 @@ HTTP_OBJS = $(HTTP_SRCS:%=$(OBJDIR)/http_%.o)
 FS_SRCS   = localfs_amiga localfs_util pattern_amiga
 FS_OBJS   = $(FS_SRCS:%=$(OBJDIR)/fs_%.o)
 
-OWN_SRCS = main_mui gui panel_mui mui_stubs
-OWN_OBJS = $(OWN_SRCS:%=$(OBJDIR)/%.o) $(OBJDIR)/panel.o $(OBJDIR)/search.o
+OWN_SRCS = main_mui gui panel_mui
+OWN_OBJS = $(OWN_SRCS:%=$(OBJDIR)/%.o) $(OBJDIR)/mui_stubs.o $(OBJDIR)/panel.o $(OBJDIR)/search.o
 
 all: $(OBJDIR) $(BINDIR) $(TARGET_BIN)
 
@@ -77,6 +77,9 @@ $(TARGET_BIN): $(OWN_OBJS) $(HTTP_OBJS) $(FS_OBJS) $(CORE_OBJS)
 	    $(OWN_OBJS) $(HTTP_OBJS) $(FS_OBJS) $(CORE_OBJS) $(COMMANDER_LIBS)
 
 $(OBJDIR)/%.o: src/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/mui_stubs.o: $(COMMON_DIR)/src/mui_stubs.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/panel.o: $(COMMON_DIR)/src/panel.c
