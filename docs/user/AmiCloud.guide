@@ -117,6 +117,7 @@ enth‰lt:
   Uninstall-AmiCloud      Deinstallationsskript
   ReadMe                  Kurzbeschreibung
   LICENSE                 GNU GPL Version 3
+  THIRD-PARTY-NOTICES     Lizenz der Fremdkomponente Parson (MIT)
   C/                      alle Programme
   Docs/AmiCloud.guide     dieses Handbuch
   Examples/               amicloud.cfg.example, CLOUD.mountlist
@@ -834,7 +835,8 @@ Maﬂgeblich ist allein der englische Lizenztext in der Datei LICENSE
 (in der Installationsschublade und im Quellcode).
 
 Der enthaltene JSON-Parser Parson (c) Krzysztof Gabis steht unter der
-MIT-Lizenz.
+MIT-Lizenz; ihr Wortlaut liegt als THIRD-PARTY-NOTICES in der
+Installationsschublade.
 
 @endnode
 

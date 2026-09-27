@@ -13,6 +13,7 @@ Inhalt dieser Schublade
   Uninstall-AmiCloud    Deinstallationsskript
   ReadMe                diese Datei
   LICENSE               GNU General Public License, Version 3
+  THIRD-PARTY-NOTICES   Lizenz der Fremdkomponente Parson (MIT)
   C/amicloud            Kommandozeilen-Client (ein Befehl je Aufruf)
   C/amicloud-shell      interaktive Shell (cd, ls, get, put, ...)
   C/cloudsync           einmaliger Abgleich lokaler Ordner <-> Cloud
@@ -45,7 +46,7 @@ Lizenz
 ------
 AmiCloud ist freie Software unter der GNU General Public License,
 Version 3 oder neuer (siehe LICENSE). Enthält den JSON-Parser Parson
-(MIT-Lizenz). Keine Garantie.
+(MIT-Lizenz, siehe THIRD-PARTY-NOTICES). Keine Garantie.
 
 Autor: Ronny Krueger
 Quellcode: https://github.com/dangelrk/AmiCloud

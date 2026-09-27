@@ -235,6 +235,7 @@ AmiCloud/
   Uninstall-AmiCloud      Deinstallationsskript
   ReadMe                  Kurzbeschreibung
   LICENSE                 GNU GPL v3
+  THIRD-PARTY-NOTICES     Lizenz der Fremdkomponente Parson (MIT)
   C/                      alle Programme
   Docs/AmiCloud.guide     Handbuch (AmigaGuide)
   Examples/               amicloud.cfg.example, CLOUD.mountlist
