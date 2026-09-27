@@ -120,21 +120,50 @@ static void parse_args(char **tokens, int n, ParsedArgs *pa)
     }
 }
 
+/* Separators of a LOCAL path on this platform: '/' everywhere, the
+ * AmigaDOS volume/device colon on the Amiga, '\\' and the drive colon on
+ * Windows. On macOS/Linux '\\' and ':' are ordinary name characters.
+ * Remote paths only ever use '/'. */
+static int is_local_sep(char c)
+{
+    if (c == '/') return 1;
+#if defined(PLATFORM_AMIGA)
+    if (c == ':') return 1;
+#elif defined(PLATFORM_WIN)
+    if (c == '\\' || c == ':') return 1;
+#endif
+    return 0;
+}
+
+/* Last separator in path (local or remote rules, see above), or NULL. */
+static const char *last_sep(const char *path, int local)
+{
+    const char *p, *last = NULL;
+    for (p = path; *p; p++)
+        if (local ? is_local_sep(*p) : (*p == '/')) last = p;
+    return last;
+}
+
 /* Zerlegt z.B. "sub" + Muster "?.txt" (Pfad "sub/?.txt") in
  * dir="sub" (dir="" wenn kein Verzeichnisanteil) und liefert einen Zeiger
  * auf den Musteranteil (letztes Segment) INNERHALB von path zurueck. NULL,
  * wenn das letzte Segment kein Wildcard-Zeichen enthaelt — dann bleibt dir
  * unveraendert und der Aufrufer soll den kompletten Original-String
- * weiterverwenden (bisheriges Verhalten). */
-static const char *split_pattern(const char *path, char *dir, size_t dirsz)
+ * weiterverwenden (bisheriges Verhalten). local: path ist ein lokaler
+ * Pfad (Trennzeichen je System, siehe is_local_sep()), sonst Remote. */
+static const char *split_pattern(const char *path, int local, char *dir, size_t dirsz)
 {
-    const char *slash = strrchr(path, '/');
-    const char *last  = slash ? slash + 1 : path;
+    const char *sep  = last_sep(path, local);
+    const char *last = sep ? sep + 1 : path;
 
     if (!pattern_is_wildcard(last)) return NULL;
 
-    if (slash) {
-        size_t len = (size_t)(slash - path);
+    if (sep) {
+        /* The separator stays part of dir when it is the root or ends a
+         * volume/drive ("/", "DH0:", "C:", "C:\\") -- dropping it would
+         * name the current directory instead. */
+        size_t len = (size_t)(sep - path);
+        if (len == 0 || *sep == ':' || path[len - 1] == ':') len++;
         if (len >= dirsz) len = dirsz - 1;
         memcpy(dir, path, len);
         dir[len] = '\0';
@@ -568,7 +597,7 @@ static void do_get(ShellSession *s, char **tok, int n)
     if (pa.npos < 1) { fprintf(stderr, "amicloud: get requires <remote> [local]\n"); return; }
     eff_config(s, &eff);
 
-    pat = split_pattern(pa.pos[0], dirpart, sizeof(dirpart));
+    pat = split_pattern(pa.pos[0], 0, dirpart, sizeof(dirpart));
     if (pat) {
         do_get_pattern(&eff, dirpart, pat,
                        pa.npos > 1 ? pa.pos[1] : NULL, pa.recursive, pa.force);
@@ -705,7 +734,7 @@ static void do_put(ShellSession *s, char **tok, int n)
     if (pa.npos < 1) { fprintf(stderr, "amicloud: put requires <local> [remote]\n"); return; }
     eff_config(s, &eff);
 
-    pat = split_pattern(pa.pos[0], dirpart, sizeof(dirpart));
+    pat = split_pattern(pa.pos[0], 1, dirpart, sizeof(dirpart));
     if (pat) {
         do_put_pattern(&eff, dirpart, pat,
                        pa.npos > 1 ? pa.pos[1] : NULL, pa.recursive, pa.force);
@@ -719,12 +748,14 @@ static void do_put(ShellSession *s, char **tok, int n)
         if (pa.npos > 1) {
             cmd_resolve_path(&eff, pa.pos[1], rbuf, sizeof(rbuf));
         } else {
-            const char *slash = strrchr(pa.pos[0], '/');
-#ifdef PLATFORM_WIN
-            const char *bslash = strrchr(pa.pos[0], '\\');
-            if (bslash && (!slash || bslash > slash)) slash = bslash;
-#endif
-            cmd_resolve_path(&eff, slash ? slash + 1 : pa.pos[0], rbuf, sizeof(rbuf));
+            const char *sep  = last_sep(pa.pos[0], 1);
+            const char *name = sep ? sep + 1 : pa.pos[0];
+            if (!*name) {
+                fprintf(stderr, "amicloud: put -r: '%s' nennt keinen Ordnernamen -- "
+                        "Ziel angeben (put -r <lokal> <remote>)\n", pa.pos[0]);
+                return;
+            }
+            cmd_resolve_path(&eff, name, rbuf, sizeof(rbuf));
         }
         copyctx_init(&c, !pa.force);
         count_local_tree(pa.pos[0], &c.pr);
