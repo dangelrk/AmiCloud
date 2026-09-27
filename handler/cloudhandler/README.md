@@ -382,4 +382,4 @@ then add:
 - `worker.c` -- the `amicloud-worker` process (normal vbcc startup, links
   libcloudhttp/libcloudcore).
 - `Makefile.amiga-cross`, `mount/CLOUD` -- build and DOSDriver
-  (identical copy: `../../config-examples/CLOUD.mountlist`).
+  (same values as a classic mountlist entry: `../../config-examples/CLOUD.mountlist`).

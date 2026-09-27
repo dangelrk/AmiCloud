@@ -1,19 +1,19 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright (C) 2026 Ronny Krueger */
-/* CLOUD: -- AmiCloud DOS handler (DOSDriver). Installation (automatisch
- * per Install-AmiCloud, Details in docs/INSTALL.md und
- * handler/cloudhandler/README.md):
- *   Copy amicloud-handler L:
- *   Copy amicloud-worker  L:        <- backend_init() startet ihn beim
- *                                      Mount aus L: (SystemTags)
- *   Copy CLOUD.mountlist DEVS:DOSDrivers/CLOUD   <- diese Datei
- * amicloud-worker liest ENV:amicloud.cfg (server/user/pass, Vorlage
- * config-examples/amicloud.cfg.example, Editor AmiCloudPrefs) -- ohne
- * sie startet er zwar, aber jede echte Anfrage schlaegt fehl.
- * Danach neu starten oder in der Shell "Mount CLOUD:" eingeben.
- * Original: handler/cloudhandler/mount/CLOUD (gleiche Eintraege) */
+/* CLOUD: als klassischer Mountlist-Eintrag (dieselben Werte wie der
+ * DOSDriver handler/cloudhandler/mount/CLOUD).
+ * Voraussetzung: L:amicloud-handler und L:amicloud-worker installiert,
+ * ENV:amicloud.cfg vorhanden (siehe docs/INSTALL.md).
+ * Mounten ohne DOSDriver:
+ *   Mount CLOUD: FROM <Pfad>/CLOUD.mountlist
+ * oder diesen Eintrag an DEVS:MountList anhaengen, dann genuegt
+ *   Mount CLOUD:
+ * Fuer das automatische Mounten beim Systemstart stattdessen den
+ * DOSDriver nach DEVS:DOSDrivers/ kopieren (macht das Install-Skript). */
+CLOUD:
 Handler   = L:amicloud-handler
 StackSize = 16384
 Priority  = 5
 GlobVec   = -1      /* pflicht fuer C-Handler -- kein BCPL-GlobVec */
 Activate  = 1
+#

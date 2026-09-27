@@ -7,12 +7,16 @@ Amiga-Installationsschublade.
 | Datei | Ablage im Betrieb | Gelesen von | Bearbeitet mit |
 |---|---|---|---|
 | [amicloud.cfg.example](amicloud.cfg.example) | Amiga: `ENV:amicloud.cfg` (dauerhaft `ENVARC:amicloud.cfg`); PC: `~/.amicloudrc` | `amicloud`, `amicloud-shell`, `cloudsync`, `amicloud-commander` (MUI und Qt), `amicloud-worker` (Backend des `CLOUD:`-Handlers) | von Hand oder mit **AmiCloudPrefs** (Amiga, `SYS:Prefs`) |
-| [CLOUD.mountlist](CLOUD.mountlist) | `DEVS:DOSDrivers/CLOUD` | AmigaDOS `Mount` → `L:amicloud-handler` | von Hand (normalerweise keine Änderung nötig) |
+| [CLOUD.mountlist](CLOUD.mountlist) | beliebig, z. B. an `DEVS:MountList` anhängen | AmigaDOS `Mount CLOUD: FROM …` → `L:amicloud-handler` | von Hand (normalerweise keine Änderung nötig) |
 | `../server/config.php.example` | `config.php` im Web-Verzeichnis des Servers | AmiCloud-Server (`api.php`, `web.php`) | von Hand, siehe [docs/INSTALL.md](../docs/INSTALL.md#server) |
 
-`CLOUD.mountlist` ist inhaltsgleich mit dem Original
-`handler/cloudhandler/mount/CLOUD`; `make dist-amiga` legt Letzteres als
-`Storage/DOSDrivers/CLOUD` in die Installationsschublade.
+`CLOUD.mountlist` ist ein klassischer Mountlist-Eintrag (`CLOUD:` … `#`)
+mit denselben Werten wie der DOSDriver `handler/cloudhandler/mount/CLOUD`.
+Den DOSDriver legt `make dist-amiga` als `Storage/DOSDrivers/CLOUD` in die
+Installationsschublade; das Install-Skript kopiert ihn nach
+`DEVS:DOSDrivers/`. Die Mountlist ist die Alternative ohne DOSDriver:
+`Mount CLOUD: FROM Examples/CLOUD.mountlist`. Änderungen an den Werten
+bitte an beiden Stellen nachziehen.
 
 ## Suchreihenfolge der Konfigurationsdatei
 

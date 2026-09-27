@@ -11,7 +11,7 @@
  * config-examples/amicloud.cfg.example, Editor AmiCloudPrefs) -- ohne
  * sie startet er zwar, aber jede echte Anfrage schlaegt fehl.
  * Danach neu starten oder in der Shell "Mount CLOUD:" eingeben.
- * Inhaltsgleiche Kopie: config-examples/CLOUD.mountlist */
+ * Dieselben Werte als Mountlist-Eintrag: config-examples/CLOUD.mountlist */
 Handler   = L:amicloud-handler
 StackSize = 16384
 Priority  = 5
