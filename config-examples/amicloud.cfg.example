@@ -1,0 +1,41 @@
+# AmiCloud-Konfiguration -- ein Format fuer alle AmiCloud-Programme.
+# Ablage:  Amiga: ENV:amicloud.cfg (dauerhaft: ENVARC:amicloud.cfg)
+#          PC:    ~/.amicloudrc     (oder jeweils -c <datei>)
+# Bearbeiten: von Hand oder auf dem Amiga mit AmiCloudPrefs (SYS:Prefs).
+#
+# Gelesen von: amicloud (CLI), amicloud-shell, cloudsync,
+# amicloud-commander (MUI und Qt) sowie amicloud-worker (Backend des
+# CLOUD:-Handlers, siehe config-examples/CLOUD.mountlist).
+# Zeilen "schluessel=wert", '#' am Zeilenanfang = Kommentar.
+#
+# Basis-URL des Servers (ohne /api.php):
+server=https://amicloud.example.com
+
+# Zugangsdaten (user/pass und username/password sind gleichwertig):
+user=bob
+pass=geheim
+
+# Basis-Pfad auf dem Server (Standard: /):
+#basepath=/
+
+# TLS-Zertifikat pruefen (1 = ja, Standard; 0 = nur fuer Entwicklung):
+#verify_ssl=1
+
+# Debug-Log des CLOUD:-Handlers (leer = aus). Beispiele:
+#debug=T:amicloud.log
+#debug=CON:0/0/640/200/AmiCloud Debug/CLOSE
+# Hinweis: dieser Schluessel wird nur von amicloud-worker (CLOUD:-Handler)
+# ausgewertet, nicht von den uebrigen Programmen. Debug-Ausgabe fuer
+# amicloud/amicloud-shell auf dem Amiga: Option -v (nach stderr). Fuer
+# amicloud-commander (MUI): -v beim Start aus der Shell oder ein
+# "DEBUG"-Tooltype am Workbench-Icon; Qt-Commander: -v/--verbose.
+
+# Nur auf dem Amiga relevant, ausgewertet von amicloud-shell (lokale
+# Datei-Zeitstempel) und amicloud-worker (Datumsangaben auf CLOUD:): die
+# Amiga-Systemuhr kennt keine Zeitzone. PC/Mac/Linux ignorieren diese
+# beiden Werte (ihre Datei-Zeitstempel sind bereits UTC-Epoche).
+#
+# Zeitzone der Amiga-Systemuhr relativ zu GMT/UTC, in Minuten (MEZ = 60):
+#gmt_offset=60
+# Sommerzeit aktiv? 1 = ja (addiert 60 Minuten), 0 = nein:
+#dst=0

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>AmiCloud — Plan: GUI-Dateimanager (Commander)</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1b1f23; --muted: #5b6570; --border: #e1e4e8;
+    --code-bg: #f6f8fa; --accent: #0969da; --accent-bg: #eef6ff;
+    --warn-bg: #fff8e6; --warn-border: #f0c36d;
+    --new-bg: #e8f7ee; --new-border: #4caf7d;
+    --done-bg: #eef6ff; --done-border: #0969da;
+    --table-head: #f6f8fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #30363d;
+      --code-bg: #161b22; --accent: #4da3ff; --accent-bg: #10233b;
+      --warn-bg: #2b2410; --warn-border: #7a5d1f;
+      --new-bg: #0f2a1c; --new-border: #2f7a52;
+      --done-bg: #10233b; --done-border: #4da3ff;
+      --table-head: #161b22;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #30363d;
+    --code-bg: #161b22; --accent: #4da3ff; --accent-bg: #10233b;
+    --warn-bg: #2b2410; --warn-border: #7a5d1f;
+    --new-bg: #0f2a1c; --new-border: #2f7a52;
+    --done-bg: #10233b; --done-border: #4da3ff;
+    --table-head: #161b22;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --fg: #1b1f23; --muted: #5b6570; --border: #e1e4e8;
+    --code-bg: #f6f8fa; --accent: #0969da; --accent-bg: #eef6ff;
+    --warn-bg: #fff8e6; --warn-border: #f0c36d;
+    --new-bg: #e8f7ee; --new-border: #4caf7d;
+    --done-bg: #eef6ff; --done-border: #0969da;
+    --table-head: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.55; max-width: 920px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem;
+  }
+  h1 { font-size: 1.7rem; margin-bottom: .2rem; }
+  h1 + .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 2rem; }
+  h2 { font-size: 1.25rem; margin-top: 2.6rem; border-bottom: 1px solid var(--border); padding-bottom: .35rem; }
+  h3 { font-size: 1.03rem; margin-top: 1.6rem; color: var(--fg); }
+  p, li { color: var(--fg); }
+  code, pre {
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .87em;
+    background: var(--code-bg); border-radius: 4px;
+  }
+  code { padding: .15em .4em; }
+  pre { padding: .9rem 1rem; overflow-x: auto; border: 1px solid var(--border); }
+  pre code { padding: 0; background: none; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.6rem; font-size: .92rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--table-head); font-weight: 600; }
+  td code { white-space: nowrap; }
+  .tag {
+    display: inline-block; font-size: .72rem; font-weight: 600; letter-spacing: .02em;
+    padding: .1rem .5rem; border-radius: 999px; margin-left: .4rem; vertical-align: middle;
+  }
+  .tag.new { background: var(--new-bg); border: 1px solid var(--new-border); color: var(--fg); }
+  .tag.done { background: var(--done-bg); border: 1px solid var(--done-border); color: var(--fg); }
+  .box {
+    border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; margin: 1rem 0;
+  }
+  .box.warn { background: var(--warn-bg); border-color: var(--warn-border); }
+  .box.info { background: var(--accent-bg); border-color: var(--accent); }
+  .box.done { background: var(--done-bg); border-color: var(--done-border); }
+  .box h4 { margin: 0 0 .5rem; font-size: .95rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist li { padding-left: 1.6rem; position: relative; margin-bottom: .4rem; }
+  ul.checklist li::before { content: "☐"; position: absolute; left: 0; color: var(--muted); }
+  ul.resolved { list-style: none; padding-left: 0; }
+  ul.resolved li { padding-left: 1.6rem; position: relative; margin-bottom: .5rem; }
+  ul.resolved li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+  .phase { border-left: 3px solid var(--accent); padding-left: 1rem; margin-bottom: 1.4rem; }
+  .phase h3 { margin-top: 0; }
+  .filepath { color: var(--accent); }
+  footer { margin-top: 3.5rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .82rem; }
+  .toc { columns: 2; column-gap: 2rem; }
+  .toc a { color: var(--accent); text-decoration: none; font-size: .9rem; display: block; margin-bottom: .25rem; }
+  @media (max-width: 600px) { .toc { columns: 1; } }
+  kbd {
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: .05em .4em;
+  }
+</style>
+</head>
+<body>
+
+<h1>AmiCloud — Plan: GUI-Dateimanager (Commander)</h1>
+<p class="subtitle">Zwei-Panel-Dateimanager im Stil von Midnight/Total Commander als grafisches Frontend über dem bestehenden Client-Kern — PC mit Qt&nbsp;6 Widgets, Amiga mit MUI. Betrifft ausschließlich <code>client/</code>; Server und Handler bleiben unangetastet.</p>
+
+<div class="box info">
+<h4>Status</h4>
+<p style="margin:0 0 .6rem">v1 (2026-07-05): Erstfassung. Grundsatzentscheidungen (Toolkit-Wahl, Panel-Konzept, Phasenreihenfolge) sind getroffen, siehe Abschnitt&nbsp;2 und&nbsp;10.</p>
+<p style="margin:0"><strong>Umsetzung (2026-07-05):</strong> Phase&nbsp;0 (Hook-Schicht <code>ui_hooks.c</code>, Fortschritt+Abbruch in <code>http_download</code>/neues <code>http_upload</code>, Panel-Abstraktion <code>panel.c/h</code>) ist implementiert und gegen CLI/Shell regressionsgetestet (<code>scripts/test_api.sh</code>, byte-identisches Konsolenverhalten). Phase&nbsp;1 (<code>client/gui_qt/</code>, Qt&nbsp;6) ist implementiert, gebaut und lauffähig getestet (startet, laedt Panels, keine Laufzeitfehler) — volle interaktive Bedienung konnte in dieser Umgebung mangels Bildschirmzugriff (Screen-Recording/Accessibility) nicht visuell verifiziert werden. Phase&nbsp;2 (<code>client/gui_amiga/</code>, MUI&nbsp;3.8) ist geschrieben, aber <strong>unverifiziert</strong> — keine VBCC/MUI-Toolchain in dieser Umgebung verfügbar, siehe Warnhinweis in <code>gui_amiga/gui.h</code>; benötigt einen nativen Amiga-Build-Durchlauf. Phasen&nbsp;3–4 (Komfortfunktionen, Politur/Paketierung) sind noch nicht begonnen.</p>
+</div>
+
+<div class="toc">
+<a href="#ziel">1. Ziel &amp; Ausgangslage</a>
+<a href="#toolkit">2. Toolkit-Entscheidungen</a>
+<a href="#ui">3. UI-Konzept</a>
+<a href="#architektur">4. Architektur</a>
+<a href="#phase0">5. Phase 0 — Kern GUI-fähig machen</a>
+<a href="#phase1">6. Phase 1 — Qt-Client MVP</a>
+<a href="#phase2">7. Phase 2 — Amiga-MUI-Client MVP</a>
+<a href="#phase3">8. Phase 3 — Komfortfunktionen</a>
+<a href="#phase4">9. Phase 4 — Politur &amp; Paketierung</a>
+<a href="#entscheidungen">10. Entscheidungen &amp; Risiken</a>
+<a href="#build">11. Build-Integration</a>
+<a href="#test">12. Testplan</a>
+</div>
+
+<h2 id="ziel">1. Ziel &amp; Ausgangslage</h2>
+<p>
+Neben CLI (<code>amicloud</code>) und interaktiver Shell (<code>amicloud-shell</code>) soll ein <strong>drittes Frontend</strong>
+entstehen: ein grafischer Zwei-Panel-Dateimanager (Arbeitstitel <strong>AmiCloud&nbsp;Commander</strong>,
+Binary <code>amicloud-commander</code>). Vorbild sind Midnight&nbsp;Commander / Total&nbsp;Commander / DirWork:
+zwei Dateilisten nebeneinander, Funktionstasten für Kopieren/Verschieben/Löschen, Statuszeile.
+</p>
+<p>
+Die Ausgangslage ist günstig: Der Client ist bereits sauber geschichtet. <code>cmd.c</code> liefert mit
+<code>cmd_list_raw()</code> strukturierte Verzeichnislisten (<code>AcEntry</code>), <code>localfs_*</code> abstrahiert
+das lokale Dateisystem plattformneutral (<code>LocalDirEntry</code>), <code>http_pc.c</code>/<code>http_amiga.c</code>
+kapseln den Transport, <code>pattern_*</code> die Wildcards, <code>config.c</code> die Konfiguration.
+Das GUI setzt <strong>auf denselben Kern</strong> auf — der einzige echte Umbau ist eine dünne
+Callback-Schicht (Phase&nbsp;0), CLI und Shell laufen unverändert weiter.
+</p>
+
+<h2 id="toolkit">2. Toolkit-Entscheidungen</h2>
+
+<h3>2.1 Amiga: MUI — nicht GadTools</h3>
+<table>
+<tr><th>Kriterium</th><th>GadTools</th><th>MUI 3.8</th></tr>
+<tr><td>Listen mit Spalten</td><td>nein (nur einspaltige ListView)</td><td>ja (<code>MUIA_List_Format</code> + Display-Hook)</td></tr>
+<tr><td>Multiselect</td><td>praktisch nicht</td><td>eingebaut (<code>MUIA_Listview_MultiSelect</code>)</td></tr>
+<tr><td>Font-sensitiv / Resize</td><td>manuelles Layout</td><td>Layout-Engine gratis</td></tr>
+<tr><td>Tastaturnavigation</td><td>manuell</td><td>eingebaut</td></tr>
+<tr><td>Abhängigkeit</td><td>im ROM (V37+)</td><td><code>muimaster.library</code> (Standard bei 3.x-Nutzern)</td></tr>
+</table>
+<p>
+Für einen Commander ist die GadTools-ListView disqualifiziert. Entscheidung: <strong>MUI&nbsp;3.8</strong>,
+bewusst <strong>nur eingebaute Klassen</strong> (Application/Window/Group/Listview/List/Text/String/Gauge) —
+kein NList-Zwang, damit die einzige Abhängigkeit die <code>muimaster.library</code> bleibt.
+NList ist ein optionales Upgrade in Phase&nbsp;4. Build wie gehabt mit VBCC (<code>Makefile.amiga</code>),
+MUI-SDK-Header zusätzlich.
+</p>
+
+<h3>2.2 PC: Qt 6 Widgets — nicht QML</h3>
+<p>
+<code>QTableView</code> + eigenes <code>QAbstractTableModel</code> ist genau das Werkzeug für Dateipanels;
+Widgets binden den C-Kern trivial per <code>extern "C"</code> an. QML brächte für diese Art UI nichts außer
+Deployment-Gewicht. Build per <strong>CMake</strong> (Qt-üblich); die bestehenden Makefiles bleiben für
+CLI/Shell zuständig.
+</p>
+
+<h2 id="ui">3. UI-Konzept (beide Plattformen identisch)</h2>
+
+<pre><code>┌─ AmiCloud Commander ────────────────────────────────────────────┐
+│ [Local ▾] /Users/bob/Downloads     │ [Cloud ▾] /dokumente       │
+│ Name           Größe   Datum       │ Name          Größe  Datum │
+│ ..                                 │ ..                         │
+│ archiv/           —    2026-06-01  │ bericht.txt    12K   ...   │
+│ foto.jpg        840K   2026-05-11  │ archiv/         —    ...   │
+│────────────────────────────────────┴────────────────────────────│
+│ 3 Objekte markiert, 1,2 MB  ·  Server v0.1, TLS ok              │
+│ F3 Info  F5 Kopieren  F6 Umben./Versch.  F7 MkDir  F8 Löschen   │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+
+<h3>3.1 Panels</h3>
+<ul>
+<li><strong>Jedes Panel ist umschaltbar Local&nbsp;↔&nbsp;Cloud</strong> (Total-Commander-Stil), nicht fix
+    „links lokal, rechts remote“. Beide Quellen liefern schon identisch geformte Einträge
+    (<code>LocalDirEntry</code> bzw. <code>AcEntry</code>: Name / is_dir / size / modified) — sie werden
+    hinter einer gemeinsamen Panel-Abstraktion vereinheitlicht (Abschnitt&nbsp;5.4).</li>
+<li>Spalten: Name, Größe, Datum. Sortierung Name/Größe/Datum, Verzeichnisse immer zuerst,
+    <code>..</code>-Eintrag immer ganz oben.</li>
+<li>Startzustand: links Local (CWD), rechts Cloud (<code>/</code> bzw. <code>basepath</code>) — wie das
+    Banner der Shell.</li>
+</ul>
+
+<h3>3.2 Tastenbelegung</h3>
+<table>
+<tr><th>Taste</th><th>Funktion</th></tr>
+<tr><td><kbd>Tab</kbd></td><td>aktives Panel wechseln</td></tr>
+<tr><td><kbd>Enter</kbd></td><td>Verzeichnis betreten</td></tr>
+<tr><td><kbd>Backspace</kbd></td><td>eine Ebene hoch (= <code>..</code>)</td></tr>
+<tr><td><kbd>Einfg</kbd> / <kbd>Space</kbd></td><td>Eintrag markieren + Cursor runter</td></tr>
+<tr><td><kbd>*</kbd></td><td>Wildcard-Markierung (Dialog, nutzt <code>pattern_match</code>) — Phase&nbsp;3</td></tr>
+<tr><td><kbd>F2</kbd></td><td>Panel neu laden</td></tr>
+<tr><td><kbd>F3</kbd></td><td>Info-Dialog (Daten von <code>cmd_info</code>; lokal: stat)</td></tr>
+<tr><td><kbd>F5</kbd></td><td>Kopieren ins andere Panel</td></tr>
+<tr><td><kbd>F6</kbd></td><td>Umbenennen/Verschieben</td></tr>
+<tr><td><kbd>F7</kbd></td><td>Verzeichnis anlegen</td></tr>
+<tr><td><kbd>F8</kbd> / <kbd>Entf</kbd></td><td>Löschen (mit Bestätigung; rekursiv wie <code>del -r</code> der Shell)</td></tr>
+<tr><td><kbd>F10</kbd> / <kbd>Esc</kbd></td><td>Beenden</td></tr>
+</table>
+
+<h3>3.3 Operations-Matrix für F5 (Kopieren)</h3>
+<table>
+<tr><th>Quelle → Ziel</th><th>Umsetzung</th></tr>
+<tr><td>Local → Cloud</td><td><code>cmd_put</code> (rekursiv: Logik aus <code>shell_put_dir</code>)</td></tr>
+<tr><td>Cloud → Local</td><td><code>cmd_get</code> (rekursiv: Logik aus <code>shell_get_dir</code>)</td></tr>
+<tr><td>Local → Local</td><td>lokale Kopie (neue kleine Funktion in <code>localfs_*</code>)</td></tr>
+<tr><td>Cloud → Cloud</td><td><strong>v1 gesperrt</strong> (ausgegraut) — der Server kennt keine Copy-Action; später Temp-Download+Upload oder neue API-Action <code>copy</code> (separates Server-Thema)</td></tr>
+</table>
+<p>F6 (Verschieben) analog; Cloud→Cloud geht hier per <code>cmd_rename</code>, Local↔Cloud = Kopie&nbsp;+&nbsp;Löschen mit Nachfrage.</p>
+
+<h2 id="architektur">4. Architektur</h2>
+
+<pre><code>                 ┌────────────────────────────────────────────┐
+                 │              GUI-Frontends                 │
+                 │  gui_qt/ (C++, Qt 6)   gui_amiga/ (C, MUI) │
+                 └───────────────┬────────────────────────────┘
+                                 │
+                 ┌───────────────▼───────────────┐
+                 │  panel.c/h  (NEU, reines C)   │  Einträge vereinheitlichen,
+                 │  ui_hooks.h (NEU)             │  Sortieren, Markieren,
+                 └───────────────┬───────────────┘  Pfadnavigation, Callbacks
+                                 │
+   ┌──────────┬──────────┬───────┴────┬───────────┬───────────┐
+   │  cmd.c   │ localfs_*│  http_*    │ pattern_* │ config.c  │  bestehender Kern
+   └──────────┴──────────┴────────────┴───────────┴───────────┘</code></pre>
+
+<p>Neue Verzeichnisstruktur unter <code>client/</code>:</p>
+<pre><code>client/
+  panel.c  panel.h  ui_hooks.h        &lt;- Phase 0 (plattformneutral, C)
+  gui_qt/                             &lt;- Phase 1
+    CMakeLists.txt  main.cpp
+    mainwindow.cpp/h  panelwidget.cpp/h
+    transferjob.cpp/h  connectdialog.cpp/h
+  gui_amiga/                          &lt;- Phase 2
+    main_mui.c  gui.c/h  panel_mui.c
+    (Makefile.amiga um Ziel amicloud-commander erweitert)</code></pre>
+
+<div class="box warn">
+<h4>Grundregel: keine C++-Kontamination des Kerns</h4>
+<p style="margin:0">Der Kern bleibt C89-nah und VBCC-kompatibel. Die Qt-Seite kapselt ihn ausschließlich
+über <code>extern "C"</code>-Includes. Alles, was beide GUIs brauchen, kommt als reines C in
+<code>panel.c</code> — nichts davon darf Qt- oder MUI-Typen kennen.</p>
+</div>
+
+<h2 id="phase0">5. Phase 0 — Kern GUI-fähig machen <span class="tag new">NEU</span></h2>
+<p>Der einzige echte Umbau; alles Weitere setzt nur oben drauf. CLI und Shell dürfen sich dabei <strong>nicht</strong> verändern.</p>
+
+<div class="phase">
+<h3>5.1 Callback-Schicht <code class="filepath">ui_hooks.h</code></h3>
+<p>
+<code>cmd.c</code> druckt heute per <code>printf</code>/<code>fprintf(stderr)</code>, <code>shell.c</code> fragt per
+<code>confirm()</code> auf stdin. Neue globale Hook-Struktur mit Funktionszeigern:
+</p>
+<pre><code>typedef struct {
+    void (*notify)(int level, const char *msg);          /* Info/Fehler        */
+    int  (*confirm)(const char *msg);                    /* 1=ja, 0=nein       */
+    int  (*progress)(long done, long total,              /* 0 = abbrechen      */
+                     const char *name);
+} UiHooks;
+void ui_set_hooks(const UiHooks *h);   /* NULL = Konsolen-Default */</code></pre>
+<p>
+Default-Implementierung = heutiges Konsolenverhalten. Die <code>fprintf</code>/<code>printf</code>-Stellen in
+<code>cmd.c</code> werden auf <code>notify()</code> umgestellt, <code>confirm()</code> aus <code>shell.c</code> wandert
+hinter die Hook.
+</p>
+</div>
+
+<div class="phase">
+<h3>5.2 Fortschritt + Abbruch im HTTP-Layer</h3>
+<ul>
+<li><code>http_download()</code> streamt bereits in eine <code>FILE*</code> — dort pro Chunk den
+    <code>progress</code>-Hook rufen. PC: libcurl <code>CURLOPT_XFERINFOFUNCTION</code>;
+    Amiga: <code>http_amiga.c</code> ist handgestrickt, Aufruf direkt in der recv-Schleife.</li>
+<li>Rückgabe 0 des Hooks bricht den Transfer sauber ab (curl: Abort-Return; Amiga: Verbindung schließen,
+    angefangene Zieldatei löschen).</li>
+</ul>
+</div>
+
+<div class="phase">
+<h3>5.3 Upload-Streaming (Amiga-kritisch)</h3>
+<p>
+<code>cmd_put()</code> lädt heute die <strong>ganze Datei per <code>malloc</code> in den Speicher</strong>
+(<code>cmd.c:367</code>) — auf einem 8-MB-Amiga ein Showstopper für größere Dateien. Neue Funktion
+<code>http_upload(url, auth, FILE *fp, long fsize, ...)</code> mit Chunk-Read + Progress-Hook.
+PC: libcurl <code>CURLOPT_READFUNCTION</code>; Amiga: <code>http_amiga.c</code> sendet ohnehin schleifenweise,
+statt aus dem Puffer eben aus der Datei lesen. <code>cmd_put()</code> intern umstellen, Signatur bleibt.
+</p>
+</div>
+
+<div class="phase">
+<h3>5.4 Panel-Abstraktion <code class="filepath">panel.c/h</code></h3>
+<ul>
+<li>Vereinheitlichter Eintrag (Name, is_dir, size, modified, mark-Flag) + Quelle
+    <code>PANEL_LOCAL</code>/<code>PANEL_CLOUD</code>.</li>
+<li><code>panel_read(src, path)</code> → Eintragsliste (delegiert an <code>localfs_opendir</code>-Familie bzw.
+    <code>cmd_list_raw</code>).</li>
+<li>Sortierung (Name/Größe/Datum, Verzeichnisse zuerst), Markierungsverwaltung,
+    Summen für die Statuszeile.</li>
+<li>Pfadnavigation: <code>remote_resolve()</code>/<code>path_push</code>/<code>path_pop</code> wandern aus
+    <code>shell.c</code> in ein gemeinsames Modul (z.&nbsp;B. <code>paths.c</code> oder direkt <code>panel.c</code>),
+    ebenso <code>shell_get_dir</code>/<code>shell_put_dir</code> für die rekursiven Fälle —
+    <code>shell.c</code> ruft sie danach von dort.</li>
+</ul>
+</div>
+
+<h2 id="phase1">6. Phase 1 — Qt-Client MVP <span class="tag new">client/gui_qt/</span></h2>
+<ol>
+<li><strong>Start &amp; Verbindung:</strong> <code>AcConfig</code> aus <code>~/.amicloudrc</code> laden (vorhandener Loader);
+    Connect-Dialog nur bei fehlender/unvollständiger Config. <code>cmd_status()</code> als Login-Test,
+    Serverversion + TLS-Status in die Statuszeile (wie das Shell-Banner).</li>
+<li><strong>Panels:</strong> zwei <code>panelwidget</code>-Instanzen (QTableView + Model über <code>panel.h</code>),
+    Local/Cloud-Umschalter als ComboBox im Panel-Kopf, Pfadanzeige, Sortierung per Spaltenklick,
+    Multiselect, Tastenbelegung aus Abschnitt&nbsp;3.2.</li>
+<li><strong>Operationen:</strong> F3/F5/F6/F7/F8 gemäß Matrix. <strong>Alle Netz-Operationen laufen in einem
+    Worker-<code>QThread</code></strong> (der Kern ist blocking); Progress-Hook → Qt-Signal → Fortschrittsdialog
+    mit Abbrechen-Button (setzt das Cancel-Flag, das der Hook zurückgibt).
+    <code>confirm</code>-Hook → <code>QMessageBox</code>, in den UI-Thread marshalled
+    (<code>QMetaObject::invokeMethod</code>, blocking).</li>
+<li><strong>Nach jeder Operation:</strong> betroffene Panels neu laden, Markierungen der erfolgreich
+    verarbeiteten Einträge löschen.</li>
+</ol>
+
+<h2 id="phase2">7. Phase 2 — Amiga-MUI-Client MVP <span class="tag new">client/gui_amiga/</span></h2>
+<ol>
+<li><strong>Fensteraufbau</strong> (<code>gui.c</code>): <code>ApplicationObject</code> → <code>WindowObject</code> →
+    <code>HGroup</code> mit zwei Panel-Gruppen (je: Umschalt-Cycle + Pfad-Text + <code>Listview</code>) +
+    Button-Leiste (F-Tasten-Äquivalente) + Statuszeile. Spalten per
+    <code>MUIA_List_Format "BAR,BAR P=\33r,"</code> mit Display-Hook, Sortierung per Compare-Hook
+    (<code>panel_mui.c</code>).</li>
+<li><strong>Feature-Set identisch zu Phase 1</strong> (gleiche Panel-Abstraktion, gleiche Hooks).</li>
+<li><strong>Nebenläufigkeit pragmatisch:</strong> v1 synchron mit Busy-Pointer
+    (<code>MUIA_Application_Sleep</code>) + kleinem Progress-Fenster mit Abbrechen-Button; der
+    <code>progress</code>-Hook pollt zwischen den Chunks die GUI-Events
+    (<code>DoMethod(app, MUIM_Application_NewInput, ...)</code>) — responsives Abbrechen ohne
+    Task-Kommunikation. Falls das später nicht genügt: das Zwei-Prozess-Muster aus
+    <code>handler/</code> (exec-Messages, privater Reply-Port) ist im Projekt erprobt → Phase&nbsp;4.</li>
+<li><strong>Amiga-Anstand:</strong> <code>$VER</code>-String, Icon (<code>.info</code>), Menüleiste (Projekt/Über/Beenden),
+    Config aus <code>ENV:amicloud.cfg</code> wie gehabt.</li>
+<li><strong>Entwicklung:</strong> Syntaxprüfung auf dem PC wie gewohnt
+    (<code>clang -fsyntax-only -D_NO_INLINE -DAMIGA -DPLATFORM_AMIGA -IInclude_H ...</code>, MUI-Header ergänzen),
+    Nativ-Build und Test auf dem Amiga.</li>
+</ol>
+
+<h2 id="phase3">8. Phase 3 — Komfortfunktionen (beide Plattformen)</h2>
+<ul class="checklist">
+<li>Rekursives Kopieren/Löschen mit Gesamt-Fortschritt (Dateien vorab zählen: Cloud via
+    <code>cmd_list_raw</code>-Walk, lokal via <code>localfs_opendir</code>-Walk).</li>
+<li>Überschreib-Nachfrage mit „Ja / Nein / Alle / Keine / Abbrechen“ (Erweiterung der confirm-Hook um
+    einen Antwort-Enum).</li>
+<li>Wildcard-Markierung (<kbd>*</kbd>-Dialog → <code>pattern_match</code>), Markierungs-Invertierung.</li>
+<li>Inline-Umbenennen (Qt: Edit-Delegate; MUI: String-Gadget-Dialog).</li>
+<li>Statuszeile: Anzahl + Gesamtgröße markierter Einträge.</li>
+<li>Qt: Drag&nbsp;&amp;&nbsp;Drop zwischen den Panels und aus dem System-Dateimanager; Kontextmenüs;
+    Einstellungsdialog (schreibt <code>~/.amicloudrc</code>).</li>
+<li>Amiga: AppWindow (Icons aufs Fenster ziehen = Upload ins aktive Cloud-Panel); Panel-Verlauf.</li>
+</ul>
+
+<h2 id="phase4">9. Phase 4 — Politur &amp; Paketierung</h2>
+<ul class="checklist">
+<li>Qt: Programm-Icon, Dark-Mode-Check, Pakete für Windows/macOS/Linux (analog zum Makefile-Trio des CLI).</li>
+<li>Amiga: optionaler Async-Worker nach dem Handler-Muster (falls synchrone Transfers in der Praxis stören);
+    NList als optionales Listen-Upgrade; LhA-Archiv mit Installer-Skript + Aminet-Readme.</li>
+<li>README-Abschnitt + Screenshots.</li>
+</ul>
+
+<h2 id="entscheidungen">10. Entscheidungen &amp; Risiken</h2>
+<ul class="resolved">
+<li><strong>MUI statt GadTools</strong> — GadTools-ListView kann weder Spalten noch Multiselect (Abschnitt&nbsp;2.1).</li>
+<li><strong>Qt 6 Widgets statt QML</strong> — Tabellen-UI + triviale C-Anbindung (Abschnitt&nbsp;2.2).</li>
+<li><strong>Panels frei umschaltbar</strong> Local↔Cloud statt fixer Zuordnung.</li>
+<li><strong>Qt vor MUI</strong> — die Phase-0-Callback-Schicht lässt sich auf dem PC schnell validieren,
+    bevor die zähere Amiga-Runde beginnt.</li>
+<li><strong>Kern bleibt reines C</strong>, VBCC-kompatibel; GUIs sind reine Konsumenten.</li>
+</ul>
+<div class="box warn">
+<h4>Bewusste Auslassungen in v1</h4>
+<ul style="margin:0">
+<li><strong>Cloud→Cloud-Kopie:</strong> serverseitig nicht vorhanden — ausgegraut; ggf. später API-Action
+    <code>copy</code> (separates Server-Thema).</li>
+<li><strong>Kein Datei-Betrachter (F3-View):</strong> F3 ist Info; ein Viewer wäre besonders auf dem Amiga
+    ein eigenes Projekt.</li>
+<li><strong>Amiga v1 synchron:</strong> Busy-Pointer + Abbruch-Polling statt Worker-Task — bewusster
+    Einfachheits-Trade-off, Upgrade-Pfad existiert (Handler-Muster).</li>
+</ul>
+</div>
+
+<h2 id="build">11. Build-Integration</h2>
+<table>
+<tr><th>Ziel</th><th>Build</th><th>Ergebnis</th></tr>
+<tr><td>PC (macOS/Linux/Windows)</td><td><code>cmake -S client/gui_qt -B build &amp;&amp; cmake --build build</code> (Qt&nbsp;6; kompiliert die Kern-<code>.c</code>-Dateien direkt mit)</td><td><code>amicloud-commander</code></td></tr>
+<tr><td>Amiga (nativ, VBCC)</td><td><code>make -f Makefile.amiga commander</code> (neues Ziel; MUI-SDK zusätzlich zu Roadshow + AmiSSL)</td><td><code>amicloud-commander</code> + <code>.info</code></td></tr>
+<tr><td>CLI/Shell</td><td>unverändert <code>Makefile.pc|win|amiga</code></td><td>wie bisher</td></tr>
+</table>
+
+<h2 id="test">12. Testplan</h2>
+<ul class="checklist">
+<li><strong>Phase-0-Regression:</strong> CLI + Shell nach dem Hook-Umbau gegen den lokalen Testserver
+    (<code>php -S 127.0.0.1:8180</code> + <code>scripts/test_api.sh</code>-Setup) — Verhalten byte-identisch.</li>
+<li>Upload-Streaming: große Datei (&gt; verfügbarer RAM auf dem Amiga-Testgerät) hochladen.</li>
+<li>Qt: Kopieren/Verschieben/Löschen in allen Richtungen der Matrix, Abbruch mitten im Transfer
+    (halbe Zieldatei darf nicht liegen bleiben), Überschreib-Dialoge, Sonderzeichen/Umlaute in Namen.</li>
+<li>Amiga nativ: gleiche Fälle; zusätzlich Abbruch-Reaktionszeit beim Chunk-Polling, RAM-Verbrauch,
+    Verhalten bei Verbindungsabbruch (Roadshow offline).</li>
+<li>Beide: Panel Local↔Cloud umschalten während markierte Einträge existieren; leere Verzeichnisse;
+    sehr lange Namen/Pfade (<code>AC_MAX_PATH</code>).</li>
+</ul>
+
+<footer>AmiCloud — Plan GUI-Dateimanager, v1 · 2026-07-05 · Vorgängerdokument: <code>interactive-shell-plan.html</code> · Phasen 0-2 umgesetzt (Amiga/MUI unverifiziert), Phasen 3-4 offen.</footer>
+
+</body>
+</html>

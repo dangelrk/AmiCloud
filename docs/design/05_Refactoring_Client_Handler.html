@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AmiCloud — Refactoring Client + Handler auf Bibliotheks-Architektur</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a2e; --muted: #5a5a72;
+    --accent: #1e5aa8; --accent2: #8a4d1f;
+    --card: #f4f6fa; --border: #d8dde6; --code-bg: #eef1f6;
+    --warn-bg: #fff6e8; --warn-border: #e0b060;
+    --rule-bg: #eef6ee; --rule-border: #6aa06a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --fg: #e4e6eb; --muted: #9aa0ad;
+      --accent: #7ab0f0; --accent2: #e0a060;
+      --card: #1e222a; --border: #333a46; --code-bg: #242933;
+      --warn-bg: #2a2418; --warn-border: #8a6a30;
+      --rule-bg: #1b2a1b; --rule-border: #4a7a4a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 { font-size: 1.7rem; border-bottom: 3px solid var(--accent); padding-bottom: .4rem; }
+  h2 { font-size: 1.3rem; color: var(--accent); margin-top: 2.2rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+  h3 { font-size: 1.05rem; color: var(--accent2); margin-top: 1.6rem; }
+  code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .875em; }
+  code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: .9rem 1rem; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 1.4rem; }
+  li { margin: .25rem 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  .tablewrap { overflow-x: auto; }
+  th, td { border: 1px solid var(--border); padding: .4rem .6rem; text-align: left; vertical-align: top; }
+  th { background: var(--card); }
+  .stage { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: .2rem 1.2rem 1rem; margin: 1.4rem 0; }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); border-radius: 6px; padding: .7rem 1rem; margin: 1rem 0; }
+  .rule { background: var(--rule-bg); border-left: 4px solid var(--rule-border); border-radius: 6px; padding: .7rem 1rem; margin: 1rem 0; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  strong { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+<h1>Refactoring: Client + Handler auf Bibliotheks-Architektur</h1>
+<p class="meta">Stand: 2026-07-10 · Ziel: Zielstruktur nach <code>docs/02</code> mit <code>src/</code>-Layout · Markdown-Fassung: <code>docs/05_Refactoring_Client_Handler.md</code> · Nur Planung — Umbau folgt nach Review.</p>
+
+<h2>Kontext</h2>
+<p>Der AmiCloud-Code teilt sich heute über <strong>flache Dateien in <code>client/</code></strong> (die drei Apps <code>amicloud</code>, <code>amicloud-shell</code>, <code>amicloud-commander</code> sowie zwei Handler-Bäume) denselben Kern nur per Copy-in-den-Makefiles (<code>COMMON_SRCS</code>). Das ist fragil und blockiert die in <code>docs/01–03</code> beschriebene Roadmap.</p>
+<p>Ziele dieses Umbaus:</p>
+<ol>
+  <li><strong>Sync raus aus den interaktiven Apps.</strong> Die Engine wird nicht gelöscht, sondern nach der Migrationsregel („Code nicht neu schreiben, nur verschieben", <code>docs/03</code>) in eine eigene Bibliothek <code>libcloudsync</code> ausgelagert. Die UI-Anbindungen (Shell-Kommando, je ein Commander-Menü) werden entfernt.</li>
+  <li><strong>Voller Bibliotheks-Umbau bis <code>libcloudfs</code>.</strong> <code>libcloudcore</code>, <code>libcloudhttp</code>, <code>libcloudfs</code>, <code>libcloudsync</code> extrahieren; alle vier Apps <strong>und</strong> der Handler-Worker ziehen ihren Kern aus denselben Bibliotheken (<code>docs/02</code>).</li>
+  <li><strong>Neue <code>src/</code>-Ordnerstruktur.</strong> Alles Neue landet in sauberen <code>include/</code>+<code>src/</code>-Bäumen. Das <strong>alte <code>handler/</code> bleibt unangetastet</strong> als Referenz; der aktuelle <code>cloudhandler/</code> wird nach <code>handler/cloudhandler/</code> mit <code>src/</code> überführt.</li>
+</ol>
+<p>Zusätzlich bindend:</p>
+<ul>
+  <li><strong>ADR <code>docs/04_ADR_Multiuser_Architektur.md</code></strong> — v1 bleibt funktional Einbenutzer, aber die Bibliotheks-Grenzen müssen Mehrbenutzer <em>vorbereiten</em> (siehe „Multiuser-Vorbereitung").</li>
+  <li><strong>Modul-Kapselung</strong> — <em>Kein Modul darf Wissen besitzen, das in ein anderes Modul gehört</em> (siehe „Verbindliche Regel").</li>
+</ul>
+<p>Ergebnis: eine Zielstruktur nach <code>docs/02</code>, in der Commander, Shell, CLI, Handler und der künftige Sync-Dienst denselben Kern nutzen.</p>
+
+<h2>Ist-Zustand (verifiziert)</h2>
+<ul>
+  <li><strong>Gemeinsamer Kern</strong> (<code>COMMON_SRCS</code> in beiden Makefiles): <code>cmd.c http_{pc,amiga}.c base64.c config.c cJSON.c md5.c ui_hooks.c</code>.</li>
+  <li><strong>Drei Apps</strong>, alle über denselben Kern:
+    <ul>
+      <li><code>amicloud</code> — CLI, <code>main.c</code>.</li>
+      <li><code>amicloud-shell</code> — <code>shell_main.c shell.c panel.c localfs_* history lineedit_* pattern_*</code>.</li>
+      <li><code>amicloud-commander</code> — zwei Frontends: <code>client/gui_amiga/</code> (MUI) und <code>client/gui_qt/</code> (Qt6, linkt dieselben <code>.c</code>-Dateien).</li>
+    </ul>
+  </li>
+  <li><strong>Sync-Engine liegt isoliert</strong> in <code>client/panel.c</code> Z.&nbsp;<strong>566–952</strong> (<code>SyncEntry</code>, <code>SyncIndex</code>, <code>SyncAction*</code>, <code>index_*_tree_sync</code>, <code>queue_transfer_by_mtime</code>, <code>panel_sync()</code>), Interface <code>panel.h</code> Z.&nbsp;156–172. Anbindungen: <code>shell.c</code> (<code>do_sync</code>, Dispatch Z.&nbsp;823, Hilfetext Z.&nbsp;259); <code>gui_amiga/gui.c</code> (<code>ID_SYNC</code>, <code>do_sync_menu</code>, Menü Z.&nbsp;757, Case Z.&nbsp;951); <code>gui_qt</code> (<code>mainwindow::doSync</code> + Menü, <code>transferjob</code> <code>SyncPanels</code>-Zweig + <code>syncFinished</code>).</li>
+  <li><strong>Support-Funktionen</strong> von Sync (<code>cmd_setdate_mtime</code>, <code>localfs_utime</code>, <code>AcConfig.gmt_offset/dst</code>, UTC-Epoch-Konvertierung) werden <strong>auch vom Handler</strong> (Stufe 3, <code>WREQ_SETDATE</code>) genutzt → bleiben erhalten, wandern nur in die passende Lib.</li>
+  <li><strong>Handler</strong>: zwei Bäume. <code>cloudhandler/</code> (neu, Stufe 1–3, Worker linkt <code>../client/cmd.c</code>) und <code>handler/</code> (alt, WebDAV-Variante). Der Handler-Prozess ist <code>-nostdlib</code>/exec-only; nur der <strong>Worker</strong> linkt Client-Kern.</li>
+</ul>
+
+<h2>Zielstruktur <span class="meta">(nach <code>docs/02</code>, mit <code>src/</code>-Layout)</span></h2>
+<pre><code>libs/
+  libcloudcore/   include/cloudcore/*.h   src/   (Makefile.pc/.amiga)
+  libcloudhttp/   include/cloudhttp/*.h   src/
+  libcloudfs/     include/cloudfs/*.h     src/
+  libcloudsync/   include/cloudsync/*.h   src/
+client/
+  common/                 include/ src/   panel.c/.h ohne Sync (Dual-Pane + Copy-Engine)
+  amicloud/               src/            main.c
+  amicloud-shell/         src/            shell_main.c shell.c history.c lineedit_*
+  amicloud-commander-mui/ src/            (aus gui_amiga/)
+  amicloud-commander-qt/  src/            (aus gui_qt/) + CMakeLists.txt
+  cloudsync/              src/            Platzhalter-Commodity (Phase 5), linkt libcloudsync
+handler/
+  cloudhandler/   src/ mount/            (aus cloudhandler/); Worker linkt die Libs
+  handler/  -&gt; BLEIBT UNVERAENDERT (Referenz, altes WebDAV)
+server/
+  php/  -&gt; keine funktionale Aenderung noetig (Begruendung unten)</code></pre>
+<p>Jede Lib baut eine <strong>statische Bibliothek</strong> (<code>libcloudX.a</code> / Amiga <code>libcloudX.lib</code>); Apps linken diese über <code>-Ilibs/libcloudX/include -Lpfad -lcloudX</code>. Ein Top-Level <code>Makefile.pc</code> orchestriert.</p>
+
+<h3>Bibliotheks-Zuordnung</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Lib</th><th>Quellen (aus <code>client/</code>)</th><th>Öffentliche Typen/API</th><th>Abhängig von</th></tr></thead>
+<tbody>
+<tr><td><strong>libcloudcore</strong></td><td><code>config.c base64.c cJSON.c md5.c ui_hooks.c</code> + Typen aus <code>amicloud.h</code>/<code>cmd.h</code> + DateStamp↔Epoch/gmt-dst-Util</td><td><code>AcConfig</code>, <code>AcEntry</code>, <code>AcInfo</code>, <code>ListMode</code>, <code>ui_*</code>, config/base64/md5/json, <strong>eine</strong> Zeit-Konvertierung</td><td>—</td></tr>
+<tr><td><strong>libcloudhttp</strong></td><td><code>http.h http_pc.c http_amiga.c cmd.c/.h</code></td><td><code>http_*</code>, alle <code>cmd_*</code> (list/get/put/del/info/mkdir/rename/setcomment/setprotect/setdate, <code>*_buf</code>, <code>*_raw</code>, <code>del_recursive</code>)</td><td>core</td></tr>
+<tr><td><strong>libcloudfs</strong></td><td><code>localfs.h localfs_pc.c localfs_amiga.c localfs_util.c pattern.*</code></td><td><code>localfs_*</code> (Scan, mtime, <code>utime</code>, Größe), <code>pattern_*</code></td><td>core</td></tr>
+<tr><td><strong>libcloudsync</strong></td><td>Sync-Block aus <code>panel.c</code> (Z.&nbsp;566–952) + <code>panel.h</code> 156–172 → <code>sync.c</code>/<code>sync.h</code></td><td><code>cloudsync_run()</code> (= ex-<code>panel_sync</code>), <strong><code>SyncSummary</code>, <code>SyncAction*</code>, Konfliktregeln</strong> (hier beheimatet, nicht in core)</td><td>core, http, fs</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Nicht als Lib:</strong> <code>core/common/panel.{c,h}</code> (Dual-Pane-Modell + <code>panel_copy_file</code>-Transfer-Engine) bleibt geteilter Frontend-Code von Shell + beiden Commandern — UI-Modell, kein sauberer Lib-Kandidat. <strong>Nutzt nur öffentliche Lib-APIs</strong> (core/http/fs) — kein http/fs-Internwissen.</p>
+
+<h2>Verbindliche Regel: Modul-Kapselung</h2>
+<div class="rule">
+<strong>Kein Modul besitzt Wissen, das in ein anderes gehört.</strong> Jedes Modul exponiert nur seine öffentliche Schnittstelle; niemand greift auf Interna oder Domänenwissen eines anderen zu.
+</div>
+<p>Konkrete Konsequenzen (Prüfpunkte beim Umbau):</p>
+<ul>
+  <li><strong>Server-Vertrag</strong> (Auth-Verfahren, URL/Endpoint-Aufbau, HTTP↔DOS-Fehler-Mapping): <strong>nur <code>libcloudhttp</code></strong>. Apps/Handler/Sync kennen nur <code>cmd_*</code>-Ergebnisse, nie URLs oder Auth-Details.</li>
+  <li><strong>Zeit-/Datumswissen</strong> (Amiga-Epoche-Offset, <code>gmt_offset</code>/<code>dst</code>, DateStamp↔UTC-Epoch): <strong>genau ein Ort</strong> (Zeit-Util in <code>libcloudcore</code>). Die heutige Duplizierung in <code>client/localfs_amiga.c</code> <strong>und</strong> <code>cloudhandler/worker.c</code> (<code>epoch_to_datestamp</code>) wird auf diese eine Quelle zusammengeführt; Worker/localfs rufen nur noch.</li>
+  <li><strong>Sync-Domäne</strong> (<code>SyncSummary</code>, <code>SyncAction*</code>, Index-/Konflikt-/mtime-Entscheidung): <strong>nur <code>libcloudsync</code></strong> — nichts davon in core oder panel.</li>
+  <li><strong>Lokale FS-Semantik</strong> (Scan, Pattern, mtime, <code>utime</code>): <strong>nur <code>libcloudfs</code></strong>.</li>
+  <li><strong>Gerichtete, azyklische Abhängigkeiten:</strong> core ← {http, fs} ← sync ← Apps. Keine Rückwärts-Includes, keine App-Typen in Libs.</li>
+</ul>
+
+<h2>Milestones <span class="meta">(jeder Schritt baut &amp; testet grün, bevor der nächste beginnt)</span></h2>
+
+<div class="stage">
+<h3>M1 — Sync entfernen + <code>libcloudsync</code> anlegen <span class="meta">(liefert den expliziten Wunsch zuerst)</span></h3>
+<ul>
+  <li>UI-Anbindungen entfernen: <code>shell.c</code> (<code>do_sync</code>, Dispatch Z.&nbsp;823, Hilfetext Z.&nbsp;259); <code>gui_amiga/gui.c</code> (<code>ID_SYNC</code>, <code>do_sync_menu</code>, Menüeintrag Z.&nbsp;757, Case Z.&nbsp;951); <code>gui_qt</code> (<code>mainwindow::doSync</code> + Menü, <code>transferjob</code> <code>SyncPanels</code>-Zweig, <code>syncFinished</code>, <code>m_sync*</code>-Member, Header-Deklarationen).</li>
+  <li>Sync-Engine aus <code>panel.c</code> Z.&nbsp;566–952 herausschneiden → <code>core/libcloudsync/src/sync.c</code> + <code>include/cloudsync/sync.h</code> (Funktion <code>panel_sync</code> → <code>cloudsync_run</code>, sonst 1:1 übernehmen). <code>SyncSummary</code>/<code>SyncAction*</code> <strong>in <code>libcloudsync</code></strong> beheimatet (Sync-Domäne, nicht core).</li>
+  <li><code>panel.c/.h</code> behalten nur Dual-Pane + Copy-Engine.</li>
+  <li><strong>Support bleibt</strong> (<code>cmd_setdate_mtime</code>, <code>localfs_utime</code>, <code>gmt_offset/dst</code>) — wandert später in http/fs/core, wird von <code>libcloudsync</code> + Handler weiter genutzt.</li>
+  <li><strong>Verify:</strong> alle Apps bauen ohne Sync-Kommando/-Menü; <code>libcloudsync</code> baut (vorerst ohne App-Consumer, dormant bis Phase-5-<code>cloudsync</code>).</li>
+</ul>
+</div>
+
+<div class="stage">
+<h3>M2 — <code>libcloudcore</code></h3>
+<ul>
+  <li>Dateien nach <code>core/libcloudcore/{src,include/cloudcore}</code> verschieben; gemeinsame Typen (<code>AcConfig</code> aus <code>amicloud.h</code>; <code>AcEntry/AcInfo/ListMode</code> aus <code>cmd.h</code>) in <code>include/cloudcore/types.h</code> konsolidieren. <code>cmd.h</code> inkludiert diese. <strong>Eine</strong> Zeit-Util (DateStamp↔Epoch, gmt/dst) hier ansiedeln.</li>
+  <li><code>Makefile.pc</code>/<code>Makefile.amiga</code> der Lib (baut <code>libcloudcore.a</code>).</li>
+  <li>Alle Consumer-Includes + Makefiles/CMake auf neue Pfade zeigen.</li>
+  <li><strong>Verify:</strong> CLI, Shell, beide Commander, Handler-Worker bauen weiter.</li>
+</ul>
+</div>
+
+<div class="stage">
+<h3>M3 — <code>libcloudhttp</code> (inkl. <code>cmd.c</code>)</h3>
+<ul>
+  <li><code>http.*</code>, <code>cmd.*</code> nach <code>core/libcloudhttp/{src,include/cloudhttp}</code>.</li>
+  <li><strong>Handler-Worker repointen:</strong> <code>cloudhandler/worker.c</code> linkt statt <code>../client/cmd.c</code> künftig <code>libcloudhttp</code> + <code>libcloudcore</code> (<code>-Ilibs/.../include -lcloudhttp -lcloudcore</code>).</li>
+  <li><strong>ADR-Leitplanke (kein v1-Feature):</strong> Auth <strong>und</strong> URL/Endpoint-Aufbau bleiben die einzigen zwei Punkte, die das Server-Vertragsdetail kennen — Auth zentral in <code>http_request(...,auth)</code>, URL-Bau ausschließlich in <code>cmd.c</code> (<code>cmd_resolve_path</code>/URL-Builder). So sind der spätere Wechsel von Basic-Auth auf Session/Token und von <code>api.php?action=</code> auf eine benutzerneutrale REST-API (<code>GET /files</code>) je eine lokale Änderung in dieser Lib. Apps/Handler kennen nur „authentifiziert", nie eine User-ID.</li>
+  <li><strong>Verify:</strong> wie M2 + Handler-Worker linkt gegen die Libs.</li>
+</ul>
+</div>
+
+<div class="stage">
+<h3>M4 — <code>libcloudfs</code></h3>
+<ul>
+  <li><code>localfs_*</code>, <code>localfs_util</code>, <code>pattern_*</code> nach <code>core/libcloudfs/{src,include/cloudfs}</code>.</li>
+  <li><code>libcloudsync</code> linkt jetzt fs+http (statt vormals <code>panel.c</code>-lokaler Aufrufe).</li>
+  <li><strong>Verify:</strong> Shell/Commander (nutzen fs) + <code>libcloudsync</code> bauen.</li>
+</ul>
+</div>
+
+<div class="stage">
+<h3>M5 — Apps in <code>src/</code>-Layout + Build-Neuverdrahtung</h3>
+<ul>
+  <li><code>main.c</code> → <code>client/amicloud/src</code>; <code>shell_main.c shell.c history.c lineedit_*</code> → <code>client/amicloud-shell/src</code>; <code>gui_amiga/*</code> → <code>client/amicloud-commander-mui/src</code>; <code>gui_qt/*</code> → <code>client/amicloud-commander-qt/src</code>; <code>panel.*</code> → <code>core/common</code>.</li>
+  <li>Neue Build-Dateien: pro App <code>Makefile.pc</code>/<code>Makefile.amiga</code>, Qt <code>CMakeLists.txt</code> (referenziert Lib-<code>src</code>/<code>include</code> statt flacher <code>../*.c</code>), <code>Makefile.win</code>, Top-Level-<code>Makefile.pc</code>.</li>
+  <li><code>client/cloudsync/</code> als <strong>Platzhalter</strong> anlegen (kleines <code>main</code>, das <code>libcloudsync</code> linkt) — Roadmap-Phase 5, hier nur Gerüst.</li>
+  <li><strong>Verify:</strong> Voll-Build aller Targets auf PC (<code>make -f Makefile.pc</code>) + Qt-Build.</li>
+</ul>
+</div>
+
+<div class="stage">
+<h3>M6 — <code>handler/cloudhandler/src</code></h3>
+<ul>
+  <li><code>cloudhandler/*</code> → <code>handler/cloudhandler/{src,mount}</code>; Handler-Prozess-Code (<code>handler.c actions.c vol.c util.c</code> — exec-only, <code>-nostdlib</code>) bleibt handler-lokal; nur <code>worker.c</code> linkt die Libs (aus M3/M4). <code>Makefile.amiga</code> anpassen.</li>
+  <li><strong>Altes <code>handler/</code> bleibt unverändert.</strong></li>
+  <li><strong>Verify:</strong> <code>cloudhandler</code>-Build (nativ am Amiga; hier nur Syntax-/Include-Abgleich gegen <code>Include_H/</code>, <code>rkrm/</code>).</li>
+</ul>
+</div>
+
+<h2>Multiuser-Vorbereitung <span class="meta">(ADR <code>docs/04</code>)</span></h2>
+<p>V1 bleibt Einbenutzer; Mehrbenutzer wird <strong>nur an den Lib-Grenzen vorbereitet</strong>, nicht implementiert:</p>
+<ul>
+  <li><strong>Auth als isolierte Schicht</strong> (siehe M3): ein Choke-Point in <code>libcloudhttp</code>; Basic-Auth jetzt, Session/Token später ohne App- oder Handler-Änderung. Clients übergeben <strong>nie</strong> eine User-ID bei Dateioperationen — der Server entscheidet per Session/Auth über den Datenbestand.</li>
+  <li><strong>Benutzerneutrale API-Kapselung:</strong> aller Endpoint-/URL-Aufbau nur in <code>cmd.c</code> → spätere Umstellung auf <code>GET /files</code>, <code>POST /upload</code> etc. ist lokal.</li>
+  <li><strong>„Client verwaltet Synchronisation":</strong> bestätigt die Lib-Grenzen — Sync-Logik gehört auf den Client (<code>libcloudsync</code> + künftige <code>cloudsync</code>-Commodity), der Server verwaltet nur Daten/Auth. Kein Sync-Code im Server.</li>
+  <li><strong>Erweiterbares Datenmodell:</strong> ADR-Felder (<code>owner_id</code>, <code>revision</code>, <code>upload_time</code>) sind serverseitig; clientseitig nur relevant, dass <code>AcEntry</code> <strong>additiv</strong> erweiterbar bleibt (wie schon bei <code>protection</code>/<code>comment</code>) — keine Struktur-Brüche.</li>
+  <li><strong>Nicht Teil dieses Umbaus</strong> (ADR „Nicht Bestandteil von v1"): Freigaben, Gruppen, ACLs, öffentliche Links, Quotas, <code>install.php</code>, <code>users/sessions/…</code>-Tabellen — reine Server-Zukunft.</li>
+</ul>
+
+<h2>Server</h2>
+<p><strong>Keine funktionale Änderung nötig.</strong> Sync-Entfernung ist rein clientseitig. Der <code>setdate</code>-Endpoint (<code>api.php</code>) bleibt, weil ihn der Handler (Stufe 3, <code>WREQ_SETDATE</code>) und <code>cmd_setdate_mtime</code> weiter brauchen — er war nur <em>auch</em> von Sync genutzt. Optional (separat): <code>server/*</code> nach <code>server/php/</code> gemäß <code>docs/02</code> verschieben — reine Ordnerkosmetik, kein Code.</p>
+
+<h2>Verifikation (End-to-End)</h2>
+<ul>
+  <li><strong>PC/macOS</strong> (hier ausführbar): nach jedem Milestone <code>make -f Makefile.pc</code> (CLI+Shell) + Qt-<code>cmake --build</code>; Smoke-Test gegen lokalen Server (<code>php -S 127.0.0.1:8180 -t server/</code>, vgl. <code>scripts/test_api.sh</code>): <code>amicloud list /</code>, Shell <code>get/put/ls/info</code>, Commander-Copy. Prüfen, dass <strong>kein</strong> <code>sync</code>-Kommando/-Menü mehr existiert und alle vier Apps + <code>libcloudsync</code> linken.</li>
+  <li><strong>Amiga</strong> (nur nativ, hier kein Toolchain): pro Lib/App/Handler <code>Makefile.amiga</code>-Build durch den Nutzer; Handler-Batterie aus <code>docs/handler-plan.md</code>. Hier: Syntax-Review + Abgleich der Includes/Typen gegen <code>Include_H/</code>, <code>rkrm/</code>, <code>netinclude/</code>.</li>
+  <li><strong>Regression:</strong> vorhandene Funktionalität (Copy, wildcard get/put, rekursiv, MD5/Info, Metadaten) unverändert; nur Sync-UI verschwindet.</li>
+</ul>
+
+<h2>Reihenfolge &amp; Abhängigkeiten <span class="meta">(Kurzfassung)</span></h2>
+<pre><code>M1  Sync raus + libcloudsync         (Quick Win, liefert den Kernwunsch)
+M2  libcloudcore                     (Fundament: Typen, Utils, EINE Zeit-Konvertierung)
+M3  libcloudhttp (+ cmd)             (Handler-Worker auf Libs umstellen; Auth/URL-Choke-Point)
+M4  libcloudfs                       (libcloudsync bekommt fs/http-Unterbau)
+M5  Apps -&gt; src/-Layout + Builds     (Voll-Build PC + Qt)
+M6  handler/cloudhandler/src         (altes handler/ bleibt)</code></pre>
+</main>
+</body>
+</html>

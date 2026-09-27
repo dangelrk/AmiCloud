@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>AmiCloud — Plan: Interaktive Client-Shell</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1b1f23; --muted: #5b6570; --border: #e1e4e8;
+    --code-bg: #f6f8fa; --accent: #0969da; --accent-bg: #eef6ff;
+    --warn-bg: #fff8e6; --warn-border: #f0c36d;
+    --new-bg: #e8f7ee; --new-border: #4caf7d;
+    --done-bg: #eef6ff; --done-border: #0969da;
+    --table-head: #f6f8fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #30363d;
+      --code-bg: #161b22; --accent: #4da3ff; --accent-bg: #10233b;
+      --warn-bg: #2b2410; --warn-border: #7a5d1f;
+      --new-bg: #0f2a1c; --new-border: #2f7a52;
+      --done-bg: #10233b; --done-border: #4da3ff;
+      --table-head: #161b22;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #30363d;
+    --code-bg: #161b22; --accent: #4da3ff; --accent-bg: #10233b;
+    --warn-bg: #2b2410; --warn-border: #7a5d1f;
+    --new-bg: #0f2a1c; --new-border: #2f7a52;
+    --done-bg: #10233b; --done-border: #4da3ff;
+    --table-head: #161b22;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --fg: #1b1f23; --muted: #5b6570; --border: #e1e4e8;
+    --code-bg: #f6f8fa; --accent: #0969da; --accent-bg: #eef6ff;
+    --warn-bg: #fff8e6; --warn-border: #f0c36d;
+    --new-bg: #e8f7ee; --new-border: #4caf7d;
+    --done-bg: #eef6ff; --done-border: #0969da;
+    --table-head: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.55; max-width: 920px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem;
+  }
+  h1 { font-size: 1.7rem; margin-bottom: .2rem; }
+  h1 + .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 2rem; }
+  h2 { font-size: 1.25rem; margin-top: 2.6rem; border-bottom: 1px solid var(--border); padding-bottom: .35rem; }
+  h3 { font-size: 1.03rem; margin-top: 1.6rem; color: var(--fg); }
+  p, li { color: var(--fg); }
+  code, pre {
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .87em;
+    background: var(--code-bg); border-radius: 4px;
+  }
+  code { padding: .15em .4em; }
+  pre { padding: .9rem 1rem; overflow-x: auto; border: 1px solid var(--border); }
+  pre code { padding: 0; background: none; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.6rem; font-size: .92rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--table-head); font-weight: 600; }
+  td code { white-space: nowrap; }
+  .tag {
+    display: inline-block; font-size: .72rem; font-weight: 600; letter-spacing: .02em;
+    padding: .1rem .5rem; border-radius: 999px; margin-left: .4rem; vertical-align: middle;
+  }
+  .tag.new { background: var(--new-bg); border: 1px solid var(--new-border); color: var(--fg); }
+  .tag.done { background: var(--done-bg); border: 1px solid var(--done-border); color: var(--fg); }
+  .box {
+    border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; margin: 1rem 0;
+  }
+  .box.warn { background: var(--warn-bg); border-color: var(--warn-border); }
+  .box.info { background: var(--accent-bg); border-color: var(--accent); }
+  .box.done { background: var(--done-bg); border-color: var(--done-border); }
+  .box h4 { margin: 0 0 .5rem; font-size: .95rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist li { padding-left: 1.6rem; position: relative; margin-bottom: .4rem; }
+  ul.checklist li::before { content: "☐"; position: absolute; left: 0; color: var(--muted); }
+  ul.resolved { list-style: none; padding-left: 0; }
+  ul.resolved li { padding-left: 1.6rem; position: relative; margin-bottom: .5rem; }
+  ul.resolved li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+  .phase { border-left: 3px solid var(--accent); padding-left: 1rem; margin-bottom: 1.4rem; }
+  .phase h3 { margin-top: 0; }
+  .filepath { color: var(--accent); }
+  footer { margin-top: 3.5rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .82rem; }
+  .toc { columns: 2; column-gap: 2rem; }
+  .toc a { color: var(--accent); text-decoration: none; font-size: .9rem; }
+  @media (max-width: 600px) { .toc { columns: 1; } }
+  kbd {
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: .05em .4em;
+  }
+</style>
+</head>
+<body>
+
+<h1>AmiCloud — Plan: Interaktive Client-Shell</h1>
+<p class="subtitle">Entwurf für einen persistenten Shell-Modus im CLI-Client — Betrifft ausschließlich <code>client/</code> und (in Teilen) <code>server/</code>. Handler bleibt unangetastet.</p>
+
+<div class="box info">
+<h4>Status</h4>
+<p style="margin:0 0 .6rem">v3: alle drei zuvor offenen Punkte entschieden (rekursives Löschen, Prompt-Format, <code>status</code>-Umfang) plus eine neue Anforderung aufgenommen — rekursive Verzeichnisgröße bei <code>info</code> (Abschnitt 10.3).</p>
+<p style="margin:0"><strong>v4 <span class="tag done">IMPLEMENTIERT</span>:</strong> Die Abschnitte 1–22 sind jetzt <strong>vollständig implementiert</strong> und lokal end-to-end getestet (MariaDB + <code>php -S</code>, <code>scripts/test_api.sh</code> 35/35 Checks grün): Fortschrittsanzeige mit Byte-Prozent bei <code>get</code>/<code>put</code>/<code>sync</code> (17), MD5-Prüfsummen inkl. <code>&amp;md5=</code>-Verifikation, <code>X-AmiCloud-MD5</code>-Header, Lazy-Backfill, <code>ls -m</code>/<code>lls -m</code> und <code>md5</code>/<code>lmd5</code>-Befehl (18), UTC-<code>mtime</code>-Feld + Amiga-Zeitzonen-Config <code>gmt_offset</code>/<code>dst</code> (19), <code>sync</code>-Befehl mit Entscheidungsmatrix, Dry-Run-Flag und Konflikterkennung (20), <code>localfs_join()</code>/<code>localfs_mkdir_p()</code> für freie lokale Pfade (21) und Web-UI: Mehrfach-Upload + Prüfsummen-Spalte (22). Offen: Windows-Cross-Build und native AmigaOS-Tests (kein Zugriff auf echte/emulierte Amiga-Hardware in dieser Umgebung) sowie das Server-Deploy von <code>migrate_002.sql</code> auf <code>amicloud.example.com</code>.</p>
+</div>
+
+<div class="toc">
+<a href="#ziel">1. Ziel &amp; Scope</a>
+<a href="#architektur">2. Architektur-Überblick</a>
+<a href="#start">3. Start &amp; Optionen</a>
+<a href="#session">4. Session-State: Remote-/Local-CWD</a>
+<a href="#loop">5. Eingabeschleife &amp; Parsing</a>
+<a href="#banner">6. Start-Banner &amp; Prompt</a>
+<a href="#befehle">7. Kommandoreferenz</a>
+<a href="#syntax">8. Plattform-angepasste Syntax</a>
+<a href="#rekursiv">9. Rekursive Operationen im Detail</a>
+<a href="#server">10. Server-seitige Änderungen</a>
+<a href="#localfs">11. Neue Datei-Abstraktion: lokales Dateisystem</a>
+<a href="#fehler">12. Fehlerbehandlung &amp; Sicherheit</a>
+<a href="#build">13. Build-Integration</a>
+<a href="#offen">14. Entscheidungsstand</a>
+<a href="#phasen">15. Umsetzungsreihenfolge</a>
+<a href="#test">16. Testplan</a>
+<a href="#fortschritt">17. Fortschritt x/y + Byte-% (v4)</a>
+<a href="#checksum">18. MD5-Prüfsummen (v4)</a>
+<a href="#utc">19. UTC &amp; Amiga-Zeit-Config (v4)</a>
+<a href="#sync">20. sync-Befehl (v4)</a>
+<a href="#lokalpfad">21. Freie lokale Pfade (v4)</a>
+<a href="#webui">22. Web-UI: Multi-Upload &amp; MD5 (v4)</a>
+<a href="#phasen4">23. Phasen &amp; Tests v4</a>
+</div>
+
+<h2 id="ziel">1. Ziel &amp; Scope</h2>
+<p>
+Aktuell startet <code>amicloud</code> für jede Aktion neu (Prozessstart → HTTP-Verbindung → Aktion → Exit). Für mehrere Operationen
+in Folge (z.&nbsp;B. mehrere <code>get</code>/<code>put</code> im selben Verzeichnis) soll ein neuer Modus
+<code>amicloud shell</code> eine interaktive REPL öffnen: einmal verbinden, dann beliebig viele Befehle eingeben,
+bis <code>quit</code>/<code>exit</code>.
+</p>
+<ul>
+<li><strong>Betroffen:</strong> nur <span class="filepath">client/</span>, optional kleine, klar umgrenzte Erweiterungen in <span class="filepath">server/</span> (für rekursives Löschen und eine Versions-/Status-Auskunft).</li>
+<li><strong>Nicht betroffen:</strong> <span class="filepath">handler/</span> (bleibt wie er ist, auch wenn er nicht läuft), bestehende Makefiles werden nur um neue Quelldateien ergänzt — keine Flag-/Toolchain-Änderungen.</li>
+<li><strong>Plattform-Pflicht:</strong> AmigaOS 3.x (VBCC), macOS, Linux, Windows — exakt die Plattformen, auf denen <code>client</code> heute schon baut.</li>
+<li><strong>Syntax-Anspruch:</strong> jede Plattform soll sich „zuhause“ fühlen (Amiga-Wortkommandos, PC/Unix-Kurzflags) — <strong>aber alle Schreibweisen funktionieren auf jeder Plattform</strong>, siehe Abschnitt 8.</li>
+<li><strong>Referenzen bei Bedarf:</strong> <span class="filepath">netinclude/</span>, <span class="filepath">include/</span>, <span class="filepath">Include_H/</span> für Amiga-Signaturen (dos.library für Verzeichnis-/CWD-Operationen).</li>
+</ul>
+
+<h2 id="architektur">2. Architektur-Überblick</h2>
+<p>Bestehende Bausteine werden wiederverwendet, nicht verändert:</p>
+<table>
+<tr><th>Datei</th><th>Rolle</th><th>Änderung</th></tr>
+<tr><td><code>cmd.c</code> / <code>cmd.h</code></td><td>Einzelaktionen (list/get/put/del/info/mkdir/rename) gegen die API</td><td>unverändert nutzbar; ggf. kleine neue Helper für rekursive Varianten</td></tr>
+<tr><td><code>http_pc.c</code> / <code>http_amiga.c</code></td><td>Transport (libcurl / Amiga-Sockets+AmiSSL)</td><td>keine Änderung</td></tr>
+<tr><td><code>config.c</code> / <code>config.h</code></td><td>Config-Datei &amp; CLI-Optionen laden</td><td>keine Änderung — Shell nutzt exakt dieselbe <code>AcConfig</code></td></tr>
+<tr><td><code>main.c</code></td><td>Dispatch der Top-Level-Kommandos</td><td>ein neuer Zweig <code>if (strcmp(cmd,"shell")==0)</code></td></tr>
+</table>
+<p>Neu hinzu kommen:</p>
+<table>
+<tr><th>Neue Datei</th><th>Zweck</th></tr>
+<tr><td><code>client/shell.c</code> / <code>shell.h</code> <span class="tag new">NEU</span></td><td>REPL-Schleife, Tokenizer, Flag-/Kurzsymbol-Erkennung (Abschnitt 8), Session-State (Remote-/Local-CWD), Kommando-Dispatch, Start-Banner, rekursive get/put/del-Orchestrierung</td></tr>
+<tr><td><code>client/localfs_pc.c</code> <span class="tag new">NEU</span></td><td>Lokale Dateisystem-Operationen für macOS/Linux/Windows (chdir, getcwd, mkdir, Verzeichnis-Traversal) — analog zum bestehenden <code>http_pc.c</code>/<code>http_amiga.c</code>-Split</td></tr>
+<tr><td><code>client/localfs_amiga.c</code> <span class="tag new">NEU</span></td><td>Dieselbe Schnittstelle über dos.library (<code>Lock</code>/<code>CurrentDir</code>/<code>Examine</code>/<code>ExNext</code>/<code>CreateDir</code>)</td></tr>
+<tr><td><code>client/localfs.h</code> <span class="tag new">NEU</span></td><td>Gemeinsame Schnittstelle beider Implementierungen</td></tr>
+</table>
+<p>
+Der Grund für das eigene <code>localfs</code>-Modul: <code>opendir</code>/<code>readdir</code>/<code>chdir</code> existieren so auf AmigaOS/VBCC nicht
+(dort läuft alles über dos.library-Locks), während PC/Mac/Win POSIX-<code>dirent.h</code> bzw. MinGW-Äquivalente nutzen können.
+Genau dieses Muster gibt es im Projekt schon für HTTP (<code>http_pc.c</code> vs. <code>http_amiga.c</code>) — die Shell übernimmt es 1:1 für Dateisystemzugriffe.
+</p>
+
+<h2 id="start">3. Start &amp; Optionen</h2>
+<p>Die Shell wird wie jedes andere Kommando aufgerufen und akzeptiert <strong>dieselben Optionen wie <code>client</code></strong> heute:</p>
+<pre><code>amicloud [-s server] [-u user] [-p pass] [-d basepath] [-c cfgfile] [-k] [-v] shell</code></pre>
+<p>
+Konfiguration wird exakt wie bisher geladen (<code>config_load</code> → <code>config_merge</code>), inklusive Config-Datei-Fallback
+(<code>~/.amicloudrc</code> / <code>ENV:amicloud.cfg</code>). Fehlt Server/User/Passwort, bricht der Start wie gewohnt mit Usage-Hinweis ab —
+die Shell wird also nie ohne gültige Zugangsdaten geöffnet.
+</p>
+<p><em>Hinweis:</em> Die Startoptionen (<code>-s</code>/<code>-u</code>/<code>-p</code>/…) bleiben bewusst bei der bestehenden Kurzflag-Syntax — sie werden vom Betriebssystem-Kommandozeilen-Parser <em>vor</em> dem Shell-Start verarbeitet (identisch zu allen anderen Kommandos wie <code>list</code>/<code>get</code>). Die in Abschnitt 8 beschriebene Mehrfach-Syntax betrifft ausschließlich Befehle <em>innerhalb</em> der Shell.</p>
+
+<h2 id="session">4. Session-State: Remote-/Local-CWD</h2>
+<p>
+Wichtigste Design-Entscheidung, um <code>cmd.c</code> unverändert wiederverwenden zu können:
+</p>
+<div class="box">
+<p style="margin:0 0 .6rem">Die Shell hält eine <strong>Kopie</strong> der geladenen <code>AcConfig</code> (<code>base_cfg</code>) plus einen zusätzlichen String <code>remote_cwd[AC_MAX_PATH]</code>, initialisiert mit <code>base_cfg.basepath</code>.</p>
+<p style="margin:0">Vor jedem Remote-Befehl wird eine flache Kopie <code>eff = base_cfg</code> erzeugt, deren <code>basepath</code> auf <code>remote_cwd</code> gesetzt wird — anschließend ruft die Shell <code>cmd_list()</code>/<code>cmd_get()</code>/… unverändert mit <code>&amp;eff</code> auf. So bleibt <code>cmd.c</code> komplett unangetastet.</p>
+</div>
+<p>Analog für lokal: <code>local_cwd</code> wird beim Start per <code>localfs_getcwd()</code> ermittelt (Startverzeichnis des Prozesses) und über <code>lcd</code> verändert.</p>
+<p><strong>Pfad-Normalisierung:</strong> Der Server lehnt <code>..</code> im Pfad mit HTTP 400 ab (<code>sanitizePath()</code> in <code>server/includes/FileStore.php</code>).
+<code>cd</code> muss alle in Abschnitt 8 definierten Kurzsymbole (Parent-/Root-Marker, gleich welcher Schreibweise) deshalb <em>client-seitig</em> auf <code>remote_cwd</code> auflösen, bevor der resultierende, saubere <code>/</code>-Pfad an den Server geschickt wird.
+Danach wird das Ziel per <code>info</code>-Aufruf verifiziert (muss existieren und <code>type=dir</code> sein) — erst dann wird <code>remote_cwd</code> aktualisiert. Schlägt die Prüfung fehl, bleibt der alte Stand erhalten und es gibt eine Fehlermeldung, kein Shell-Abbruch.</p>
+
+<h2 id="loop">5. Eingabeschleife &amp; Parsing</h2>
+<ul>
+<li>Zeilenweises Lesen über <code>fgets(stdin)</code> — <strong>bewusst kein readline/libedit</strong>, da das auf AmigaOS/VBCC nicht portabel verfügbar ist. Grundlegende Zeilenbearbeitung (Backspace, Cursor) liefert die jeweilige Konsole (CLI-Shell auf Amiga, Terminal auf Unix, Konsole auf Windows) ohnehin bereits.</li>
+<li>Ein einfacher, quotation-fähiger Tokenizer (Leerzeichen trennen Argumente, <code>"..."</code> erlaubt Pfade/Dateinamen mit Leerzeichen — auf Amiga durchaus üblich).</li>
+<li>Jedes Token wird zusätzlich durch den in Abschnitt 8 beschriebenen Flag-Erkenner geprüft (kurz/lang/Amiga-Wort), bevor der Rest als Positions-Argument (Pfad) gewertet wird.</li>
+<li>Leere Zeile → erneut Prompt, kein Fehler.</li>
+<li>Kommando nicht erkannt → Fehlermeldung + Hinweis auf <code>help</code>, Shell läuft weiter.</li>
+<li><code>EOF</code> (Ctrl-D / Ctrl-Z) wird wie <code>quit</code> behandelt.</li>
+</ul>
+
+<h2 id="banner">6. Start-Banner &amp; Prompt</h2>
+<p>Direkt nach Verbindungsaufbau, vor dem ersten Prompt, gibt die Shell aus:</p>
+<ul>
+<li>Client-Version (<code>AC_VERSION</code>) und Plattform (Amiga/macOS/Linux/Windows)</li>
+<li>Server-URL, Benutzername, aktives Remote-Basisverzeichnis</li>
+<li>Verbindungsstatus: ein leichter Check-Request beim Start (neue <code>status</code>-Action, siehe Abschnitt 10) — Erfolg zeigt Server-Version, Fehlschlag zeigt eine Warnung, <strong>beendet die Shell aber nicht</strong> (lokale Befehle wie <code>lcd</code>/<code>lpwd</code>/<code>help</code> bleiben nutzbar, Remote-Befehle liefern dann einfach ihre gewohnte Fehlermeldung).</li>
+<li>TLS-Verify-Modus (an/aus, relevant falls <code>-k</code> gesetzt war)</li>
+</ul>
+
+<h3>6.1 Prompt-Format — entschieden</h3>
+<p>
+Kein <code>amicloud:</code>-Präfix vor dem Pfad — der Prompt <em>ist</em> schlicht der aktuelle Remote-Pfad, dargestellt mit dem
+plattform-nativen Root-Symbol aus Abschnitt 8.2 (<code>:</code> auf Amiga, <code>/</code> auf macOS/Linux, <code>\</code> auf Windows)
+und entsprechend nativen Trennzeichen für die Unterverzeichnisse. Nur der Remote-Pfad wird angezeigt (kein lokaler Pfad im Prompt —
+dafür gibt es <code>lpwd</code>).
+</p>
+<table>
+<tr><th>Plattform</th><th>Root (Beispiel)</th><th>In Unterordner „sub/dir“</th></tr>
+<tr><td>Amiga</td><td><code>:&gt; </code></td><td><code>:sub/dir&gt; </code></td></tr>
+<tr><td>macOS / Linux</td><td><code>/&gt; </code></td><td><code>/sub/dir&gt; </code></td></tr>
+<tr><td>Windows</td><td><code>\&gt; </code></td><td><code>\sub\dir&gt; </code></td></tr>
+</table>
+<p>
+Intern bleibt <code>remote_cwd</code> immer ein kanonischer <code>/</code>-Pfad (so wie die API ihn erwartet, Abschnitt 4) — die
+Umwandlung in die native Anzeigeform passiert nur für Prompt und <code>pwd</code>-Ausgabe, ist also rein kosmetisch und hat keinen
+Einfluss auf das Wire-Format zum Server.
+</p>
+<pre><code>AmiCloud Shell v0.1 (macOS)
+Server   : https://amicloud.example.com  (Server v0.2, TLS ok)
+User     : bob
+Remote   : /
+Local    : /Users/bob/Downloads
+Type 'help' for a list of commands, 'quit' to exit.
+/&gt; </code></pre>
+<p>Direkt nach dem Start entspricht der aktuelle Ordner der Basis (<code>remote_cwd == basepath</code>, per Default <code>/</code>) —
+ein <code>ls</code> ohne Pfadangabe zeigt also sofort die Wurzel, ganz ohne vorheriges <code>cd</code>.</p>
+
+<h2 id="befehle">7. Kommandoreferenz</h2>
+<table>
+<tr><th>Befehl</th><th>Syntax</th><th>Beschreibung</th></tr>
+<tr><td><code>help</code></td><td><code>help</code></td><td>Kommandoübersicht <span class="tag new">NEU</span></td></tr>
+<tr><td><code>pwd</code></td><td><code>pwd</code></td><td>Aktuelles Remote-Verzeichnis anzeigen <span class="tag new">NEU</span></td></tr>
+<tr><td><code>lpwd</code></td><td><code>lpwd</code></td><td>Aktuelles lokales Verzeichnis anzeigen <span class="tag new">NEU</span></td></tr>
+<tr><td><code>cd</code></td><td><code>cd [pfad]</code></td><td>Remote-Verzeichnis wechseln — Kurzsymbole für „Ebene hoch“/„Root“ plattformübergreifend nutzbar, siehe Abschnitt 8 <span class="tag new">NEU</span></td></tr>
+<tr><td><code>lcd</code></td><td><code>lcd [pfad]</code></td><td>Lokales Verzeichnis wechseln — gleiche Kurzsymbole wie <code>cd</code> <span class="tag new">NEU</span></td></tr>
+<tr><td><code>ls</code> / <code>dir</code></td><td><code>ls [pfad]</code></td><td>Verzeichnis auflisten — Wrapper um bestehendes <code>cmd_list</code>, relativ zu <code>remote_cwd</code></td></tr>
+<tr><td><code>get</code></td><td><code>get [-r|--recursive|RECURSIVE] &lt;remote&gt; [lokal]</code></td><td>Datei herunterladen (wie bisher); mit Rekursiv-Flag ganzen Ordnerbaum, relativ zu <code>remote_cwd</code>/<code>local_cwd</code> <span class="tag new">Flag NEU</span></td></tr>
+<tr><td><code>put</code></td><td><code>put [-r|--recursive|RECURSIVE] &lt;lokal&gt; [remote]</code></td><td>Datei hochladen (wie bisher); mit Rekursiv-Flag ganzen Ordnerbaum <span class="tag new">Flag NEU</span></td></tr>
+<tr><td><code>del</code> / <code>rm</code></td><td><code>del [-r|--recursive|RECURSIVE] [-f|--force|FORCE] &lt;pfad&gt;</code></td><td>Datei/leeres Verzeichnis löschen (wie bisher); mit Rekursiv-Flag Verzeichnis inkl. Inhalt, <strong>mit Sicherheitsabfrage</strong> außer bei Force-Flag <span class="tag new">Flags NEU</span></td></tr>
+<tr><td><code>mkdir</code></td><td><code>mkdir &lt;pfad&gt;</code></td><td>Verzeichnis anlegen (wie bisher)</td></tr>
+<tr><td><code>rename</code> / <code>mv</code></td><td><code>rename &lt;alt&gt; &lt;neu&gt;</code></td><td>Umbenennen/Verschieben (wie bisher)</td></tr>
+<tr><td><code>info</code> / <code>stat</code></td><td><code>info &lt;pfad&gt;</code></td><td>Metadaten anzeigen; bei Verzeichnissen zusätzlich Gesamtgröße aller enthaltenen Dateien rekursiv, siehe Abschnitt 10.3 <span class="tag new">Verhalten NEU</span></td></tr>
+<tr><td><code>lls</code> / <code>ldir</code></td><td><code>lls [pfad]</code></td><td>Lokales Verzeichnis auflisten (Komfortbefehl, damit man vor <code>put -r</code> nicht die Shell verlassen muss) <span class="tag new">NEU</span></td></tr>
+<tr><td><code>md5</code> / <code>lmd5</code></td><td><code>md5 &lt;remote&gt;</code> / <code>lmd5 &lt;lokal&gt;</code></td><td>MD5-Prüfsumme einer Remote-Datei (DB oder Server-Berechnung) bzw. einer lokalen Datei (frisch berechnet) ausgeben, siehe Abschnitt 18.5 <span class="tag new">v4</span></td></tr>
+<tr><td><code>sync</code></td><td><code>sync [lokal] [remote]</code></td><td>Lokalen und Remote-Ordner bidirektional abgleichen (rekursiv, Prüfsummen + Zeitstempel) — ohne Argumente <code>local_cwd</code> ↔ <code>remote_cwd</code>, siehe Abschnitt 20 <span class="tag new">v4</span></td></tr>
+<tr><td><code>quit</code> / <code>exit</code> / <code>bye</code></td><td>—</td><td>Shell beenden</td></tr>
+</table>
+
+<h2 id="syntax">8. Plattform-angepasste Syntax</h2>
+<p>
+Grundidee: <strong>jede Schreibweise funktioniert auf jeder Plattform</strong> — ein Amiga-Nutzer, der aus Gewohnheit <code>RECURSIVE</code>
+tippt, bekommt auf dem Mac dasselbe Ergebnis wie mit <code>-r</code>; ein PC/Linux-Nutzer, der versehentlich ein AmigaDOS-Keyword tippt,
+wird nicht mit „unknown command“ abgewiesen. Nur an <em>einer</em> Stelle gibt es einen echten, nicht auflösbaren Bedeutungskonflikt
+(<code>/</code> für Root vs. Parent) — dort gewinnt die native Konvention der Plattform, auf der der Client gerade läuft.
+</p>
+
+<h3>8.1 Flags (Rekursiv, Force, …)</h3>
+<p>Jede Flag wird in drei gleichwertigen Schreibweisen erkannt, überall gleichzeitig aktiv:</p>
+<table>
+<tr><th>Bedeutung</th><th>Kurz (PC/Unix-Stil)</th><th>Lang (GNU-Stil)</th><th>Amiga-Keyword (case-insensitiv)</th></tr>
+<tr><td>Rekursiv</td><td><code>-r</code></td><td><code>--recursive</code></td><td><code>RECURSIVE</code> / <code>recursive</code> / <code>All</code></td></tr>
+<tr><td>Erzwingen / ohne Nachfrage</td><td><code>-f</code></td><td><code>--force</code></td><td><code>FORCE</code> / <code>force</code></td></tr>
+</table>
+<p>
+Ein gemeinsamer Helper (etwa <code>flag_match(token, "-r", "--recursive", "RECURSIVE")</code>, case-insensitiv nur für die
+Keyword-Form — Amiga-<code>ReadArgs</code>-Keywords sind traditionell nicht case-sensitiv, kurze/lange Flags bleiben klassisch
+kleingeschrieben) prüft jedes Token, bevor es als Pfad-Argument gilt. Reihenfolge der Flags relativ zu den Positions-Argumenten ist
+frei (<code>del -r -f /ordner</code>, <code>del /ordner FORCE RECURSIVE</code>, <code>del -f /ordner --recursive</code> — alle drei
+gleichwertig).
+</p>
+
+<h3>8.2 <code>cd</code>/<code>lcd</code>-Kurzsymbole</h3>
+<table>
+<tr><th>Bedeutung</th><th>Eingabe</th><th>Gültigkeit</th></tr>
+<tr><td rowspan="2">Ein Verzeichnis hoch (Parent)</td>
+    <td><code>..</code></td><td>überall (universeller Alias, kollisionsfrei)</td></tr>
+<tr><td><code>/</code></td><td><strong>nur wenn Client auf AmigaOS läuft</strong> — native Amiga-Konvention</td></tr>
+<tr><td rowspan="3">Zur Wurzel (Root)</td>
+    <td><code>:</code></td><td>überall (universeller Alias, kollisionsfrei — bloßes „<code>:</code>“ hat sonst keine Bedeutung)</td></tr>
+<tr><td><code>\</code></td><td>überall (Windows-native Schreibweise, kollisionsfrei auf allen anderen Plattformen)</td></tr>
+<tr><td><code>/</code></td><td><strong>nur wenn Client NICHT auf AmigaOS läuft</strong> (macOS/Linux/Windows) — native Unix-/Pfadkonvention</td></tr>
+<tr><td>Zurück zum konfigurierten Basisverzeichnis</td><td><code>cd</code>/<code>lcd</code> ohne Argument</td><td>überall (unverändert wie ursprünglich geplant)</td></tr>
+</table>
+<div class="box warn">
+<h4>Der einzige echte Konflikt: <code>/</code></h4>
+<p style="margin:0">
+<code>/</code> bedeutet auf AmigaOS „eine Ebene hoch“ (z.&nbsp;B. <code>/foo</code> = Geschwisterverzeichnis <code>foo</code>), auf
+macOS/Linux/Windows dagegen „absolute Wurzel“. Beide Bedeutungen gleichzeitig zuzulassen ist unmöglich — deshalb wird <code>/</code>
+exakt wie von dir beschrieben <strong>plattform-nativ zur Compile-/Laufzeit</strong> interpretiert (<code>#ifdef PLATFORM_AMIGA</code> in
+<code>shell.c</code>, gleiches Muster wie beim bestehenden <code>http_pc.c</code>/<code>http_amiga.c</code>-Split). Alle anderen Symbole
+(<code>..</code>, <code>:</code>, <code>\</code>) sind eindeutig und deshalb überall gleichzeitig aktiv.
+</p>
+</div>
+<p>
+Diese Kurzsymbol-Auflösung gilt für <strong>beide</strong> Befehle, <code>cd</code> (remote, wird zu einem saubern <code>/</code>-Pfad
+normalisiert bevor er an die API geht, siehe Abschnitt 4) und <code>lcd</code> (lokal, wird 1:1 an <code>localfs_chdir()</code> auf der
+jeweiligen Plattform durchgereicht — dort greift ohnehin die native Interpretation des zugrunde liegenden Dateisystems).
+</p>
+
+<h2 id="rekursiv">9. Rekursive Operationen im Detail</h2>
+
+<h3>9.1 <code>put -r</code> (Ordner hochladen)</h3>
+<ol>
+<li>Lokalen Verzeichnisbaum ab <code>&lt;lokal&gt;</code> traversieren (<code>localfs</code>-Modul, Tiefensuche).</li>
+<li>Für jedes gefundene Unterverzeichnis: <code>mkdir</code>-Action aufrufen (HTTP 409 „existiert bereits“ wird ignoriert, ist kein Fehler).</li>
+<li>Für jede gefundene Datei: bestehende Upload-Logik aus <code>cmd_put</code> wiederverwenden.</li>
+<li>Fortschrittsausgabe pro Datei (Pfad + ok/Fehler); ein Fehler bricht nicht den ganzen Lauf ab, wird aber am Ende als Zusammenfassung („12 Dateien, 1 Fehler“) berichtet.</li>
+</ol>
+
+<h3>9.2 <code>get -r</code> (Ordner herunterladen)</h3>
+<ol>
+<li>Remote-Verzeichnisbaum ab <code>&lt;remote&gt;</code> rekursiv traversieren — mit der bereits vorhandenen <code>list</code>-Action (ein HTTP-Request pro Unterverzeichnis, keine Server-Änderung nötig).</li>
+<li>Für jedes Remote-Unterverzeichnis lokal <code>localfs_mkdir()</code> aufrufen.</li>
+<li>Für jede Remote-Datei bestehende Download-Logik aus <code>cmd_get</code> wiederverwenden.</li>
+<li>Gleiche Fortschritts-/Fehlersammel-Logik wie bei <code>put -r</code>.</li>
+</ol>
+
+<h3>9.3 <code>del -r</code> (Ordner inkl. Inhalt löschen)</h3>
+<div class="box warn">
+<h4>Destruktiv — Sicherheitsabfrage zwingend</h4>
+<p style="margin:0">Vor der Ausführung fragt die Shell <code>Delete '/pfad' and ALL contents? [y/N]</code>. Nur bei <code>y</code>/<code>yes</code> wird gelöscht. Das Force-Flag (<code>-f</code> / <code>--force</code> / <code>FORCE</code>, Abschnitt 8.1) unterdrückt die Abfrage für Skript-/Batch-Nutzung — <strong>bestätigt per Nutzer-Feedback</strong>, Standardverhalten bleibt „nachfragen“.</p>
+</div>
+<p><strong>Entschieden:</strong> Variante B ist das Zielbild (Server-Deploy ist kein Hindernis), Variante A bleibt als automatischer Fallback bestehen:</p>
+<table>
+<tr><th>Variante</th><th>Ablauf</th><th>Vor-/Nachteile</th></tr>
+<tr><td><strong>A — rein client-seitig</strong><br>(Fallback)</td><td>Baum rekursiv per <code>list</code> einlesen, dann <em>bottom-up</em> löschen: erst alle Dateien, dann Verzeichnisse von den tiefsten zu den flachsten (jede Löschung ein bestehender <code>delete</code>-Call, der auf leere Dirs/Files schon funktioniert)</td><td>Kein Server-Deploy nötig; aber 1 Request pro Datei/Verzeichnis, nicht atomar (bei Abbruch bleibt Teilbaum übrig)</td></tr>
+<tr><td><strong>B — Server-seitig</strong> <span class="tag done">GEWÄHLT</span><br><code>DELETE …&amp;recursive=1</code></td><td>Server löscht Baum in einem Request inkl. DB-Aufräumen (<code>DELETE FROM files WHERE path LIKE 'prefix/%'</code>)</td><td>Ein Request, atomar aus Nutzersicht, weniger Netzwerk-Overhead — erfordert Server-Deploy (siehe Abschnitt 10.1)</td></tr>
+</table>
+<p>Client versucht immer zuerst <code>recursive=1</code>; bekommt er dafür 400 „Unknown parameter“ o.&nbsp;ä. von einem (noch) nicht aktualisierten Server, fällt er automatisch auf Variante A zurück. Damit funktioniert die Shell auch gegen einen älteren Server, ohne dass man beide Seiten gleichzeitig deployen muss.</p>
+
+<h2 id="server">10. Server-seitige Änderungen</h2>
+<p>Zwei kleine, klar umgrenzte Erweiterungen in <span class="filepath">server/includes/FileStore.php</span> und <span class="filepath">server/api.php</span>:</p>
+
+<h3>10.1 Rekursives Löschen</h3>
+<table>
+<tr><th>Endpoint</th><td><code>DELETE api.php?action=delete&amp;path=/ordner&amp;recursive=1</code></td></tr>
+<tr><th>Verhalten</th><td>Bisher: <code>rmdir()</code> schlägt bei nicht-leerem Verzeichnis mit 409 fehl. Neu: bei <code>recursive=1</code> und <code>is_dir($target)</code> wird der Baum rekursiv gelöscht (Dateien <code>unlink</code>, Verzeichnisse bottom-up <code>rmdir</code>) <strong>und</strong> alle zugehörigen Zeilen per <code>DELETE FROM files WHERE user_id=? AND (path=? OR path LIKE 'prefix/%')</code> entfernt (gleiches Präfix-Muster wie bereits bei <code>renameImpl()</code> für Kind-Pfade verwendet).</td></tr>
+<tr><th>Abwärtskompatibel</th><td>Ohne <code>recursive</code>-Parameter unverändertes Verhalten (409 bei nicht-leer) — bestehende <code>del</code>-Nutzung im Nicht-Shell-Client bleibt unberührt.</td></tr>
+</table>
+
+<h3>10.2 Status-/Versions-Auskunft</h3>
+<table>
+<tr><th>Endpoint</th><td><code>GET api.php?action=status</code> <span class="tag new">NEU</span></td></tr>
+<tr><th>Antwort</th><td><code>{"status":"ok","version":"0.1","time":"2026-…Z"}</code> — <code>version</code> kommt aus einer neuen Konstante, die mit <code>AMICLOUD_VERSION</code> aus <code>web.php</code> synchron gehalten wird (z.&nbsp;B. gemeinsame Definition in <code>config.php</code> oder eigener <code>includes/Version.php</code>).</td></tr>
+<tr><th>Zweck</th><td>Einzige fehlende Zutat für den Start-Banner der Shell (Abschnitt 6) — verlangt Basic Auth wie alle anderen Actions, dient zugleich als Verbindungs-/Health-Check.</td></tr>
+</table>
+<p><strong>Entschieden:</strong> bewusst minimal — kein Speicherplatz-/Quota-Feld. Es gibt im Schema aktuell kein Quota-Konzept
+(<code>files</code>-Tabelle kennt keine Limits, nur Ist-Größen), das wäre eine eigenständige Baustelle unabhängig von der Shell. Version
++ Health-Check reichen für den Banner völlig aus.</p>
+
+<h3>10.3 Rekursive Verzeichnisgröße für <code>info</code> <span class="tag new">NEU</span></h3>
+<p>
+Bisher liefert <code>FileStore::info()</code> für Verzeichnisse immer <code>size: 0</code>. Neue Anforderung: <code>info</code>/<code>stat</code>
+auf ein Verzeichnis soll die <strong>Gesamtgröße aller enthaltenen Dateien inklusive aller Unterverzeichnisse</strong> liefern.
+</p>
+<table>
+<tr><th>Umsetzung</th><td>In <code>FileStore::info()</code>: wenn <code>$isDir</code>, statt <code>filesize()</code> eine rekursive Summe bilden — z.&nbsp;B. mit PHPs <code>RecursiveDirectoryIterator</code>/<code>RecursiveIteratorIterator</code> direkt über das Dateisystem (robust, unabhängig davon ob jede Unterverzeichnis-Zeile in der DB existiert). Alternative wäre eine DB-Summe über <code>size_bytes</code> mit Pfad-Präfix-Filter (schneller, aber nur so genau wie die DB-Pflege) — Dateisystem-Variante wird empfohlen, weil sie immer korrekt ist und zum bisherigen Stil des Codes passt (einfach, ohne Zusatzabhängigkeit von DB-Konsistenz).</td></tr>
+<tr><th>Scope</th><td>Betrifft ausschließlich die <code>info</code>-Action für <strong>ein</strong> explizit angefragtes Verzeichnis. <code>list</code> zeigt Verzeichniseinträge weiterhin mit <code>size: 0</code> — pro Zeile in einer Auflistung rekursiv zu summieren würde die Kosten mit der Anzahl der Unterordner multiplizieren und ist nicht Teil der Anforderung.</td></tr>
+<tr><th>Performance-Hinweis</th><td>Für sehr große Bäume läuft die Berechnung synchron im selben Request — bei einer Cloud für persönliche Nutzung (kein Massenspeicher-Dienst) unkritisch, aber erwähnenswert als Grenze dieses einfachen Ansatzes.</td></tr>
+</table>
+<p>Client-seitig ist <strong>keine Änderung</strong> nötig: <code>cmd_info()</code> gibt bereits unverändert das <code>size</code>-Feld aus der Server-Antwort aus (<code>client/cmd.c</code>, <code>jlong(root, "size")</code>) — profitiert also automatisch, sowohl im Einzelkommando <code>amicloud info</code> als auch im Shell-Befehl <code>info</code>/<code>stat</code>.</p>
+<p>Damit ist auch die Anforderung „ganzen Ordner herunterladen, analog zu Dateien“ vollständig abgedeckt: <code>get -r</code> (Abschnitt 9.2) lädt einen Remote-Ordner exakt so herunter wie <code>get</code> eine einzelne Datei — gleiche Argumentreihenfolge, gleiches Zielverzeichnis-Verhalten, nur eben rekursiv.</p>
+<p>Beide Server-Ergänzungen (<code>status</code>, <code>info</code>-Rekursivgröße) plus <code>recursive=1</code> bei <code>delete</code> werden in <span class="filepath">docs/API.md</span> nachgetragen (neue Action-Abschnitte + Fehlercode-Tabelle bleibt gültig) und in <span class="filepath">scripts/test_api.sh</span> um passende Checks erweitert.</p>
+
+<h2 id="localfs">11. Neue Datei-Abstraktion: lokales Dateisystem</h2>
+<p>Gemeinsame Schnittstelle in <code>localfs.h</code>, zwei Implementierungen wie beim HTTP-Layer:</p>
+<table>
+<tr><th>Funktion (Signatur, konzeptionell)</th><th>PC/Mac/Win (<code>localfs_pc.c</code>)</th><th>Amiga (<code>localfs_amiga.c</code>)</th></tr>
+<tr><td><code>local_getcwd(buf, sz)</code></td><td><code>getcwd()</code> / <code>_getcwd()</code></td><td><code>NameFromLock()</code> auf aktuellem Lock</td></tr>
+<tr><td><code>local_chdir(path)</code></td><td><code>chdir()</code> / <code>_chdir()</code></td><td><code>Lock()</code> + <code>CurrentDir()</code>, alten Lock merken/freigeben</td></tr>
+<tr><td><code>local_mkdir(path)</code></td><td><code>mkdir()</code> (rekursiv wie <code>full_path</code>-Helper)</td><td><code>CreateDir()</code></td></tr>
+<tr><td><code>local_list(path, callback)</code></td><td><code>opendir</code>/<code>readdir</code>/<code>closedir</code></td><td><code>Examine()</code>/<code>ExNext()</code> bzw. <code>ExAll()</code></td></tr>
+</table>
+<p>Diese Abstraktion wird ausschließlich von <code>shell.c</code> für <code>lcd</code>/<code>lpwd</code>/<code>lls</code>/<code>put -r</code>/<code>get -r</code> genutzt — die Nicht-Shell-Kommandos in <code>cmd.c</code> bleiben unverändert (sie nutzen weiterhin einfaches <code>fopen</code>).</p>
+
+<h2 id="fehler">12. Fehlerbehandlung &amp; Sicherheit</h2>
+<ul>
+<li>Kein Kommandofehler beendet die Shell — nur <code>quit</code>/<code>exit</code>/EOF.</li>
+<li><code>del -r</code> verlangt Bestätigung (s.&nbsp;9.3); Batch-Betrieb via Force-Flag möglich.</li>
+<li>Pfad-Traversal-Schutz bleibt serverseitig bestehen (<code>sanitizePath</code>); <code>cd</code> normalisiert alle Kurzsymbole (Abschnitt 8.2) vor dem Versand, andere Befehle (<code>get</code>/<code>put</code>/<code>mkdir</code> …) verhalten sich wie bisher — ein direkt übergebenes <code>..</code> außerhalb von <code>cd</code> bleibt (wie heute schon) ein Server-Fehler 400, das ändert sich nicht.</li>
+<li>Zugangsdaten werden wie bisher einmal beim Start geladen; es gibt in dieser ersten Version <em>keinen</em> <code>connect</code>/<code>open</code>-Befehl zum Umschalten auf einen anderen Server innerhalb der Session (bewusst außerhalb des Scopes, siehe Abschnitt 14).</li>
+</ul>
+
+<h2 id="build">13. Build-Integration</h2>
+<p>In allen drei Makefiles wird die <code>SRCS</code>-Zeile um die neuen Dateien ergänzt, sonst keine Änderung an Flags/Toolchain:</p>
+<table>
+<tr><th>Makefile</th><th>Ergänzung</th></tr>
+<tr><td><code>Makefile.pc</code></td><td><code>SRCS += shell.c localfs_pc.c</code></td></tr>
+<tr><td><code>Makefile.win</code></td><td><code>SRCS += shell.c localfs_pc.c</code> (MinGW hat <code>dirent.h</code>, kein separater Win-Pfad nötig)</td></tr>
+<tr><td><code>Makefile.amiga</code></td><td><code>SRCS += shell.c localfs_amiga.c</code></td></tr>
+</table>
+
+<h2 id="offen">14. Entscheidungsstand</h2>
+
+<div class="box done">
+<h4>Alle Design-Fragen entschieden — Plan ist umsetzungsreif</h4>
+<ul class="resolved">
+<li><strong>Flag-Syntax:</strong> kein <code>-r</code> vs. Wortbefehl-Entweder-oder — alle drei Schreibweisen (kurz/lang/Amiga-Keyword) sind auf jeder Plattform gleichzeitig gültig, s. Abschnitt 8.1.</li>
+<li><strong><code>cd</code>/<code>lcd</code>-Kurzsymbole:</strong> plattform-native Interpretation für den einen echten Konflikt (<code>/</code>), universelle Aliase für alles Kollisionsfreie (<code>..</code>, <code>:</code>, <code>\</code>), s. Abschnitt 8.2.</li>
+<li><strong>Bestätigungsverhalten bei <code>del -r</code>:</strong> Sicherheitsabfrage ist Standard, Force-Flag zum Überspringen.</li>
+<li><strong>Rekursives Löschen:</strong> Server-seitig (Variante B) ist das Zielbild, client-seitige Variante A bleibt automatischer Fallback für nicht aktualisierte Server, s. Abschnitt 9.3.</li>
+<li><strong>Prompt-Format:</strong> kein <code>amicloud:</code>-Präfix, reiner Remote-Pfad mit plattform-nativem Root-Symbol (<code>:</code>/<code>/</code>/<code>\</code>), s. Abschnitt 6.1.</li>
+<li><strong><code>status</code>-Action:</strong> minimal (Version + Health-Check), kein Quota/Speicherplatz — dafür fehlt ohnehin das Datenmodell, s. Abschnitt 10.2.</li>
+<li><strong><code>info</code> auf Verzeichnisse:</strong> liefert jetzt die rekursive Gesamtgröße aller enthaltenen Dateien, s. Abschnitt 10.3 (neue Anforderung, in diesem Update aufgenommen).</li>
+</ul>
+</div>
+
+<h2 id="phasen">15. Umsetzungsreihenfolge</h2>
+
+<div class="phase">
+<h3>Phase 1 — Grundgerüst</h3>
+<p><code>shell.c</code>/<code>shell.h</code>, REPL-Schleife, Tokenizer inkl. Flag-Erkenner (Abschnitt 8.1), Start-Banner (ohne Server-Statusabfrage, die kommt in Phase 4), Dispatch für bestehende Befehle (<code>ls</code>, <code>get</code>, <code>put</code>, <code>del</code>, <code>info</code>, <code>mkdir</code>, <code>rename</code>, <code>quit</code>) über den <code>eff</code>-Konfigurationstrick aus Abschnitt 4. <code>main.c</code>: Zweig <code>shell</code>. Build &amp; Test zuerst auf Mac/Linux (schnellster Zyklus).</p>
+</div>
+<div class="phase">
+<h3>Phase 2 — Navigation</h3>
+<p><code>localfs.h</code> + <code>localfs_pc.c</code>, dann <code>cd</code>/<code>lcd</code>/<code>pwd</code>/<code>lpwd</code>/<code>lls</code> inkl. Kurzsymbol-Normalisierung (Abschnitt 8.2) und Ziel-Verifikation per <code>info</code>.</p>
+</div>
+<div class="phase">
+<h3>Phase 3 — Rekursive Operationen (client-seitig)</h3>
+<p><code>get -r</code>/<code>put -r</code> (keine Server-Änderung nötig) sowie <code>del -r</code> zunächst als Variante A (bottom-up über bestehende <code>delete</code>-Action) — damit ist die Shell bereits voll funktionsfähig gegen den <em>aktuellen, unveränderten</em> Server.</p>
+</div>
+<div class="phase">
+<h3>Phase 4 — Server-Erweiterungen</h3>
+<p><code>status</code>-Action, <code>recursive=1</code> bei <code>delete</code> und rekursive Größenberechnung in <code>info</code> (Abschnitt 10.3) — alle drei in <span class="filepath">server/includes/FileStore.php</span>/<span class="filepath">api.php</span>, gemeinsam deployt. <span class="filepath">docs/API.md</span> nachziehen, <span class="filepath">scripts/test_api.sh</span> erweitern. Shell nutzt <code>status</code> jetzt im Banner und schaltet <code>del -r</code> auf Variante B um (mit Fallback auf A); <code>info</code> zeigt ab sofort echte Verzeichnisgrößen ohne jede Client-Änderung.</p>
+</div>
+<div class="phase">
+<h3>Phase 5 — Windows &amp; AmigaOS</h3>
+<p><code>localfs_amiga.c</code> über dos.library, Cross-/Native-Build gegen <code>Makefile.win</code> und <code>Makefile.amiga</code>, native Tests auf echter/emulierter Amiga-Hardware zuletzt (analog zum bisherigen Vorgehen bei CLOUD:-Handler/WebDAV). Hier auch gezielter Test der plattform-nativen <code>/</code>-Interpretation (Abschnitt 8.2).</p>
+</div>
+
+<h2 id="test">16. Testplan</h2>
+<ul>
+<li><strong>Mac/Linux:</strong> manuelles Durchspielen aller Befehle inkl. <code>get -r</code>/<code>put -r</code>/<code>del -r</code> gegen einen Testbenutzer auf <code>amicloud.example.com</code> (oder lokalem PHP-Devserver mit <code>AMICLOUD_ALLOW_HTTP</code>); dabei gezielt auch die „fremden“ Schreibweisen testen (<code>del RECURSIVE FORCE /x</code> auf dem Mac, <code>cd :</code> auf Linux). Prompt-Format prüfen (kein <code>amicloud:</code>-Präfix, korrektes Root-Symbol).</li>
+<li><strong>Server-Erweiterungen:</strong> <span class="filepath">scripts/test_api.sh</span> um Checks für <code>status</code>, <code>delete&amp;recursive=1</code> (inkl. Negativtest: nicht-leeres Verzeichnis ohne <code>recursive</code> weiterhin 409) und <code>info</code> auf ein Verzeichnis mit bekannten Testdateien in mehreren Unterordnern (erwartete Summe exakt prüfen) ergänzen.</li>
+<li><strong>Windows:</strong> Build via MinGW, gleiche manuelle Durchläufe wie Mac/Linux, inkl. <code>cd \</code> für Root.</li>
+<li><strong>AmigaOS 3.x:</strong> nativer VBCC-Build, Test von <code>cd /</code> (muss auf Amiga „Ebene hoch“ ergeben, nicht Root!), <code>cd :</code> (Root), <code>lcd</code> (dos.library-Locks sauber freigegeben — kein Lock-Leak bei mehrfachem <code>lcd</code>), sowie <code>put -r</code> von einer Diskette/Partition mit mehreren Unterverzeichnissen als Rauchtest.</li>
+</ul>
+
+<h2 id="fortschritt">17. Fortschrittsanzeige: Datei-Zähler + Byte-Prozent bei <code>get</code>/<code>put</code> <span class="tag new">v4</span></h2>
+<p>
+Bei allen <strong>Mehrdatei-Operationen</strong> (Wildcard-<code>get</code>/<code>put</code>, <code>get -r</code>/<code>put -r</code>,
+später auch <code>sync</code>) bekommt jede übertragene Datei einen Präfix aus Datei-Zähler <code>x/y</code> <strong>und</strong>
+Prozentwert. Der Prozentwert bezieht sich auf die <strong>übertragenen Bytes</strong>, nicht auf die Dateianzahl — bei
+einem Ordner mit einer großen und vielen kleinen Dateien zeigt er also den echten Übertragungsfortschritt:
+</p>
+<pre><code>( 3/12  47%) Downloaded fotos/img_003.jpg
+( 4/12  48%) Downloaded fotos/img_004.jpg
+...
+(12/12 100%) Downloaded fotos/readme.txt
+12 Datei(en) ok, 0 Fehler</code></pre>
+<h3>17.1 Zwei Durchläufe: erst zählen &amp; summieren, dann übertragen</h3>
+<p>Damit <code>y</code> (Gesamtzahl) und <code>total_bytes</code> (Gesamtvolumen) vor der ersten Übertragung feststehen, wird pro Operation ein <strong>Zähl-Durchlauf</strong> vorgeschaltet — die Dateigrößen fallen dort gratis mit ab:</p>
+<table>
+<tr><th>Operation</th><th>Woher kommen <code>y</code> und <code>total_bytes</code>?</th><th>Kosten</th></tr>
+<tr><td>Wildcard (<code>get *.txt</code> / <code>put #?.c</code>)</td><td>Die Treffer stehen nach dem ohnehin nötigen <code>list</code>-/<code>localfs_opendir</code>-Durchlauf fest — dazu wird die bestehende Schleife in <code>do_get_pattern()</code>/<code>do_put_pattern()</code> zweigeteilt: erst Treffer sammeln (Array statt Sofort-Transfer, <code>AcEntry.size</code>/<code>LocalDirEntry.size</code> aufsummieren), dann übertragen.</td><td>keine zusätzlichen Requests</td></tr>
+<tr><td><code>get -r</code></td><td>Vor-Traversierung des Remote-Baums per <code>cmd_list_raw()</code> — Anzahl <em>und</em> Byte-Summe aus den <code>size</code>-Feldern; danach die bestehende <code>shell_get_dir()</code>-Rekursion mit mitlaufendem Zähler.</td><td>1 zusätzlicher <code>list</code>-Request pro Unterverzeichnis — derselbe Baum wird gleich darauf sowieso gelistet; alternativ kann der Zähl-Durchlauf die Einträge gleich cachen (Entscheidung bei Implementierung, Cache spart die Hälfte der <code>list</code>-Requests)</td></tr>
+<tr><td><code>put -r</code></td><td>Vor-Traversierung des lokalen Baums per <code>localfs</code> (Anzahl + Byte-Summe) — rein lokal, praktisch kostenlos.</td><td>keine Requests</td></tr>
+</table>
+<h3>17.2 Prozent-Semantik &amp; Umsetzung ohne Änderung an <code>cmd.c</code></h3>
+<p>
+<code>cmd_get()</code>/<code>cmd_put()</code> geben bereits <code>Downloaded …</code>/<code>Uploaded …</code> aus. Die Shell druckt den Präfix
+<code>(&nbsp;x/y&nbsp;&nbsp;p%)&nbsp;</code> (ohne Zeilenumbruch, <code>fflush</code>) <em>unmittelbar davor</em> — die bestehende Ausgabezeile von
+<code>cmd.c</code> vervollständigt sie. Der Prozentwert ist <code>p = (bytes_done + size_dieser_datei) / total_bytes</code>, also der Stand
+<em>nach Abschluss</em> der gerade laufenden Datei — so endet die letzte Zeile immer bei <code>100%</code> und der Wert neben einer Zeile
+beschreibt genau das, was diese Zeile geleistet hat. Der Fortschritt aktualisiert sich damit an <strong>Dateigrenzen</strong>
+(byte-genau kumuliert), nicht innerhalb einer Datei — s. Kasten unten.
+Fehlerfälle schreiben nach <code>stderr</code> und stören den Zähler nicht: gescheiterte Dateien zählen in <code>x</code> weiter und ihre
+Bytes werden trotzdem als „verbraucht“ verbucht, sonst käme der Lauf nie bei 100 % an. Dafür wandern die bisherigen losen
+<code>int *ok, *err</code>-Parameter in eine Struktur
+<code>Progress { int done, total, ok, err; long bytes_done, bytes_total; }</code>, die durch
+<code>shell_get_dir()</code>/<code>shell_put_dir()</code>/die Pattern-Schleifen gereicht wird.
+</p>
+<ul>
+<li><strong>Einzeldatei-<code>get</code>/<code>put</code>:</strong> unverändert, kein <code>(1/1 100%)</code>-Präfix — bringt keine Information.</li>
+<li><strong>Zeilenbreite:</strong> Präfix kostet maximal 13 Zeichen (<code>(12/12 100%) </code>) — bleibt mit den bestehenden gekürzten Ausgaben unter den ~70 Zeichen für schmale Amiga-Konsolen.</li>
+<li><strong>0-Byte-Sonderfall:</strong> <code>total_bytes == 0</code> (nur leere Dateien) → Prozentanzeige entfällt, nur <code>x/y</code>.</li>
+</ul>
+<div class="box info">
+<h4>Abgrenzung: Prozent <em>innerhalb</em> einer einzelnen Datei</h4>
+<p style="margin:0">Ein live mitlaufender Balken <em>während</em> einer einzelnen großen Übertragung bräuchte einen Fortschritts-Callback in der HTTP-Schicht (<code>http_download</code>/<code>http_request</code> in beiden Implementierungen, auf dem Amiga zusätzlich Umbau der blockierenden Sende-/Empfangsschleife). Das bleibt eine mögliche spätere Erweiterung — die hier geplante byte-kumulierte Anzeige an Dateigrenzen liefert bereits echte Byte-Prozent über den Gesamtlauf, ohne die HTTP-Schicht anzufassen.</p>
+</div>
+
+<h2 id="checksum">18. MD5-Prüfsummen: Übertragungscheck &amp; Sync-Grundlage <span class="tag new">v4</span></h2>
+<p>
+Jede Datei bekommt serverseitig eine gespeicherte Prüfsumme. Sie dient (a) als <strong>Übertragungscheck</strong> bei
+<code>get</code>/<code>put</code> und (b) als <strong>Vergleichsbasis für <code>sync</code></strong> (Abschnitt 20).
+</p>
+
+<h3>18.1 Algorithmuswahl: MD5, eingebettet im Code — entschieden</h3>
+<table>
+<tr><th>Kandidat</th><th>Bewertung</th></tr>
+<tr><td>CRC-8/16/32</td><td>Wie in der Anforderung festgestellt: zu kollisionsanfällig für Sync-Entscheidungen (32 Bit ≙ Zufallskollision schon bei ~65k Dateien realistisch) — <strong>raus</strong>.</td></tr>
+<tr><td>SHA-256 (AmiSSL)</td><td>Kryptographisch überdimensioniert und auf 68030/68040 spürbar langsam; außerdem wäre der PC-Client dann auf eine Crypto-Bibliothek angewiesen, die er heute nicht linkt (libcurl macht TLS intern) — <strong>raus</strong>.</td></tr>
+<tr><td>MD5 via AmiSSL</td><td>Funktioniert auf dem Amiga (AmiSSL ist dort für HTTPS eh geladen), aber: auf dem PC gibt es kein AmiSSL, d.&nbsp;h. zwei Codepfade; zudem bindet es die Prüfsumme an die TLS-Initialisierung — <strong>raus</strong>.</td></tr>
+<tr><td><strong>MD5 als eigene portable C-Datei</strong> <span class="tag done">GEWÄHLT</span></td><td>Referenzimplementierung nach RFC&nbsp;1321 (Public Domain, ~250 Zeilen C89) als <code>client/md5.c</code>/<code>md5.h</code> — identischer Code auf allen vier Plattformen, keine neue Abhängigkeit, auf 68k deutlich schneller als SHA. 128 Bit sind für Integritäts-/Sync-Zwecke (nicht-adversarial) mehr als eindeutig genug; die bekannten MD5-Kollisionsangriffe sind hier irrelevant, weil niemand gezielt Kollisionen konstruiert.</td></tr>
+</table>
+<p>Serverseitig rechnet PHP nativ: <code>md5($data)</code> / <code>md5_file($path)</code> — kein Zusatzmodul nötig. Wire-Format: 32 Hex-Zeichen, kleingeschrieben, JSON-Feld <code>md5</code>.</p>
+
+<h3>18.2 Server: Speicherung &amp; API</h3>
+<table>
+<tr><th>Baustein</th><th>Änderung</th></tr>
+<tr><td><span class="filepath">server/sql/migrate_002.sql</span> <span class="tag new">NEU</span></td><td><code>ALTER TABLE files ADD COLUMN checksum CHAR(32) NULL</code> — <code>NULL</code> = „noch nicht berechnet“ (Bestandsdateien, Verzeichnisse).</td></tr>
+<tr><td><code>upload</code> (API) + <code>uploadRaw</code> (Web)</td><td>Berechnet <code>md5</code> des Bodys und schreibt es mit in die <code>files</code>-Zeile; Antwort enthält neu <code>"md5":"…"</code>. <strong>Übertragungscheck:</strong> optionaler Parameter <code>&amp;md5=&lt;hex&gt;</code> — stimmt er nicht mit dem empfangenen Body überein, HTTP&nbsp;422 <em>bevor</em> die Datei geschrieben wird (Client wiederholt oder meldet Fehler). Ohne Parameter unverändertes Verhalten → abwärtskompatibel für Handler/alte Clients.</td></tr>
+<tr><td><code>download</code></td><td>Sendet Header <code>X-AmiCloud-MD5: &lt;hex&gt;</code> (aus der DB, sonst on-the-fly via <code>md5_file()</code> + DB-Nachtrag). Bei Teil-Downloads (<code>offset</code>/<code>length</code> gesetzt) wird der Header <strong>weggelassen</strong> — die Prüfsumme gilt immer für die Gesamtdatei; der Handler nutzt Teil-Reads und bleibt unberührt.</td></tr>
+<tr><td><code>list</code> / <code>info</code></td><td>Liefern pro Datei-Eintrag neu <code>"md5"</code> (Verzeichnisse: leer). <strong>Lazy Backfill mit Frische-Check:</strong> weicht die DB-Zeile in <code>size_bytes</code>/<code>modified_at</code> vom Dateisystem ab oder ist <code>checksum</code> NULL, wird beim Listen einmalig <code>md5_file()</code> gerechnet und gespeichert. Erste Auflistung eines großen Bestandsordners ist dadurch einmalig langsamer — akzeptierter Einmalpreis, danach reiner DB-Read. (Deckt auch Dateien ab, die am API vorbei direkt auf dem Server geändert wurden.)</td></tr>
+</table>
+
+<h3>18.3 Client: Verifikation bei <code>get</code>/<code>put</code></h3>
+<ul>
+<li><strong><code>put</code>:</strong> <code>cmd_put()</code> hat die Datei bereits komplett im RAM → <code>md5(data)</code> ist ein Einzeiler, wird als <code>&amp;md5=</code> an die Upload-URL gehängt. Ein alter Server ignoriert den unbekannten Parameter einfach → funktioniert gegen jeden Deploy-Stand.</li>
+<li><strong><code>get</code>:</strong> Die MD5 wird <em>während</em> des Schreibens mitgerechnet (Streaming-Update im Download-Pfad) und am Ende gegen <code>X-AmiCloud-MD5</code> verglichen. Dafür braucht die HTTP-Schicht zwei kleine Erweiterungen: <code>http_download()</code> bekommt einen optionalen <code>Md5Ctx*</code> (beide Implementierungen füttern ihn im Write-Pfad), und die Antwortstruktur transportiert genau diesen einen Header (neues Feld <code>char md5_header[33]</code> in <code>HttpResponse</code> — bewusst kein generischer Header-Store). Fehlt der Header (alter Server, Teil-Download), wird die Prüfung übersprungen, kein Fehler.</li>
+<li><strong>Mismatch bei <code>get</code>:</strong> Fehlermeldung, Rückgabewert „Fehler“ (zählt in <code>x/y</code>-Läufen als Fehler), die unvollständige lokale Datei wird gelöscht — keine halb-kaputten Dateien auf Platte.</li>
+<li><strong>Verify ist Standard, nicht optional</strong> — kein neues Flag; die Kosten (ein MD5-Durchlauf über Daten, die sowieso durch die CPU laufen) sind auch auf 68k vertretbar.</li>
+</ul>
+
+<h3>18.4 Anzeige-Flag bei <code>ls</code>/<code>lls</code>: <code>-m</code>/<code>--md5</code>/<code>MD5</code> <span class="tag new">v4.1</span></h3>
+<p>
+Die Listen-Befehle bekommen einen vierten Anzeige-Modus neben <code>-n</code>/<code>-s</code>/<code>-d</code>: neuer
+<code>ListMode</code>-Wert <code>LIST_MD5</code>, Spalten <strong>Name + MD5</strong> (32 Hex-Zeichen — Name wird dafür wie in
+<code>LIST_FULL</code> auf 28 Zeichen gekürzt, Zeile bleibt unter ~64 Zeichen). Erkennung im bestehenden
+<code>parse_list_mode()</code>-Muster, gleiche Drei-Schreibweisen-Regel wie alle Flags.
+</p>
+<table>
+<tr><th>Befehl</th><th>Woher kommt die MD5?</th><th>Kosten</th></tr>
+<tr><td><code>ls -m [pfad]</code></td><td>Aus dem <code>md5</code>-Feld der <code>list</code>-Antwort (DB, Lazy Backfill nach 18.2) — Verzeichnisse zeigen <code>—</code>.</td><td>keine: die Daten sind in der Antwort ohnehin enthalten</td></tr>
+<tr><td><code>lls -m [pfad]</code></td><td><strong>Wird lokal frisch berechnet</strong> (Datei komplett lesen + <code>md5.c</code>) — es gibt lokal keinen Cache. Genau deshalb ist die MD5-Spalte ein <em>Opt-in-Flag</em> und nicht Teil von <code>LIST_FULL</code>: <code>lls</code> ohne <code>-m</code> bleibt exakt so schnell wie heute. </td><td>ein voller Lese-Durchlauf pro Datei — auf dem Amiga bei großen Ordnern spürbar; die Ausgabe erfolgt zeilenweise während des Rechnens, damit man den Fortschritt sieht</td></tr>
+</table>
+
+<h3>18.5 Neues Befehlspaar: <code>md5 &lt;remote&gt;</code> / <code>lmd5 &lt;lokal&gt;</code> <span class="tag new">v4.1</span></h3>
+<p>
+Nach dem etablierten Remote/Lokal-Paarmuster der Shell (<code>ls</code>/<code>lls</code>, <code>cd</code>/<code>lcd</code>,
+<code>pwd</code>/<code>lpwd</code>). Ausgabeformat wie <code>md5sum</code>, damit man Werte direkt nebeneinanderlegen kann:
+</p>
+<pre><code>/&gt; md5 fotos/img_003.jpg
+d41d8cd98f00b204e9800998ecf8427e  fotos/img_003.jpg
+/&gt; lmd5 RAM:t/img_003.jpg
+d41d8cd98f00b204e9800998ecf8427e  RAM:t/img_003.jpg</code></pre>
+<table>
+<tr><th>Befehl</th><th>Umsetzung</th></tr>
+<tr><td><code>md5 &lt;remote&gt;</code></td><td>Liest das <code>md5</code>-Feld aus der <code>info</code>-Action (Abschnitt 18.2) — der Server liefert es aus der DB oder <strong>berechnet und speichert es bei Bedarf</strong> (derselbe Lazy-Backfill-Pfad wie bei <code>list</code>, inkl. Frische-Check). Damit ist „berechnen oder DB“ vollständig serverseitig gelöst, der Client stellt nur die Frage. Verzeichnis als Argument → Fehlermeldung (Verzeichnisse haben keine Prüfsumme).</td></tr>
+<tr><td><code>lmd5 &lt;lokal&gt;</code></td><td>Berechnet lokal per <code>md5.c</code>, blockweise streamend (fester Puffer, z.&nbsp;B. 8&nbsp;KB) statt Datei-in-RAM — <code>lmd5</code> soll auch für Dateien funktionieren, die größer sind als der freie Amiga-Speicher. Nativer Pfad erlaubt (jedes Laufwerk, Abschnitt 21). Dieselbe Streaming-Routine nutzen auch <code>lls -m</code> (18.4) und der lokale Hash-Bedarf von <code>sync</code> (20.2).</td></tr>
+</table>
+<p><em>Bewusst nicht in v4.1:</em> Wildcards bei <code>md5</code>/<code>lmd5</code> — für „viele Dateien auf einmal“ ist <code>ls -m</code>/<code>lls -m</code> der passende Weg; das Befehlspaar bleibt ein präzises Ein-Datei-Werkzeug.</p>
+
+<h2 id="utc">19. Zeitstempel: UTC intern, lokale Anzeige — Amiga-Zeitzonen-Config <span class="tag new">v4</span></h2>
+<p>
+<code>sync</code> braucht <strong>vergleichbare</strong> Zeitstempel über Rechnergrenzen hinweg. Heute liefert der Server bewusst lokale
+Zeit-Strings (<code>AMICLOUD_TIMEZONE</code>, „YYYY-MM-DD HH:MM:SS“) — das bleibt für die <em>Anzeige</em> (ls/info/Web) unverändert.
+Für den <em>Vergleich</em> kommt ein maschinenlesbares Feld dazu:
+</p>
+<table>
+<tr><th>Baustein</th><th>Änderung</th></tr>
+<tr><td><code>list</code> / <code>info</code> / <code>upload</code>-Antwort</td><td>Neues Feld <code>"mtime": &lt;unix-epoch-sekunden, UTC&gt;</code> pro Eintrag — serverseitig trivial (<code>filemtime()</code> liefert bereits Epoch). Das bestehende <code>"modified"</code>-String-Feld bleibt unverändert erhalten (Anzeige, Handler, Abwärtskompatibilität).</td></tr>
+<tr><td><code>setdate</code></td><td>Akzeptiert alternativ <code>&amp;mtime=&lt;epoch&gt;</code> statt <code>&amp;modified=&lt;string&gt;</code> — damit kann der Client nach einem Sync-Upload die Remote-Mtime exakt (und zeitzonenfrei) auf die Quelldatei setzen. Der bestehende String-Parameter bleibt für den Handler erhalten.</td></tr>
+</table>
+<h3>19.1 Client-Seite: Epoch pro Plattform</h3>
+<table>
+<tr><th>Plattform</th><th>Lokale Datei-Mtime als UTC-Epoch</th></tr>
+<tr><td>macOS / Linux / Windows</td><td><code>stat()</code>/<code>_stat()</code> → <code>st_mtime</code> ist bereits UTC-Epoch. Nichts zu konfigurieren.</td></tr>
+<tr><td>AmigaOS</td><td><code>ExamineFH</code>/<code>Examine</code> liefert einen <code>DateStamp</code> — <strong>lokale</strong> Zeit seit 1978-01-01, ohne jede Zeitzoneninfo im OS. Umrechnung: <code>epoch = ds_sekunden + 252460800 − offset_min·60</code> mit <code>offset_min = gmt_offset + (dst ? 60 : 0)</code> aus der Config (s.&nbsp;19.2). Rückrichtung analog für <code>localfs_utime()</code>.</td></tr>
+</table>
+<h3>19.2 Config-Erweiterung (nur vom Amiga-Build ausgewertet)</h3>
+<pre><code># Zeitzone der Amiga-Systemuhr relativ zu GMT/UTC, in Minuten (MEZ = 60):
+gmt_offset=60
+# Sommerzeit aktiv? 1 = ja (addiert 60 Minuten), 0 = nein:
+dst=0</code></pre>
+<ul>
+<li><code>AcConfig</code> bekommt <code>int gmt_offset; int dst;</code> (Default 0/0 = Uhr läuft auf UTC), <code>config.c</code> parst beide Keys, <span class="filepath">client/amicloud.cfg.example</span> dokumentiert sie. PC-Builds parsen sie mit, nutzen sie aber nicht — eine gemeinsame Config-Datei bleibt so zwischen Amiga und PC austauschbar.</li>
+<li>Neue <code>localfs</code>-Funktionen für Sync: <code>localfs_stat(path, &amp;size, &amp;mtime_epoch)</code> und <code>localfs_utime(path, mtime_epoch)</code> (PC: <code>stat</code>/<code>utime</code>; Amiga: <code>Examine</code>/<code>SetFileDate</code> + obige Umrechnung). Das bestehende Anzeige-Feld <code>LocalDirEntry.modified</code> bleibt unangetastet; <code>LocalDirEntry</code> bekommt zusätzlich <code>long mtime</code>.</li>
+<li><strong>Toleranz:</strong> Zeitstempel gelten als gleich bei |Δ| ≤ 2 s (FAT-Auflösung, Amiga-Ticks, Rundung bei der Übertragung).</li>
+</ul>
+
+<h2 id="sync">20. <code>sync</code> — bidirektionaler Ordnerabgleich <span class="tag new">v4</span></h2>
+<h3>20.1 Aufruf</h3>
+<table>
+<tr><th>Form</th><th>Bedeutung</th></tr>
+<tr><td><code>sync</code></td><td><code>local_cwd</code> ↔ <code>remote_cwd</code> (die aktuellen Verzeichnisse der Session)</td></tr>
+<tr><td><code>sync &lt;lokal&gt;</code></td><td>angegebener lokaler Ordner ↔ <code>remote_cwd</code></td></tr>
+<tr><td><code>sync &lt;lokal&gt; &lt;remote&gt;</code></td><td>beide explizit — Argumentreihenfolge wie bei <code>put</code> (lokal zuerst); lokal darf jeder native Pfad inkl. anderer Laufwerke sein (Abschnitt 21), remote wird wie überall relativ zu <code>remote_cwd</code> bzw. mit führendem <code>/</code> ab Wurzel aufgelöst</td></tr>
+</table>
+<p><code>sync</code> ist <strong>immer rekursiv</strong> (ein Ordnerabgleich ohne Unterordner wäre keiner); ein <code>-n</code>/<code>--dry-run</code>/<code>NOOP</code>-Flag zeigt nur an, was passieren <em>würde</em>, ohne zu übertragen — dringend empfohlen für den ersten Lauf.</p>
+
+<h3>20.2 Ablauf</h3>
+<ol>
+<li><strong>Indizes bauen:</strong> Remote-Baum rekursiv per <code>cmd_list_raw()</code> (liefert nach Abschnitt 18/19 pro Datei <code>size</code>, <code>md5</code>, <code>mtime</code>); lokaler Baum per <code>localfs</code>-Traversal (<code>size</code>, <code>mtime</code>; MD5 lokal erst <em>bei Bedarf</em> rechnen, s. Matrix — spart auf dem Amiga Plattenlesezeit).</li>
+<li><strong>Aktionsliste ableiten</strong> (Matrix 20.3), Gesamtzahl = <code>y</code> für die Fortschrittsanzeige.</li>
+<li><strong>Ausführen</strong> mit <code>(&nbsp;x/y)</code>-Zähler (Abschnitt 17); fehlende Verzeichnisse werden auf der Zielseite angelegt (<code>mkdir</code>-Action bzw. <code>localfs_mkdir</code>).</li>
+<li><strong>Mtime angleichen:</strong> nach jedem Kopieren erhält die Zielseite die Mtime der Quelle — lokal per <code>localfs_utime()</code>, remote per <code>setdate&amp;mtime=</code> (Abschnitt 19). Ohne diesen Schritt würde jede kopierte Datei beim nächsten Lauf erneut als „neuer“ gelten.</li>
+<li><strong>Zusammenfassung:</strong> <code>3 hochgeladen, 1 heruntergeladen, 40 unveraendert, 1 Konflikt (uebersprungen)</code>.</li>
+</ol>
+
+<h3>20.3 Entscheidungsmatrix</h3>
+<table>
+<tr><th>Fall</th><th>Aktion</th></tr>
+<tr><td>Nur lokal vorhanden</td><td>Upload (<code>put</code>)</td></tr>
+<tr><td>Nur remote vorhanden</td><td>Download (<code>get</code>)</td></tr>
+<tr><td>Beidseitig, Größe ungleich</td><td>Inhalt ist sicher verschieden, kein Hashen nötig → neuere Mtime gewinnt, Kopie in die entsprechende Richtung</td></tr>
+<tr><td>Beidseitig, Größe gleich</td><td>Lokale MD5 rechnen und mit Remote-MD5 vergleichen: <strong>gleich → unverändert, überspringen</strong> (auch wenn die Mtimes abweichen — dann werden nur die Mtimes angeglichen, Richtung: ältere gewinnt als „wahres“ Datum); <strong>ungleich → neuere Mtime gewinnt</strong></td></tr>
+<tr><td>Inhalt ungleich, Mtimes gleich (±2&nbsp;s)</td><td><strong>Konflikt</strong> — keine Richtung ableitbar: Warnung, überspringen (in der Zusammenfassung gezählt). Auflösung manuell per gezieltem <code>get</code>/<code>put</code>.</td></tr>
+<tr><td>Name ist lokal Datei, remote Verzeichnis (oder umgekehrt)</td><td><strong>Konflikt</strong> — Warnung, Teilbaum überspringen</td></tr>
+<tr><td>Auf einer Seite gelöscht</td><td><strong>Wird nicht propagiert:</strong> ohne Zustands-Datenbank ist „gelöscht“ von „noch nie dagewesen“ nicht unterscheidbar — die Datei kommt beim nächsten Sync von der anderen Seite zurück. Bewusste, dokumentierte Grenze dieser Version; Löschen weiterhin explizit per <code>del</code>. (Eine spätere Version könnte eine lokale Sync-Statusdatei einführen.)</td></tr>
+</table>
+<div class="box warn">
+<h4>Warum MD5 vor Mtime entscheidet</h4>
+<p style="margin:0">Mtime allein ist über Amiga↔PC↔Server hinweg das fragilste Kriterium (Zeitzonen-Config, DST-Wechsel, ungestellte Amiga-Uhr). Die Prüfsumme beantwortet die wichtigste Frage — „<em>ist</em> die Datei verschieden?“ — absolut zuverlässig; die Mtime entscheidet nur noch die <em>Richtung</em>, wenn feststeht, dass kopiert werden muss. Eine falsch gestellte Uhr kann so schlimmstenfalls die falsche Version gewinnen lassen, aber nie unnötige Übertragungen oder Endlos-Sync-Schleifen erzeugen.</p>
+</div>
+
+<h2 id="lokalpfad">21. Freie lokale Pfade bei <code>get</code>/<code>put</code> (andere Laufwerke) <span class="tag new">v4</span></h2>
+<p>
+Anforderung: der lokale Pfad darf <strong>jeder</strong> native Pfad sein — auch andere Laufwerke (<code>DH1:Downloads</code>,
+<code>Work:tmp/x</code>, <code>C:\Daten</code>, <code>/Volumes/USB/x</code>). Remote bleibt wie bisher: relativ zu
+<code>remote_cwd</code>, führendes <code>/</code> = ab Wurzel (bestätigt das Ist-Verhalten von <code>full_path()</code>).
+</p>
+<h3>21.1 Ist-Zustand &amp; Lücken</h3>
+<ul>
+<li><strong>Einzeldatei-<code>get</code>/<code>put</code>:</strong> reichen den lokalen Pfad direkt an <code>fopen()</code> durch — native Pfade inkl. Laufwerke funktionieren hier <em>heute schon</em>. Keine Änderung.</li>
+<li><strong>Wildcard-/Rekursiv-Zweige (und künftig <code>sync</code>):</strong> hier liegt die Lücke. <code>join_local()</code> und die <code>snprintf("%s/%s")</code>-Stellen in <code>shell_get_dir()</code>/<code>do_get_pattern()</code> hängen stur <code>/</code> an — aus <code>DH1:</code> würde <code>DH1:/name</code> (auf AmigaDOS „Parent der Root“, ungültig), aus <code>C:\Daten</code> würde <code>C:\Daten/name</code> (funktioniert zwar meist, ist aber inkonsistent).</li>
+</ul>
+<h3>21.2 Lösung: ein plattformbewusster Join im <code>localfs</code>-Modul</h3>
+<table>
+<tr><th>Baustein</th><th>Verhalten</th></tr>
+<tr><td><code>localfs_join(out, sz, dir, name)</code> <span class="tag new">NEU</span></td><td>Ersetzt <code>join_local()</code> und alle lokalen <code>%s/%s</code>-Joins in <code>shell.c</code>. Regeln: endet <code>dir</code> auf <code>:</code> (Amiga-Volume/Assign, Windows-Laufwerk) oder auf einem Separator → kein Separator einfügen; sonst nativer Separator (<code>\</code> auf Windows, wenn <code>dir</code> bereits <code>\</code> enthält, sonst <code>/</code> — Windows akzeptiert beide); <code>dir==""</code> oder <code>"."</code> → nur <code>name</code> (bewahrt den bestehenden Amiga-Fix „kein <code>./</code>-Präfix“).</td></tr>
+<tr><td><code>localfs_mkdir_p(path)</code> <span class="tag new">NEU</span></td><td>Legt das <em>Ziel</em>-Verzeichnis inkl. fehlender Eltern an (segmentweise top-down, Volume-Anteil <code>XY:</code> wird übersprungen) — nötig für z.&nbsp;B. <code>get -r fotos Work:backup/2026/fotos</code>, wenn <code>Work:backup/2026</code> noch nicht existiert. Innerhalb der Rekursion reicht weiterhin das einstufige <code>localfs_mkdir()</code> (Eltern entstehen dort top-down von selbst).</td></tr>
+</table>
+<p>Remote-seitig ändert sich nichts: dort ist <code>/</code> als kanonischer API-Separator korrekt und bleibt es.</p>
+
+<h2 id="webui">22. Web-UI: Mehrfach-Upload &amp; Prüfsummen-Anzeige <span class="tag new">v4.1</span></h2>
+<p>Zwei Erweiterungen in <span class="filepath">server/web.php</span> (+ ggf. Kleinigkeiten in <span class="filepath">server/web.css</span>) — beide unabhängig vom Client deploybar:</p>
+
+<h3>22.1 Upload mehrerer Dateien auf einmal</h3>
+<table>
+<tr><th>Baustein</th><th>Änderung</th></tr>
+<tr><td>Formular</td><td><code>&lt;input type="file" name="file[]" multiple required&gt;</code> — der Browser liefert dann Arrays in <code>$_FILES['file']['name'][i]</code>/<code>['tmp_name'][i]</code>/<code>['error'][i]</code>. Kein JavaScript nötig, reines HTML-Attribut; CSRF-Handling bleibt unverändert.</td></tr>
+<tr><td>Upload-Zweig (<code>web.php</code> Z. ~118)</td><td>Statt des einen <code>uploadRaw()</code>-Aufrufs eine Schleife über die Array-Einträge: pro Datei dieselben Prüfungen wie heute (<code>UPLOAD_ERR_OK</code>, <code>basename</code>-Filter gegen <code>.</code>/<code>..</code>/leer), dann <code>uploadRaw()</code> — das ab 18.2 auch die MD5 berechnet und speichert, Web-Uploads bekommen ihre Prüfsumme also automatisch. Fehler einzelner Dateien überspringen die Datei, brechen aber nicht den ganzen Batch ab; Ergebnis („4 hochgeladen, 1 fehlgeschlagen: name.txt“) wird per Query-Parameter an den Redirect gehängt und über dem Listing als Hinweiszeile angezeigt (bisher gibt es gar kein Upload-Feedback — das kommt hier gleich mit).</td></tr>
+<tr><td>Abwärtskompatibilität</td><td>Ein Alt-Request mit skalarem <code>name="file"</code> tritt nicht mehr auf (das Formular liefert immer das Array) — der Code behandelt der Robustheit halber beide Formen über eine kleine Normalisierung (Skalar → Ein-Element-Array).</td></tr>
+<tr><td>Deployment-Hinweis</td><td>PHP-Limits gelten pro <em>Request</em>: <code>max_file_uploads</code> (Default 20), <code>post_max_size</code>, <code>upload_max_filesize</code> — für den Server-vHost prüfen/dokumentieren; <code>MAX_UPLOAD</code> aus <code>config.php</code> greift beim API-Upload, der Web-Pfad verlässt sich auf die PHP-Limits (wie bisher).</td></tr>
+</table>
+
+<h3>22.2 Prüfsummen-Spalte im Datei-Listing</h3>
+<ul>
+<li>Neue Spalte <strong>MD5</strong> zwischen „Größe“ und „Geändert“ — die Daten liefert <code>listRaw()</code> automatisch mit, sobald <code>scanEntries()</code> das <code>md5</code>-Feld führt (18.2, gemeinsamer Codepfad von API-<code>list</code> und Web-Listing, inkl. Lazy Backfill beim ersten Aufruf).</li>
+<li><strong>Darstellung:</strong> 32 Hex-Zeichen sprengen die Tabelle — angezeigt werden die ersten 10 Zeichen in <code>&lt;code&gt;</code>-Schrift, der volle Wert steht im <code>title</code>-Tooltip und die Zelle ist per Klick markierbar (volle Summe als Textinhalt eines <code>&lt;span&gt;</code> mit CSS-Kürzung <code>text-overflow: ellipsis</code> — so kopiert Doppelklick/Strg-C immer den <em>vollen</em> Wert, ohne JavaScript). Verzeichnisse: <code>—</code> wie bei der Größe.</li>
+<li><strong>Responsive-Verhalten:</strong> auf schmalen Viewports wird die MD5-Spalte per bestehendem CSS-Muster ausgeblendet (Prüfsummen-Vergleich ist ein Desktop-Anwendungsfall).</li>
+</ul>
+
+<h2 id="phasen4">23. Umsetzungsreihenfolge &amp; Tests für v4</h2>
+<div class="phase">
+<h3>Phase 6 — Prüfsummen + Fortschritt + lokale Pfade</h3>
+<p><code>client/md5.c</code>/<code>md5.h</code> (alle drei Makefiles, inkl. Streaming-API für große Dateien), <span class="filepath">server/sql/migrate_002.sql</span>, Server-Änderungen aus 18.2 (upload/download/list/info inkl. Lazy Backfill), Client-Verify aus 18.3 (inkl. <code>HttpResponse.md5_header</code> + Streaming-MD5 in beiden HTTP-Implementierungen), <code>ls -m</code>/<code>lls -m</code> und <code>md5</code>/<code>lmd5</code> (18.4/18.5), <code>Progress</code>-Struktur + <code>x/y</code>-Zähler mit Byte-Prozent (17), <code>localfs_join()</code>/<code>localfs_mkdir_p()</code> (21). <span class="filepath">docs/API.md</span> (md5-Felder, <code>&amp;md5=</code>, <code>X-AmiCloud-MD5</code>, 422) und <code>scripts/test_api.sh</code> nachziehen. Alles einzeln abwärtskompatibel deploybar.</p>
+</div>
+<div class="phase">
+<h3>Phase 6b — Web-UI</h3>
+<p>Mehrfach-Upload (<code>file[]</code> + Schleife + Ergebnis-Hinweiszeile) und MD5-Spalte im Listing (22) — setzt nur die Server-Seite von Phase 6 voraus (MD5 in <code>scanEntries()</code>/<code>uploadRaw()</code>), unabhängig vom Client-Stand deploybar.</p>
+</div>
+<div class="phase">
+<h3>Phase 7 — UTC-Zeitstempel</h3>
+<p>Server: <code>mtime</code>-Epoch-Feld in list/info/upload, <code>setdate&amp;mtime=</code> (19). Client: <code>gmt_offset</code>/<code>dst</code> in <code>AcConfig</code>/<code>config.c</code>/<code>amicloud.cfg.example</code>, <code>localfs_stat()</code>/<code>localfs_utime()</code> beide Plattformen, Amiga-DateStamp↔Epoch-Umrechnung (Konstante 252460800 = 1978-01-01 in Unix-Epoch).</p>
+</div>
+<div class="phase">
+<h3>Phase 8 — <code>sync</code></h3>
+<p>Indexaufbau, Entscheidungsmatrix, Dry-Run-Flag, Mtime-Angleich, Zusammenfassung (20). Erst Mac/Linux gegen Testkonto, dann Windows, zuletzt Amiga nativ.</p>
+</div>
+<h3>Test-Ergänzungen</h3>
+<ul>
+<li><strong>Prüfsummen:</strong> <code>test_api.sh</code>: Upload mit korrektem/falschem <code>&amp;md5=</code> (ok/422), <code>X-AmiCloud-MD5</code> gegen <code>md5sum</code> der Referenzdatei, Lazy Backfill (Datei direkt im Storage anlegen → nach <code>list</code> steht die MD5 in der DB). Client: absichtlich abgeschnittener Download (Proxy/Testserver) → Fehler + lokale Datei gelöscht. <code>md5</code>/<code>lmd5</code> auf dieselbe Datei müssen identische Werte liefern (Kreuzvergleich mit <code>md5sum</code> auf dem PC); <code>lmd5</code> auf eine Datei größer als der freie RAM (Streaming-Pfad); <code>ls -m</code> zeigt Remote-Summen ohne Zusatz-Requests, <code>lls -m</code> rechnet sichtbar zeilenweise.</li>
+<li><strong>Fortschritt:</strong> <code>get *.txt</code> mit 12 Treffern → Präfixe <code>( 1/12 …%)</code>…<code>(12/12 100%)</code>; Prozentwerte monoton steigend und byte-proportional (Testset: 1 große + viele kleine Dateien — die große Datei muss einen entsprechend großen Prozentsprung machen); Fehler mittendrin zählt weiter hoch und der Lauf endet trotzdem bei 100 %; Lauf nur mit 0-Byte-Dateien → keine Prozentanzeige.</li>
+<li><strong>Lokale Pfade:</strong> Amiga: <code>get -r fotos RAM:t/fotos</code>, <code>put -r DH1:src backup</code> (kein <code>DH1:/…</code>-Join!); Windows: <code>get datei.txt D:\tmp\datei.txt</code>; Ziel mit fehlenden Eltern → <code>localfs_mkdir_p</code> greift.</li>
+<li><strong>UTC/Sync:</strong> Kernszenario auf allen Plattformen: (1) leerer Remote-Ordner + voller lokaler → <code>sync</code> lädt alles hoch; (2) sofortiger zweiter Lauf → „0 übertragen“ (Mtime-Angleich wirkt!); (3) eine Datei lokal ändern → genau 1 Upload; (4) eine remote ändern (Web-Interface) → genau 1 Download; (5) beidseitig ändern mit gleicher Mtime → 1 Konflikt, nichts überschrieben; (6) Amiga mit absichtlich falschem <code>gmt_offset</code> → Läufe bleiben stabil (keine Schleife), nur Richtungsentscheid ggf. falsch — erwartetes, dokumentiertes Verhalten.</li>
+<li><strong>Web-UI:</strong> Upload von 3 Dateien auf einmal (alle da, Hinweiszeile korrekt), Upload mit einer absichtlich zu großen Datei im Batch (Rest kommt an, Fehlermeldung nennt die richtige Datei), MD5-Spalte: Tooltip zeigt vollen Wert, Kopieren aus der Zelle liefert 32 Zeichen, Wert stimmt mit <code>md5 &lt;datei&gt;</code> aus der Shell überein; schmaler Viewport blendet die Spalte aus.</li>
+</ul>
+
+<footer>AmiCloud — Planungsdokument. Betrifft <code>client/</code> und optional <code>server/</code>; <code>handler/</code> und bestehende Makefile-Flags bleiben unverändert. v4: Abschnitte 17–22 (Fortschritt, MD5-Prüfsummen, UTC, sync, freie lokale Pfade, Web-UI) sind implementiert und lokal getestet — offen sind nur noch Windows-Cross-Build, native AmigaOS-Tests und das Server-Deploy von <code>migrate_002.sql</code>.</footer>
+
+</body>
+</html>

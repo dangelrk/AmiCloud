@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Ronny Krueger
+# amicloud-shell — AmigaOS 3.x (VBCC), CROSS-compiled from a host (macOS/
+# Linux/Windows) using the toolchain described in
+# docs/BUILD.md. For a native build on the Amiga
+# see Build-Amiga in the project root (generated from this file).
+#
+# No oml on the host, so this links directly against the lib .o files
+# (compiled into obj/amiga/ alongside this app's own objects) instead
+# of against the lib .lib archives.
+#
+# Build:  export VBCC=/path/to/vbcc     (see docs/BUILD.md)
+#         make -f Makefile.amiga-cross
+
+VBCC    ?= /opt/vbcc
+CC       = $(VBCC)/bin/vc
+TARGET   = +aos68k
+CPU      = 68000
+
+RUNTIME_INC = $(VBCC)/targets/m68k-amigaos/include
+RUNTIME_LIB = $(VBCC)/targets/m68k-amigaos/lib
+NDK_INC     = $(VBCC)/sdk/NDK_3.2/Include_H
+NET_INC     = $(VBCC)/sdk/Roadshow/netinclude
+AMISSL_INC  = $(VBCC)/sdk/AmiSSL-v5/Developer/include
+
+LIBS_DIR   = ../../core
+CORE_DIR   = $(LIBS_DIR)/libcloudcore
+HTTP_DIR   = $(LIBS_DIR)/libcloudhttp
+FS_DIR     = $(LIBS_DIR)/libcloudfs
+COMMON_DIR = ../../core/common
+
+CORE_INC   = $(CORE_DIR)/include/cloudcore
+HTTP_INC   = $(HTTP_DIR)/include/cloudhttp
+FS_INC     = $(FS_DIR)/include/cloudfs
+COMMON_INC = $(COMMON_DIR)/include/common
+
+# AMISSL_INC before NDK_INC/RUNTIME_INC -- see libcloudhttp/Makefile.amiga-cross
+CFLAGS  = $(TARGET) -O2 -DAMIGA -DPLATFORM_AMIGA -cpu=$(CPU) \
+          -I$(COMMON_INC) -I$(CORE_INC) -I$(HTTP_INC) -I$(FS_INC) \
+          -I$(AMISSL_INC) -I$(NET_INC) -I$(NDK_INC) -I$(RUNTIME_INC)
+# -lmieee: parson (libcloudcore, since the cJSON->parson migration) uses
+# double arithmetic, which on a 68000 (no FPU) needs mathieeedoubbas.library's
+# stub routines (_MathIeeeDoubBasBase/_strtod/_fabs) -- undefined-symbol
+# link errors otherwise.
+LDFLAGS = $(TARGET) -L$(RUNTIME_LIB) -lmieee
+
+OBJDIR = obj/amiga
+BINDIR = ../../bin/amiga
+TARGET_BIN = $(BINDIR)/amicloud-shell
+
+CORE_SRCS = config base64 parson md5 ui_hooks cloudtime progress
+CORE_OBJS = $(CORE_SRCS:%=$(OBJDIR)/core_%.o)
+HTTP_SRCS = cmd http_amiga
+HTTP_OBJS = $(HTTP_SRCS:%=$(OBJDIR)/http_%.o)
+FS_SRCS   = localfs_amiga localfs_util pattern_amiga
+FS_OBJS   = $(FS_SRCS:%=$(OBJDIR)/fs_%.o)
+
+OWN_SRCS = shell_main shell history lineedit_amiga
+OWN_OBJS = $(OWN_SRCS:%=$(OBJDIR)/%.o) $(OBJDIR)/panel.o
+
+all: $(OBJDIR) $(BINDIR) $(TARGET_BIN)
+
+$(OBJDIR) $(BINDIR):
+	mkdir -p $@
+
+$(TARGET_BIN): $(OWN_OBJS) $(HTTP_OBJS) $(FS_OBJS) $(CORE_OBJS)
+	$(CC) $(LDFLAGS) -o $(TARGET_BIN) $(OWN_OBJS) $(HTTP_OBJS) $(FS_OBJS) $(CORE_OBJS)
+
+$(OBJDIR)/%.o: src/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/panel.o: $(COMMON_DIR)/src/panel.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/core_%.o: $(CORE_DIR)/src/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/http_%.o: $(HTTP_DIR)/src/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/fs_%.o: $(FS_DIR)/src/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(OBJDIR)
+	rm -f $(TARGET_BIN)
+
+.PHONY: all clean

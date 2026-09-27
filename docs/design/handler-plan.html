@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AmiCloud DOS-Handler CLOUD: — Stufenplan</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a2e; --muted: #5a5a72;
+    --accent: #1e5aa8; --accent2: #8a4d1f;
+    --card: #f4f6fa; --border: #d8dde6; --code-bg: #eef1f6;
+    --warn-bg: #fff6e8; --warn-border: #e0b060;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --fg: #e4e6eb; --muted: #9aa0ad;
+      --accent: #7ab0f0; --accent2: #e0a060;
+      --card: #1e222a; --border: #333a46; --code-bg: #242933;
+      --warn-bg: #2a2418; --warn-border: #8a6a30;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 { font-size: 1.7rem; border-bottom: 3px solid var(--accent); padding-bottom: .4rem; }
+  h2 { font-size: 1.3rem; color: var(--accent); margin-top: 2.2rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+  h3 { font-size: 1.05rem; color: var(--accent2); margin-top: 1.6rem; }
+  code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .875em; }
+  code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: .9rem 1rem; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 1.4rem; }
+  li { margin: .25rem 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  .tablewrap { overflow-x: auto; }
+  th, td { border: 1px solid var(--border); padding: .4rem .6rem; text-align: left; vertical-align: top; }
+  th { background: var(--card); }
+  .stage { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: .2rem 1.2rem 1rem; margin: 1.4rem 0; }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); border-radius: 6px; padding: .7rem 1rem; margin: 1rem 0; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  strong { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+<h1>AmiCloud DOS-Handler <code>CLOUD:</code> — Stufenplan (3 Commits)</h1>
+<p class="meta">Stand: 2026-07-10 · Ziel: AmigaOS 3.x, 68000, VBCC nativ · Neuer Ordner <code>cloudhandler/</code> · Markdown-Fassung: <code>docs/handler-plan.md</code></p>
+
+<h2>Kontext</h2>
+<p>Der AmiCloud-Client läuft zu 100&nbsp;% auf dem Amiga. Jetzt soll ein AmigaOS-3.x-DOS-Handler den Cloud-Speicher wie ein Laufwerk <code>CLOUD:</code> verfügbar machen: Dateien/Ordner rein-/rauskopieren, löschen, anlegen, auflisten. Drei Stufen, jede als eigener Git-Commit. Kein Basis-Commit des restlichen Codes (Nutzer-Entscheidung); Stufe-2/3-Commits nehmen die mitgeänderten <code>client/cmd.c</code>/<code>cmd.h</code> mit auf.</p>
+
+<div class="warn">
+<strong>Entscheidende Vorerfahrung</strong> (früherer, gelöschter Handler, 2026-07-04): Ein-Prozess-Design crashte mit Guru <code>0x87000004</code> (AN_DOSLib+4), weil <code>pr_MsgPort</code> gleichzeitig DOS-Packet-Port und DoPkt-Reply-Port war. Bewährt: <strong>zwei Prozesse</strong> — Handler (Packet-Loop, nach <code>dn_Task</code>-Setzen ausschließlich exec.library) + Worker (normales Programm mit bsdsocket/AmiSSL), Rendezvous über benannten Port, Puffer über die Prozessgrenze immer AllocVec/FreeVec. <code>client/http_amiga.c</code> ist bereits handler-tauglich: <code>http_warmup()</code>, <code>http_log_bptr</code>, <code>g_log_buf</code>-Hooks existieren (client/http.h:116–128).</div>
+
+<p><strong>Nutzer-Entscheidungen:</strong> Device <code>CLOUD:</code> · kein Basis-Commit · Lesen = ganze Datei beim Öffnen in RAM-Puffer (Server könnte Byte-Ranges via <code>download&amp;offset=&amp;length=</code>, aber ein TLS-Handshake pro READ wäre auf 68000 zu langsam; Range-Zugriff als dokumentierte Zukunftsoption).</p>
+
+<div class="warn"><strong>Ordner-Regel (verbindlich):</strong> Der neue Handler-Code entsteht ausschließlich in <code>cloudhandler/</code>. Der bestehende Ordner <code>handler/</code> (falls vorhanden) darf <strong>nicht angefasst und nicht einmal angeschaut/gelistet</strong> werden — kein <code>ls</code>, <code>Read</code>, <code>grep</code>, <code>cd</code> o.&nbsp;ä. darauf. Er ist für Claude in dieser Aufgabe komplett tabu.</div>
+
+<p><strong>Server-API</strong> (Basic-Auth pro Request, HTTPS): <code>status, list, download, upload, delete, info, mkdir, rename, setcomment, setprotect, setdate</code>. <code>list</code>-Einträge tragen <code>name/type/size/mtime (UTC-Epoch)/md5/protection (Amiga-Bits)/comment</code>. <strong>Upload = nur Ganzdatei-Overwrite</strong> (kein Append/Partial) → Schreiben lokal puffern, Upload bei ACTION_END.</p>
+
+<h2>Dateilayout <code>cloudhandler/</code> <span class="meta">(S1/S2/S3 = Einführungsstufe)</span></h2>
+<pre><code>cloudhandler/
+  handler.c       S1  Eigener Entry (_start, -nostdlib!), ACTION_STARTUP,
+                      Volume-Node, Packet-Loop, Dispatch, Reply via PutMsg
+  actions.c/.h    S1  Eine Funktion pro ACTION_*
+  vol.c/.h        S1  RAM-Baum (CNode); ab S2 = Cache des Server-Zustands
+  util.c/.h       S1  BSTR&lt;-&gt;C-String, Latin-1-Case-Insensitive-Vergleich,
+                      Pfad-Split, DateStamp&lt;-&gt;Epoch
+  proto.h         S2  WREQ_*-Codes + struct WorkerMsg (Handler&lt;-&gt;Worker)
+  worker.c        S2  amicloud-worker: config_load, http_init/warmup,
+                      Port "AmiCloud-Worker", Request-Loop, stille ui_hooks
+  backend.c/.h    S2  Handler-Seite: send_wreq() synchron, Cache-TTL,
+                      HTTP-&gt;DOS-Fehler-Mapping
+  Makefile.amiga  S1  vc +aos68k -cpu=68000 (wie client/Makefile.amiga)
+  mount/CLOUD     S1  DOSDrivers-Beispiel
+  README.md       S1  Build/Install/Mount/Test, wächst pro Stufe</code></pre>
+
+<div class="stage">
+<h2>Stufe 1 — RAM-POC (Commit 1)</h2>
+
+<h3>Prozess-Disziplin (wichtigste Regel)</h3>
+<ul>
+<li><code>handler.c</code> mit <strong>eigenem Entry, <code>-nostdlib</code></strong> (vbcc-Startup würde als Nicht-CLI-Prozess das Startup-Packet als WBenchMsg fressen). <code>SysBase = *(struct ExecBase **)4L</code>. Kein stdio/malloc, eigene Mini-<code>str*/mem*</code> in util.c. Stack via Mountlist <code>StackSize=16384</code>.</li>
+<li>Startup-Phase (dos.library noch erlaubt): Startup-Packet holen (<code>dp_Arg3</code> = BPTR DeviceNode), <code>MakeDosEntry("AmiCloud", DLT_VOLUME)</code> + <code>AddDosEntry</code> (→ Workbench-Icon), Root-CNode bauen, <strong>dann</strong> <code>dn_Task = &amp;pr_MsgPort</code> setzen, Startup-Packet mit DOSTRUE beantworten.</li>
+<li>Danach <strong>nur exec.library</strong> (WaitPort/GetMsg/PutMsg/AllocVec/CopyMem/Forbid/FindPort…), Replies über eigenes <code>reply_pkt()</code> mit rohem <code>PutMsg</code> — nie ReplyPkt/DoPkt/Delay.</li>
+</ul>
+
+<h3>RAM-Baum (vol.c)</h3>
+<p><code>CNode { parent/next/children, type, name[108], data/size/alloc, protection, comment[80], DateStamp, lock_count, excl_lock, open_count, seq }</code></p>
+<ul>
+<li>Namen Latin-1-case-insensitiv (256er-Uppercase-Tabelle, nicht ASCII-toupper), max. 106 Zeichen.</li>
+<li>Datei-Daten: AllocVec, Wachstum durch Verdoppeln (Start 16 KB), kein realloc.</li>
+<li>Locks: AllocVec'te <code>struct FileLock</code>, <code>fl_Key = (LONG)node</code>; <strong>BPTR 0 = Root</strong>; exklusiv nur wenn <code>lock_count==0 &amp;&amp; !excl_lock &amp;&amp; open_count==0</code>, sonst <code>ERROR_OBJECT_IN_USE</code>.</li>
+<li>FileHandles: DOS liefert FileHandle-BPTR in dp_Arg1, Handler setzt nur <code>fh_Arg1</code> auf eigenes <code>OpenFile { node, pos, writable, dirty }</code>.</li>
+<li>Pfadauflösung <code>resolve_path(lockdir, name, &amp;parent, &amp;leaf)</code>: BSTR (Längenbyte!) → C-String; alles bis inkl. <code>:</code> strippen → Root; <strong>leere <code>/</code>-Komponente = Parent</strong> (Amiga-Semantik!).</li>
+<li>ExNext-Stabilität: <code>fib_DiskKey</code> = monotone <code>seq</code> pro Verzeichnis, nie rohe Pointer; Ende → <code>ERROR_NO_MORE_ENTRIES</code>.</li>
+<li>FIB füllen: <code>fib_FileName</code>/<code>fib_Comment</code> <strong>BCPL-Style</strong> (Längenbyte voran); <code>fib_DirEntryType</code> UND <code>fib_EntryType</code> beide setzen (ST_ROOT/ST_USERDIR/ST_FILE).</li>
+</ul>
+
+<h3>Implementierte Packets (Stufe 1, alle in RAM)</h3>
+<p>STARTUP, IS_FILESYSTEM, LOCATE_OBJECT, FREE_LOCK, COPY_DIR, COPY_DIR_FH, PARENT, PARENT_FH, SAME_LOCK, EXAMINE_OBJECT, EXAMINE_NEXT, EXAMINE_FH, FINDINPUT/FINDOUTPUT/FINDUPDATE, READ, WRITE, SEEK, END, SET_FILE_SIZE, CREATE_DIR, DELETE_OBJECT, RENAME_OBJECT, SET_PROTECT, SET_COMMENT, SET_DATE, DISK_INFO, INFO, FH_FROM_LOCK, CHANGE_MODE, FLUSH, CURRENT_VOLUME.</p>
+<p>Unbekanntes (inkl. EXAMINE_ALL) → <code>ERROR_ACTION_NOT_KNOWN</code> (DOS fällt auf ExNext zurück). Arg-Konventionen gegen <code>Include_H/dos/dosextens.h</code> (ACTION_* Z. 152–227) und <code>rkrm/rkrm-dos.pdf</code> prüfen — als Kommentarblock in actions.c zitieren.</p>
+
+<h3>Mount (<code>cloudhandler/mount/CLOUD</code>)</h3>
+<pre><code>Handler   = L:amicloud-handler
+StackSize = 16384
+Priority  = 5
+GlobVec   = -1      /* Pflicht für C-Handler — kein BCPL-GlobVec */
+Activate  = 1</code></pre>
+
+<h3>Test Stufe 1 (echter Amiga, ohne Netz)</h3>
+<p>Build (<code>vc +aos68k -nostdlib</code>, handler.o zuerst im Link), nach <code>L:</code> kopieren, mounten. Dann: <code>Dir CLOUD:</code> → <code>MakeDir</code> → <code>Copy S:Startup-Sequence CLOUD:Test/</code> → <code>Type</code> → Rückkopie + Vergleich → <code>Rename</code> → <code>Protect +p</code> → <code>FileNote</code> → <code>List</code> (zeigt Schutz+Kommentar) → <code>Delete</code>, <code>Delete … ALL</code> → Workbench-Fenster (Icon, Drag&amp;Drop, Schublade anlegen) → <code>Copy SYS:Utilities CLOUD: ALL</code> (Stress) → paralleles <code>Dir</code> während <code>Copy</code> (ExNext-Stabilität).</p>
+</div>
+
+<div class="stage">
+<h2>Stufe 2 — Worker-Prozess + echtes Backend (Commit 2)</h2>
+
+<h3>Architektur</h3>
+<ul>
+<li>Handler bleibt exec-only; <code>vol.c</code>-Baum wird <strong>Cache</strong> des Serverzustands.</li>
+<li><code>amicloud-worker</code> = normales CLI-Programm (voller vbcc-Startup), linkt Client-Backend: <code>cmd.c, http_amiga.c, cJSON.c, base64.c, md5.c, config.c, ui_hooks.c</code>. <strong>Bibliotheken genau einmal:</strong> bsdsocket + AmiSSL öffnet <code>http_init()</code> einmalig; alle HTTP-Calls bleiben strukturell im Worker-Prozess (http_amiga.c ist nicht threadsafe — passt).</li>
+</ul>
+
+<h3>Worker-Start (in der Startup-Phase, vor dn_Task — dos.library noch erlaubt)</h3>
+<ol>
+<li><code>FindPort("AmiCloud-Worker")</code> — existiert schon (manuell gestartet)? → übernehmen.</li>
+<li>Sonst <code>SystemTags("L:amicloud-worker", SYS_Asynch TRUE, SYS_Input/Output NIL:, NP_StackSize 65536, …)</code> und <code>FindPort</code>-Poll mit <code>Delay(10)</code>, Timeout ~30 s → Mount schlägt sauber fehl (DOSFALSE + Fehler, Volume-Node entfernen).</li>
+<li>README: Alternative <code>run &gt;NIL: L:amicloud-worker</code> in der User-Startup.</li>
+<li>Boot-Reihenfolge-Falle (Roadshow noch nicht oben): Worker macht <code>http_init()</code> <strong>lazy beim ersten Request mit Retry</strong> statt beim Start — nimmt dem <code>Activate=1</code>-Mount den Schrecken.</li>
+</ol>
+
+<h3>Protokoll (<code>proto.h</code>)</h3>
+<p><code>WREQ_PING, LIST, GET, PUT, DEL, MKDIR, RENAME, INFO, SETCOMMENT, SETPROTECT, SETDATE, QUIT</code></p>
+<pre><code>WorkerMsg { struct Message; cmd; path[]; path2[]; UBYTE *buf; ULONG buflen;
+            mtime; protection; comment[80]; LONG result /* fertiger DOS-Fehlercode */ }</code></pre>
+<ul>
+<li>Synchron: ein wiederverwendbares Message-Struct + privater Reply-Port (CreateMsgPort in der Startup-Phase); <code>send_wreq()</code> = PutMsg/WaitPort/GetMsg. Volume blockiert währenddessen — v1 ok.</li>
+<li><strong>Puffer-Eigentum:</strong> PUT: Handler AllocVec't, Worker liest nur, Handler FreeVec't nach Reply. GET/LIST: Worker AllocVec't Ergebnis (<code>WEntry[]</code> bzw. Dateiinhalt), Handler FreeVec't.</li>
+</ul>
+<div class="tablewrap">
+<table>
+<tr><th>HTTP / Zustand</th><th>DOS-Fehler</th></tr>
+<tr><td>404</td><td>ERROR_OBJECT_NOT_FOUND (205)</td></tr>
+<tr><td>401 / 403</td><td>ERROR_READ_PROTECTED (213) bei Lesen / ERROR_WRITE_PROTECTED (223) bei Schreiben</td></tr>
+<tr><td>409 „existiert“ (mkdir/rename)</td><td>ERROR_OBJECT_EXISTS (203)</td></tr>
+<tr><td>409 „Dir nicht leer“ (delete)</td><td>ERROR_DIRECTORY_NOT_EMPTY (216)</td></tr>
+<tr><td>422 MD5-Mismatch / Upload-Fehler</td><td>ERROR_DISK_FULL (221)</td></tr>
+<tr><td>Transportfehler (Netz/TLS/5xx)</td><td>READ → ERROR_SEEK_ERROR (219), WRITE/END → 221, sonst → ERROR_INVALID_LOCK (211)</td></tr>
+<tr><td>Name &gt; 106 Zeichen</td><td>ERROR_INVALID_COMPONENT_NAME (210), handler-seitig</td></tr>
+</table>
+</div>
+
+<h3>Worker-Ablauf (worker.c)</h3>
+<p><code>config_load("ENV:amicloud.cfg")</code> → stille <code>ui_set_hooks()</code> (notify→Log, confirm→ja, progress→weiter), <code>ac_errors_to_stderr=0</code>, optional <code>http_log_path</code> aus <code>cfg.debug</code> → <code>http_init()</code> + <code>http_warmup(cfg.server, cfg.verify_ssl)</code> (lazy, s.&nbsp;o.) → <code>CreatePort("AmiCloud-Worker")</code> → Loop: GetMsg → Dispatch → ReplyMsg. QUIT → RemPort, <code>http_cleanup()</code>, Ende.</p>
+<p>Dispatch ≈ 1:1 auf Client-Funktionen: LIST→<code>cmd_list_raw</code>, DEL→<code>cmd_del</code>, MKDIR→<code>cmd_mkdir_quiet</code>, RENAME→<code>cmd_rename</code>, INFO→<code>cmd_info_raw</code>, SETDATE→<code>cmd_setdate_mtime</code>.</p>
+
+<h3>Neue Client-Funktionen (client/cmd.c/.h — in Commit 2 enthalten)</h3>
+<ul>
+<li><code>cmd_get_buf(cfg, remote, char **out, long *out_len)</code> — Download in Speicher (http_request liefert Body ohnehin im RAM), MD5 gegen <code>X-AmiCloud-MD5</code> prüfen.</li>
+<li><code>cmd_put_buf(cfg, remote, buf, len)</code> — MD5 berechnen, Upload als Raw-Body mit <code>&amp;md5=</code>.</li>
+</ul>
+
+<h3>Handler-Integration (backend.c + vol.c)</h3>
+<ul>
+<li><strong>Dir-Cache mit TTL ~10 s</strong> (<code>cache_time</code> am CNode; Zeitquelle: Worker liefert „jetzt“ in jedem LIST-Reply mit — keine Uhr-Syscalls im Packet-Loop): LOCATE/EXAMINE/EXNEXT auf veraltetem Verzeichnis → WREQ_LIST, Merge (neu/aktualisiert/verschwunden; gelockte/geöffnete Knoten bleiben). Mutationen (PUT/DEL/MKDIR/RENAME) aktualisieren den Baum sofort + invalidieren Parent.</li>
+<li><strong>Lesen:</strong> beim Öffnen (FINDINPUT/FINDUPDATE auf existierende Datei) ganze Datei per WREQ_GET in AllocVec-Puffer am OpenFile; READs/SEEKs aus dem Puffer. Datei &gt; freies RAM → Fehler (README; Range-API als dokumentierte Zukunftsoption).</li>
+<li><strong>Schreiben:</strong> FINDOUTPUT legt Knoten + Wachstumspuffer an; WRITE in den Puffer (<code>ERROR_NO_FREE_STORE</code> bei Alloc-Fehler); <strong>ACTION_END mit dirty → WREQ_PUT der ganzen Datei</strong>; Upload-Fehler → END mit DOSFALSE + Fehlercode, Knoten als stale markieren.</li>
+<li>ACTION_DIE bleibt DOSFALSE (Unmount bräuchte dos.library); Worker-Stopp nur manuell/Reboot — README.</li>
+</ul>
+
+<h3>Test Stufe 2</h3>
+<p>Erst CLI-Client gegen Server prüfen (<code>amicloud list /</code>) → Worker manuell starten, mounten, <code>Dir CLOUD:</code> zeigt Server-Inhalt → komplette Stufe-1-Batterie gegen den Server, Ergebnisse in web.php/Shell gegenprüfen → 1-MB-Datei rein/raus + Vergleich → <code>List</code> 2× in 10 s (2. Mal instant = Cache) → Netz ziehen mitten im Copy (Fehler im Shell, Handler überlebt, nächstes Dir erholt sich) → Auto-Spawn ohne manuellen Worker testen.</p>
+</div>
+
+<div class="stage">
+<h2>Stufe 3 — Voller Funktionsumfang (Commit 3, ohne Sync)</h2>
+
+<h3>Client-Lücken schließen (client/cmd.c/.h)</h3>
+<ul>
+<li><code>cmd_setcomment(cfg, path, comment)</code> → <code>action=setcomment&amp;comment=</code> (URL-encoded, ≤79).</li>
+<li><code>cmd_setprotect(cfg, path, bits)</code> → <code>action=setprotect&amp;bits=</code> — Server speichert <strong>rohe Amiga-Bits</strong>, <code>fib_Protection</code> unverändert durchreichen (RWED active-low, nirgends invertieren).</li>
+<li><code>AcEntry</code> um <code>long protection; char comment[80];</code> erweitern + in <code>cmd_list_raw()</code> parsen (Server-JSON hat beides schon; Parsing von <code>cmd_info_raw</code> kopieren). Additive Felder — Shell/Panel/GUI kompilieren weiter.</li>
+</ul>
+
+<h3>Handler-Metadaten</h3>
+<ul>
+<li>SET_PROTECT/SET_COMMENT/SET_DATE → WREQ_SETPROTECT/SETCOMMENT/SETDATE → Server; Cache-Knoten aktualisieren. Kommentar &gt;79 → <code>ERROR_COMMENT_TOO_BIG</code> (215) handler-seitig.</li>
+<li>EXAMINE/EXNEXT füllen jetzt <code>fib_Protection</code> + <code>fib_Comment</code> (BCPL!) aus dem Cache — <code>List CLOUD:</code> zeigt alles.</li>
+<li><strong>Datumskonvertierung im Worker</strong> (der hat die Config): DateStamp ↔ UTC-Epoch mit Amiga-Epoche-Offset 252460800 (1978→1970) und <code>gmt_offset</code>/<code>dst</code> aus ENV:amicloud.cfg — Konvention von <code>client/localfs_amiga.c</code> übernehmen/spiegeln.</li>
+</ul>
+
+<h3>Restpunkte</h3>
+<ul>
+<li><strong>Rename = Move</strong> über Verzeichnisse (Server kann das; Ziel-Parent muss existieren, 409 → ERROR_OBJECT_EXISTS). Reinen Case-Change-Rename testen; falls Server no-op → als Limitation dokumentieren.</li>
+<li><strong>Kein rekursives Delete im Handler:</strong> AmigaDOS <code>Delete … ALL</code> läuft selbst per ExNext + einzelne DELETE_OBJECTs; nicht-leeres Dir → ERROR_DIRECTORY_NOT_EMPTY reicht. <code>cmd_del_recursive</code> bleibt Shell-Feature. (README.)</li>
+<li><strong>DISK_INFO</strong> mit plausiblen Zahlen (32-bit-Überlauf beachten): BytesPerBlock=512, NumBlocks=0x003FFFFF (~2 GB), Used=½, ID_DOS_DISK, ID_VALIDATED, id_VolumeNode, id_InUse.</li>
+<li>FINDUPDATE + SET_FILE_SIZE-Kanten (kürzen, dann Close → kürzerer Upload).</li>
+</ul>
+
+<h3>Test Stufe 3</h3>
+<p><code>FileNote</code>/<code>Protect</code>/<code>SetDate</code> → <code>List</code> + web.php gegenprüfen, Remount-Persistenz (kommt vom Server, nicht aus RAM) · <code>Copy CLONE</code> erhält Schutzbits · SetDate respektiert gmt_offset/dst · Cross-Dir-Move + Rename-auf-Existierendes (Requester „object exists“) · <code>Delete … ALL</code> + Workbench-Schublade löschen · <code>Info CLOUD:</code> / Workbench-Fenstertitel „% full“ plausibel · volle Regression Stufe 1+2.</p>
+</div>
+
+<h2>Risiko-Checkliste</h2>
+<ol>
+<li>BCPL überall: Locks = BPTR (BADDR/MKBADDR), Namen/Kommentare = BSTR, FIB-Strings längenpräfixiert — alles nur über util.c.</li>
+<li>Handler <code>-nostdlib</code> + eigener Entry; Worker bewusst mit normalem Startup via SystemTags.</li>
+<li>Nach <code>dn_Task</code>: exec-only im Handler; Replies per PutMsg; auch Delay() verboten.</li>
+<li>Pfade relativ zum Lock: <code>sub/dir/file</code>, führendes <code>:</code>, leere Komponente = Parent.</li>
+<li>ExNext-Keys = seq-Nummern, nie Pointer.</li>
+<li>Puffer-Eigentum über Prozessgrenze: AllocVec/FreeVec, ein Owner pro Richtung.</li>
+<li>Server-Upload = Ganzdatei → Puffern + Upload bei END; Lesen ganze Datei bei Open (RAM-Limit dokumentiert).</li>
+<li>Case-Insensitivität = Latin-1.</li>
+<li>Stack: Handler 16 KB (Mountlist), Worker 64 KB (AmiSSL).</li>
+</ol>
+
+<h2>Verifikation gesamt</h2>
+<p>Build erfolgt <strong>nativ auf dem Amiga</strong> (VBCC, wie client/Makefile.amiga — hier kein Amiga-Toolchain verfügbar): Code + Makefile + README-Testanleitungen werden geliefert; der Nutzer baut und testet jede Stufe auf echter Hardware anhand der Checklisten, bevor die nächste Stufe beginnt. Auf dem Mac prüfbar: Syntax-Review, Server-API-Abgleich (<code>scripts/test_api.sh</code>-Umgebung: MariaDB + <code>php -S 127.0.0.1:8180 -t server/</code>).</p>
+
+<h2>Commits</h2>
+<ol>
+<li><code>cloudhandler/</code> Stufe 1 (RAM-POC) + Mount-Beispiel + README.</li>
+<li>Stufe 2: proto.h, worker.c, backend.c/h, vol.c-Cache, Makefile, <code>client/cmd.{c,h}</code> (+get_buf/put_buf), README.</li>
+<li>Stufe 3: Metadaten-Pfade, <code>client/cmd.{c,h}</code> (setcomment/setprotect/AcEntry), README final.</li>
+</ol>
+</main>
+</body>
+</html>

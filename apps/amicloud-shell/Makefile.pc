@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Ronny Krueger
+# amicloud-shell — interactive REPL, linked against libcloudhttp +
+# libcloudfs + libcloudcore + core/common (panel.c, no sync).
+# Copy of the old client/shell*.c/history.c/lineedit_pc.c (docs/design/05_Refactoring_Client_Handler.md, M5)
+# with the `sync` command removed — that logic now lives (dormant) in
+# libcloudsync, no longer wired into any interactive frontend.
+#
+# Build:   make -f Makefile.pc
+
+CC = gcc
+
+LIBS_DIR = ../../core
+CORE_DIR = $(LIBS_DIR)/libcloudcore
+HTTP_DIR = $(LIBS_DIR)/libcloudhttp
+FS_DIR   = $(LIBS_DIR)/libcloudfs
+COMMON_DIR = ../../core/common
+
+CORE_INC   = $(CORE_DIR)/include/cloudcore
+HTTP_INC   = $(HTTP_DIR)/include/cloudhttp
+FS_INC     = $(FS_DIR)/include/cloudfs
+COMMON_INC = $(COMMON_DIR)/include/common
+
+PKG_CF  := $(shell pkg-config --cflags libcurl 2>/dev/null)
+PKG_LF  := $(shell pkg-config --libs   libcurl 2>/dev/null)
+ifeq ($(PKG_CF),)
+  PKG_CF := -I/opt/homebrew/include -I/usr/local/include
+  PKG_LF := -L/opt/homebrew/lib -L/usr/local/lib -lcurl
+endif
+
+CFLAGS  = -O2 -Wall -Wextra -std=c99 \
+          -I$(COMMON_INC) -I$(CORE_INC) -I$(HTTP_INC) -I$(FS_INC) $(PKG_CF)
+
+OBJDIR = obj/pc
+BINDIR = ../../bin/pc
+LIBDIR = ../../lib/pc
+LDFLAGS = -L$(LIBDIR) $(PKG_LF)
+
+TARGET = $(BINDIR)/amicloud-shell
+
+OWN_SRCS = shell_main shell history lineedit_pc
+OWN_OBJS = $(OWN_SRCS:%=$(OBJDIR)/%.o) $(OBJDIR)/panel.o
+
+all: libs $(TARGET)
+
+libs:
+	$(MAKE) -C $(CORE_DIR) -f Makefile.pc
+	$(MAKE) -C $(HTTP_DIR) -f Makefile.pc
+	$(MAKE) -C $(FS_DIR)   -f Makefile.pc
+
+$(TARGET): $(OWN_OBJS) | $(BINDIR)
+	$(CC) $(CFLAGS) -o $@ $(OWN_OBJS) -lcloudhttp -lcloudfs -lcloudcore $(LDFLAGS)
+
+$(OBJDIR)/%.o: src/%.c | $(OBJDIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/panel.o: $(COMMON_DIR)/src/panel.c | $(OBJDIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR) $(BINDIR):
+	mkdir -p $@
+
+install: $(TARGET)
+	install -m 755 $(TARGET) /usr/local/bin/
+
+clean:
+	rm -rf $(OBJDIR)
+	rm -f $(TARGET)
+
+.PHONY: all libs install clean

@@ -1,0 +1,79 @@
+; Uninstall-AmiCloud -- entfernt eine mit Install-AmiCloud installierte
+; AmiCloud-Installation wieder.
+; SPDX-License-Identifier: GPL-3.0-or-later
+; Copyright (C) 2026 Ronny Krueger
+;
+; Aufruf in einer Shell:  Execute Uninstall-AmiCloud
+; Die Konfiguration wird nur nach Rückfrage gelöscht. Ein gemountetes
+; CLOUD: bleibt bis zum nächsten Neustart aktiv (es lässt sich nicht
+; abmelden).
+
+FailAt 21
+
+Echo ""
+Echo "AmiCloud deinstallieren"
+Echo "======================="
+Ask "Alle AmiCloud-Programme, den DOSDriver CLOUD und das Handbuch löschen? (y/n)"
+If NOT WARN
+  Echo "Abgebrochen, nichts gelöscht."
+  Quit 0
+EndIf
+
+If EXISTS C:amicloud
+  Delete C:amicloud QUIET
+EndIf
+If EXISTS C:amicloud-shell
+  Delete C:amicloud-shell QUIET
+EndIf
+If EXISTS C:cloudsync
+  Delete C:cloudsync QUIET
+EndIf
+If EXISTS SYS:Tools/amicloud-commander
+  Delete SYS:Tools/amicloud-commander QUIET
+EndIf
+If EXISTS SYS:Tools/amicloud-commander.info
+  Delete SYS:Tools/amicloud-commander.info QUIET
+EndIf
+If EXISTS SYS:Prefs/AmiCloudPrefs
+  Delete SYS:Prefs/AmiCloudPrefs QUIET
+EndIf
+If EXISTS SYS:Prefs/AmiCloudPrefs.info
+  Delete SYS:Prefs/AmiCloudPrefs.info QUIET
+EndIf
+If EXISTS L:amicloud-handler
+  Delete L:amicloud-handler QUIET
+EndIf
+If EXISTS L:amicloud-worker
+  Delete L:amicloud-worker QUIET
+EndIf
+If EXISTS DEVS:DOSDrivers/CLOUD
+  Delete DEVS:DOSDrivers/CLOUD QUIET
+EndIf
+If EXISTS DEVS:DOSDrivers/CLOUD.info
+  Delete DEVS:DOSDrivers/CLOUD.info QUIET
+EndIf
+
+Assign >NIL: EXISTS HELP:
+If NOT WARN
+  If EXISTS HELP:AmiCloud.guide
+    Delete HELP:AmiCloud.guide QUIET
+  EndIf
+EndIf
+Echo "Programme, DOSDriver und Handbuch entfernt."
+
+Ask "Auch die Konfiguration ENV:amicloud.cfg und ENVARC:amicloud.cfg löschen? (y/n)"
+If WARN
+  If EXISTS ENV:amicloud.cfg
+    Delete ENV:amicloud.cfg QUIET
+  EndIf
+  If EXISTS ENVARC:amicloud.cfg
+    Delete ENVARC:amicloud.cfg QUIET
+  EndIf
+  Echo "Konfiguration gelöscht."
+Else
+  Echo "Konfiguration bleibt erhalten."
+EndIf
+
+Echo ""
+Echo "Fertig. Ein gemountetes CLOUD: verschwindet mit dem nächsten Neustart."
+Echo ""

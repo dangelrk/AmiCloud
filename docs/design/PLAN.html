@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AmiCloud – Projektplan</title>
+  <style>
+    :root {
+      --bg:       #1a1a2e;
+      --surface:  #16213e;
+      --card:     #0f3460;
+      --accent:   #e94560;
+      --accent2:  #0f9b8e;
+      --text:     #e0e0e0;
+      --muted:    #8892a4;
+      --code-bg:  #0d1117;
+      --border:   #2a3a5c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    header {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      border-bottom: 2px solid var(--accent);
+      margin-bottom: 3rem;
+    }
+    header h1 { font-size: 3rem; color: var(--accent); letter-spacing: 0.05em; }
+    header h1 span { color: var(--accent2); }
+    header p { color: var(--muted); margin-top: 0.5rem; font-size: 1.1rem; }
+
+    h2 {
+      font-size: 1.5rem;
+      color: var(--accent2);
+      border-left: 4px solid var(--accent2);
+      padding-left: 0.75rem;
+      margin: 2.5rem 0 1rem;
+    }
+    h3 { font-size: 1.15rem; color: var(--accent); margin: 1.5rem 0 0.5rem; }
+    h4 { font-size: 1rem; color: #aac4e8; margin: 1rem 0 0.25rem; }
+
+    p { margin-bottom: 0.75rem; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .arch {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: #7dd3fc;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      white-space: pre;
+      line-height: 1.5;
+    }
+
+    pre, code { font-family: 'Courier New', monospace; font-size: 0.85rem; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      margin: 0.5rem 0 1rem;
+      color: #a3e635;
+    }
+    code { background: #1e2a3a; color: #f97316; padding: 0.1em 0.35em; border-radius: 3px; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.9rem; }
+    th { background: var(--card); color: var(--accent2); text-align: left; padding: 0.6rem 0.9rem; border: 1px solid var(--border); }
+    td { padding: 0.5rem 0.9rem; border: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) td { background: #111827; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15em 0.6em;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: bold;
+      margin-right: 0.3rem;
+      vertical-align: middle;
+    }
+    .badge-php   { background: #6366f1; color: #fff; }
+    .badge-c     { background: #0f9b8e; color: #fff; }
+    .badge-sql   { background: #854d0e; color: #fff; }
+    .badge-amiga { background: #7c3aed; color: #fff; }
+    .badge-linux { background: #166534; color: #fff; }
+    .badge-win   { background: #1e40af; color: #fff; }
+    .badge-mac   { background: #374151; color: #fff; }
+    .badge-ssl   { background: #b45309; color: #fff; }
+    .badge-adv   { background: #9f1239; color: #fff; }
+
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.3rem; }
+
+    .decision {
+      border-left: 4px solid var(--accent);
+      background: #1e1040;
+      padding: 0.75rem 1rem;
+      border-radius: 0 6px 6px 0;
+      margin: 0.75rem 0;
+    }
+    .decision strong { color: var(--accent); }
+
+    .note {
+      border-left: 4px solid var(--accent2);
+      background: #0c2030;
+      padding: 0.75rem 1rem;
+      border-radius: 0 6px 6px 0;
+      margin: 0.75rem 0;
+      color: #93c5fd;
+    }
+
+    .warn {
+      border-left: 4px solid #f59e0b;
+      background: #1c1500;
+      padding: 0.75rem 1rem;
+      border-radius: 0 6px 6px 0;
+      margin: 0.75rem 0;
+      color: #fcd34d;
+    }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { margin-top: 0; }
+    .toc ol { margin-bottom: 0; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { color: var(--accent); }
+
+    .timeline { list-style: none; padding-left: 0; position: relative; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 1rem; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+    .timeline li { position: relative; padding: 0.5rem 0 0.5rem 2.5rem; margin-bottom: 0.5rem; }
+    .timeline li::before {
+      content: '';
+      position: absolute;
+      left: 0.55rem; top: 0.9rem;
+      width: 0.9rem; height: 0.9rem;
+      border-radius: 50%;
+      background: var(--accent2);
+      border: 2px solid var(--bg);
+    }
+    .ms-tag { font-size: 0.75rem; color: var(--muted); display: block; }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Ami<span>Cloud</span></h1>
+    <p>Projektplan &mdash; Minimale Cloud-Lösung für den Amiga (und PC)</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-top:0.5rem;">
+      Stand: 2026-06-27 &nbsp;|&nbsp; Version 0.6
+      &nbsp;|&nbsp; HTTPS ab Tag 1 (Let's Encrypt + AmiSSL 5.27)
+      &nbsp;|&nbsp; kein Apache-Eingriff &nbsp;|&nbsp; VBCC nativ &nbsp;|&nbsp; AmigaOS-Filesystem-Handler
+    </p>
+  </header>
+
+  <!-- TOC -->
+  <div class="toc">
+    <h2>Inhalt</h2>
+    <ol>
+      <li><a href="#ziele">Ziele &amp; Umfang</a></li>
+      <li><a href="#architektur">Gesamtarchitektur</a></li>
+      <li><a href="#protokoll">HTTPS-API-Protokoll</a></li>
+      <li><a href="#server">Serverkomponente — kein Apache-Eingriff nötig</a></li>
+      <li><a href="#db">Datenbank (MariaDB)</a></li>
+      <li><a href="#client-pc">Client-Programm PC (C + libcurl)</a></li>
+      <li><a href="#client-amiga">Client-Programm Amiga (C + VBCC + AmiSSL)</a></li>
+      <li><a href="#codesharing">Code-Sharing-Strategie PC ↔ Amiga</a></li>
+      <li><a href="#fshandler">AmigaOS Filesystem-Handler (CLOUD:-Device)</a></li>
+      <li><a href="#webinterface">Webinterface (Browser)</a></li>
+      <li><a href="#verzeichnisse">Projektverzeichnisstruktur</a></li>
+      <li><a href="#meilensteine">Meilensteine</a></li>
+      <li><a href="#offen">Offene Entscheidungen</a></li>
+      <li><a href="#alt">OwnCloud auf demselben Server — Verhältnis zu AmiCloud</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. ZIELE -->
+  <section id="ziele">
+    <h2>1 &mdash; Ziele &amp; Umfang</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3>In Scope (Minimum)</h3>
+        <ul>
+          <li>Dateien hochladen &amp; herunterladen</li>
+          <li>Unterordner-Unterstützung</li>
+          <li>Datei löschen</li>
+          <li>Dateiinformationen abfragen (Größe, Datum)</li>
+          <li>Verzeichnisinhalt auflisten</li>
+          <li>Einfache Benutzerverwaltung (User + Passwort)</li>
+          <li>Konsolen-Client PC (Mac/Linux/Windows)</li>
+          <li>Konsolen-Client Amiga (VBCC, nativ)</li>
+          <li><strong>HTTPS von Anfang an</strong> — Let's Encrypt + AmiSSL</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Geplante Erweiterung</h3>
+        <ul>
+          <li><strong>AmigaOS Filesystem-Handler</strong> — <code>CLOUD:</code> als
+              normales Amiga-Laufwerk einbinden (AmiCloud-REST; kein WebDAV im Handler,
+              siehe unten)</li>
+          <li><strong>Webinterface</strong> — Login + Dateibrowser im Browser (kein Framework, reines PHP/HTML)</li>
+          <li>Token-Authentifizierung</li>
+          <li>Mehrbenutzer-ACL</li>
+          <li>Speicherquoten pro User</li>
+          <li>Amiga-GUI-Client (MUI)</li>
+          <li><strong>Umgesetzt als eigenständiges Projekt statt Brücke:</strong>
+              AmiCloudSync — ein separates Commodity, das per WebDAV mit einem
+              Standard-OwnCloud/Nextcloud-Server synchronisiert (kein gemeinsamer
+              Speicher mit AmiCloud, kein Handler-Code, keine <code>expat.library</code> —
+              siehe <code>docs/user/AmiCloudSync-Handbuch.html</code>)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Out of Scope (vorerst)</h3>
+        <ul>
+          <li>Versionierung von Dateien</li>
+          <li>Sharing-Links</li>
+          <li>Quota-Management</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. ARCHITEKTUR -->
+  <section id="architektur">
+    <h2>2 &mdash; Gesamtarchitektur</h2>
+    <div class="arch">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            AMICLOUD-SYSTEM                                  │
+│                                                                             │
+│  ┌────────────────┐  HTTPS (TLS 1.2/1.3)  ┌──────────────────────────────┐│
+│  │   PC Client    │◄────────────────────►  │  Apache (bestehend)          ││
+│  │  Mac/Linux/Win │  libcurl + CA-Bundle   │  + PHP (bereits aktiv)       ││
+│  │  C, libcurl    │                        │  + Let's Encrypt (vorhanden) ││
+│  └────────────────┘                        │                              ││
+│                                            │  DocumentRoot/amicloud/      ││
+│  ┌────────────────┐  HTTPS (TLS 1.2/1.3)  │    api.php  ← einziger       ││
+│  │  Amiga Client  │◄────────────────────►  │             Einstiegspunkt   ││
+│  │  Shell-CLI     │  bsdsocket + AmiSSL    │                              ││
+│  │  VBCC, nativ   │                        └──────────────┬───────────────┘│
+│  └────────────────┘                                       │                │
+│                                                           │                │
+│  ┌────────────────┐                               ┌───────┴──────────┐     │
+│  │  AmigaOS       │  Mounts CLOUD: als Laufwerk   │  Speicher        │     │
+│  │  Filesystem-   │◄──────────────────────────►   │  /pfad/storage/  │     │
+│  │  Handler       │  HTTPS via AmiSSL             │  {username}/     │     │
+│  │  (DOSHandler)  │  (nur AmiCloud-REST)          │  + MariaDB Meta  │     │
+│  └────────────────┘                               └──────────────────┘     │
+│       │                                                                     │
+│       │  Transparenter Zugriff für alle Amiga-Programme:                   │
+│       │  COPY CLOUD:docs/file.txt RAM:   ← kein spezieller Client nötig   │
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  OwnCloud (bereits vorhanden, gleicher Server + gleiches Zertifikat) │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘</div>
+
+    <div class="decision">
+      <strong>Kein Apache-Eingriff:</strong> PHP ist auf dem Server bereits aktiv (OwnCloud läuft).
+      AmiCloud wird als einfaches Unterverzeichnis unter dem bestehenden DocumentRoot abgelegt.
+      Kein neuer vHost, kein mod_rewrite, keine Apache-Konfigurationsänderung.
+    </div>
+    <div class="decision">
+      <strong>TLS:</strong> Let's Encrypt-Zertifikat ist bereits vorhanden und deckt das
+      Unterverzeichnis automatisch ab. Alle Clients sprechen ausschließlich HTTPS.
+    </div>
+    <div class="decision">
+      <strong>Amiga-Compiler:</strong> VBCC (nativ auf dem Amiga), da kein Cross-Compiling
+      gewünscht. VBCC ist ein moderner, freier C-Compiler mit guter AmigaOS-Unterstützung.
+    </div>
+  </section>
+
+  <!-- 3. PROTOKOLL -->
+  <section id="protokoll">
+    <h2>3 &mdash; HTTPS-API-Protokoll</h2>
+
+    <p>
+      Alle Anfragen laufen ausschließlich über <strong>HTTPS</strong>.
+      Authentifizierung via <strong>HTTP Basic Auth</strong>
+      (<code>Authorization: Basic base64(user:pass)</code>) —
+      durch TLS vollständig gesichert. Für VBCC/Amiga ideal: nur Base64 nötig,
+      kein Token-State.
+    </p>
+
+    <div class="note">
+      HTTP/1.0 mit <code>Connection: close</code> reicht für alle Clients —
+      kein Chunked Transfer, kein Keep-Alive. Der PHP-Server antwortet
+      auf HTTP/1.0 und HTTP/1.1 gleichermaßen.
+    </div>
+
+    <div class="warn">
+      <strong>Zertifikat-Validierung auf dem Amiga:</strong>
+      AmiSSL 5.27 (OpenSSL 3.x-Basis) kennt ISRG Root X1 (Let's Encrypt).
+      Debug-Flag <code>-k</code> deaktiviert die Prüfung (nur für Entwicklung).
+    </div>
+
+    <h3>Endpunkte</h3>
+    <table>
+      <tr><th>Methode</th><th>Pfad</th><th>Funktion</th><th>Body</th><th>Response</th></tr>
+      <tr>
+        <td><code>GET</code></td>
+        <td><code>/amicloud/api.php?action=list&amp;path=/sub</code></td>
+        <td>Verzeichnis auflisten</td><td>—</td>
+        <td>JSON-Array</td>
+      </tr>
+      <tr>
+        <td><code>GET</code></td>
+        <td><code>/amicloud/api.php?action=download&amp;path=/sub/f</code></td>
+        <td>Datei herunterladen</td><td>—</td>
+        <td>Rohe Dateidaten</td>
+      </tr>
+      <tr>
+        <td><code>POST</code></td>
+        <td><code>/amicloud/api.php?action=upload&amp;path=/sub/f</code></td>
+        <td>Datei hochladen</td>
+        <td>Rohe Bytes im Body</td>
+        <td>JSON Status</td>
+      </tr>
+      <tr>
+        <td><code>DELETE</code></td>
+        <td><code>/amicloud/api.php?action=delete&amp;path=/sub/f</code></td>
+        <td>Datei löschen</td><td>—</td>
+        <td>JSON Status</td>
+      </tr>
+      <tr>
+        <td><code>GET</code></td>
+        <td><code>/amicloud/api.php?action=info&amp;path=/sub/f</code></td>
+        <td>Dateiinfos</td><td>—</td>
+        <td>JSON (name, size, created, modified)</td>
+      </tr>
+      <tr>
+        <td><code>POST</code></td>
+        <td><code>/amicloud/api.php?action=mkdir&amp;path=/new</code></td>
+        <td>Ordner erstellen</td><td>—</td>
+        <td>JSON Status</td>
+      </tr>
+      <tr>
+        <td><code>GET</code></td>
+        <td><code>/amicloud/api.php?action=download&amp;path=/f&amp;offset=N&amp;length=M</code></td>
+        <td>Teildownload (für Filesystem-Handler / Seek-Unterstützung)</td><td>—</td>
+        <td>Rohe Bytes (M Bytes ab Offset N)</td>
+      </tr>
+    </table>
+
+    <div class="note">
+      Der <code>offset</code>/<code>length</code>-Parameter beim Download wird intern via
+      PHP <code>fseek()</code> + <code>fread()</code> implementiert und ist wichtig
+      für den Filesystem-Handler (der AmigaOS <code>ACTION_SEEK</code>-Pakete empfangen kann).
+      Für den CLI-Client wird er nicht benötigt.
+    </div>
+
+    <h3>JSON-Antwortformat</h3>
+    <h4>list</h4>
+    <pre>{
+  "status": "ok",
+  "path": "/sub",
+  "entries": [
+    { "name": "file.txt", "type": "file", "size": 4096, "modified": "2026-06-25T14:30:00Z" },
+    { "name": "bilder",   "type": "dir",  "size": 0,    "modified": "2026-06-20T09:00:00Z" }
+  ]
+}</pre>
+    <h4>info</h4>
+    <pre>{
+  "status": "ok",
+  "name": "file.txt",
+  "type": "file",
+  "size": 4096,
+  "mime": "text/plain",
+  "created":  "2026-06-01T10:00:00Z",
+  "modified": "2026-06-25T14:30:00Z"
+}</pre>
+    <h4>Fehler</h4>
+    <pre>{ "status": "error", "code": 404, "message": "File not found" }</pre>
+
+    <h3>Authentifizierung</h3>
+    <ul>
+      <li>HTTP Basic Auth per Request — durch HTTPS sicher.</li>
+      <li>Passwörter in der DB als <code>bcrypt</code>-Hash.</li>
+      <li>Stateless — kein Session-Cookie, kein Token (Amiga/Filesystem-Handler-freundlich).</li>
+      <li><strong>Erweiterungspunkt:</strong> Bearer-Token ohne Basic Auth zu entfernen nachrüstbar.</li>
+    </ul>
+  </section>
+
+  <!-- 4. SERVER -->
+  <section id="server">
+    <h2>4 &mdash; Serverkomponente</h2>
+    <span class="badge badge-php">PHP 7.4</span>
+    <span class="badge badge-linux">Alma Linux 9.8</span>
+    <span class="badge badge-ssl">Let's Encrypt</span>
+
+    <div class="note">
+      Der Server läuft auf <strong>PHP 7.4</strong> — ein Upgrade ist nicht möglich,
+      solange OwnCloud diese Version voraussetzt. AmiCloud ist daher bewusst auf
+      PHP-7.4-kompatible Syntax beschränkt (kein <code>match</code>, kein <code>??=</code>,
+      keine Union Types etc.).
+    </div>
+
+    <h3>Server-Verzeichnisstruktur (Ist-Zustand)</h3>
+    <p>Der Server hat folgende bestehende Verzeichnisstruktur:</p>
+    <pre>/var/www/html/          ← Eigene Webseite (eigener Apache-vHost)
+/var/www/owncloud/      ← OwnCloud (eigener Apache-vHost, eigenes Let's-Encrypt-Zertifikat)
+/var/www/cgi-bin/       ← CGI-Skripte</pre>
+
+    <div class="note">
+      AmiCloud bekommt — analog zu OwnCloud — ein eigenes Verzeichnis <strong>auf der gleichen Ebene</strong>
+      (<code>/var/www/amicloud/</code>) mit einem eigenen Apache-VirtualHost und einem eigenen
+      Let's-Encrypt-Zertifikat für die Subdomain <code>amicloud.example.com</code>.
+    </div>
+
+    <h3>Dateistruktur auf dem Server (nach Deployment)</h3>
+    <pre>/var/www/html/                   ← Eigene Webseite (unverändert)
+/var/www/owncloud/               ← OwnCloud (unverändert, eigener vHost)
+/var/www/amicloud/               ← NEU: AmiCloud (eigener vHost, analog OwnCloud)
+    api.php                      ← Einziger öffentlicher Einstiegspunkt
+    config.php                   ← DB + Storage-Pfad (nicht ins Git!)
+    config.php.example           ← Template
+    .htaccess                    ← Schützt config.php + includes/
+    includes/
+        Auth.php
+        DB.php
+        FileStore.php
+        Response.php
+/var/www/cgi-bin/                ← CGI-Skripte (unverändert)
+
+/var/amicloud-storage/           ← Außerhalb aller Web-Roots
+    {username}/
+        dokumente/
+            bericht.txt</pre>
+
+    <h3>Deployment</h3>
+
+    <h4>Schritt 1 — DNS</h4>
+    <p>
+      Beim DNS-Provider einen A-Record anlegen, der auf dieselbe Server-IP zeigt:
+    </p>
+    <pre>amicloud.example.com.   IN   A   &lt;Server-IP&gt;</pre>
+
+    <h4>Schritt 2 — Apache VirtualHost</h4>
+    <p>
+      Neue Datei <code>/etc/httpd/conf.d/amicloud.conf</code> anlegen
+      (berührt keine bestehende Config):
+    </p>
+    <pre>&lt;VirtualHost *:80&gt;
+    ServerName   amicloud.example.com
+    DocumentRoot /var/www/amicloud
+    DirectoryIndex disabled
+
+    &lt;Directory /var/www/amicloud&gt;
+        Options None
+        AllowOverride All
+        Require all granted
+    &lt;/Directory&gt;
+&lt;/VirtualHost&gt;</pre>
+
+    <h4>Schritt 3 — Let's Encrypt Zertifikat</h4>
+    <pre>sudo certbot --apache -d amicloud.example.com</pre>
+    <p>
+      Certbot ergänzt die Config automatisch um einen HTTPS-Block und richtet
+      den Redirect HTTP→HTTPS ein.
+    </p>
+
+    <h4>Schritt 4 — PHP-Dateien deployen</h4>
+    <pre># Verzeichnisse anlegen:
+sudo mkdir -p /var/www/amicloud
+sudo mkdir -p /var/amicloud-storage
+
+# Dateien kopieren (von deinem Rechner aus via scp):
+scp -r server/* user@server:/var/www/amicloud/
+
+# Config anlegen und anpassen:
+sudo cp /var/www/amicloud/config.php.example /var/www/amicloud/config.php
+sudo nano /var/www/amicloud/config.php        # DB-Daten + Storage-Pfad eintragen
+
+# Berechtigungen (Apache-User auf AlmaLinux heißt "apache"):
+sudo chown -R apache:apache /var/www/amicloud/
+sudo chown -R apache:apache /var/amicloud-storage/
+sudo chmod 750 /var/amicloud-storage/</pre>
+
+    <h4>Schritt 5 — Apache neu laden</h4>
+    <pre>sudo systemctl reload httpd</pre>
+
+    <p>
+      Danach ist die API erreichbar unter:<br>
+      <code>https://amicloud.example.com/api.php</code><br>
+      Das ist der Wert für <code>server=</code> in der Client-Config (ohne <code>/api.php</code>).
+    </p>
+
+    <div class="note">
+      Der Storage-Pfad (<code>/var/amicloud-storage/</code>) liegt außerhalb aller Web-Roots
+      und ist damit nicht direkt per HTTP erreichbar — auch ohne <code>.htaccess</code>-Schutz.
+    </div>
+
+    <h3>Schutz von includes/ ohne .htaccess</h3>
+    <p>
+      Falls <code>.htaccess</code> nicht aktiviert ist (kein <code>AllowOverride</code>),
+      schützen wir <code>includes/</code> programmatisch: Jede Include-Datei prüft,
+      ob sie direkt aufgerufen wurde:
+    </p>
+    <pre>&lt;?php
+// Erste Zeile in jeder includes/*.php:
+if (!defined('AMICLOUD')) { http_response_code(403); exit; }
+</pre>
+    <p>In <code>api.php</code> steht vor allen Includes: <code>define('AMICLOUD', 1);</code></p>
+
+    <h3>Kern-Logik api.php</h3>
+    <pre>&lt;?php
+define('AMICLOUD', 1);
+require 'config.php';
+require 'includes/DB.php';
+require 'includes/Auth.php';
+require 'includes/FileStore.php';
+require 'includes/Response.php';
+
+Auth::requireBasicAuth();           // 401 wenn fehlgeschlagen
+$action = $_GET['action'] ?? '';
+$path   = sanitizePath($_GET['path'] ?? '/');
+
+switch ($action) {
+    case 'list':     FileStore::list($path); break;
+    case 'download': FileStore::download($path,
+                         (int)($_GET['offset'] ?? 0),
+                         (int)($_GET['length'] ?? -1)); break;
+    case 'upload':   FileStore::upload($path, file_get_contents('php://input')); break;
+    case 'delete':   FileStore::delete($path); break;
+    case 'info':     FileStore::info($path); break;
+    case 'mkdir':    FileStore::mkdir($path); break;
+    default:         Response::error(400, 'Unknown action');
+};</pre>
+
+    <h3>Sicherheitsregeln</h3>
+    <ul>
+      <li><strong>Path Traversal:</strong> <code>sanitizePath()</code> blockt <code>../</code> und Pfade außerhalb des User-Verzeichnisses.</li>
+      <li>Storage außerhalb des Web-Roots — kein direkter HTTP-Zugriff möglich.</li>
+      <li>Passwörter nur als <code>bcrypt</code>-Hash.</li>
+      <li>HTTPS erzwungen (PHP-seitig prüfen: <code>$_SERVER['HTTPS'] !== 'on'</code> → Redirect oder Fehler).</li>
+      <li><code>config.php</code> steht in <code>.gitignore</code>.</li>
+    </ul>
+  </section>
+
+  <!-- 5. DATENBANK -->
+  <section id="db">
+    <h2>5 &mdash; Datenbank (MariaDB)</h2>
+    <span class="badge badge-sql">MariaDB</span>
+
+    <h3>Datenbank und Benutzer anlegen</h3>
+    <p>
+      AmiCloud bekommt eine eigene Datenbank und einen eigenen MariaDB-Benutzer
+      mit minimalen Rechten — kein Root-Zugriff aus PHP.
+    </p>
+    <pre># Als root auf dem Server:
+mysql -u root -p
+
+-- Datenbank anlegen:
+CREATE DATABASE amicloud
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+-- Dedizierter Benutzer (nur localhost, nur diese DB):
+CREATE USER 'amicloud'@'localhost' IDENTIFIED BY 'SICHERES_PASSWORT_HIER';
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON amicloud.*
+    TO 'amicloud'@'localhost';
+FLUSH PRIVILEGES;
+
+-- Schema einspielen:
+USE amicloud;
+SOURCE /var/www/amicloud/sql/schema.sql;
+
+-- Prüfen:
+SHOW GRANTS FOR 'amicloud'@'localhost';
+EXIT;</pre>
+
+    <div class="note">
+      Nur die vier nötigen DML-Rechte (SELECT, INSERT, UPDATE, DELETE) werden vergeben —
+      kein DROP, kein CREATE, kein ALTER aus der PHP-Anwendung heraus.
+      Das Schema wird einmalig manuell eingespielt (s. oben) oder beim ersten Deployment
+      als separater Schritt ausgeführt.
+    </div>
+
+    <p>
+      Danach in <code>config.php</code> eintragen:
+    </p>
+    <pre>&lt;?php
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'amicloud');
+define('DB_USER', 'amicloud');           // der neue Benutzer
+define('DB_PASS', 'SICHERES_PASSWORT_HIER');
+define('STORAGE_PATH', '/var/amicloud-storage');
+define('MAX_UPLOAD',   100 * 1024 * 1024);</pre>
+
+    <h3>Schema</h3>
+    <pre>CREATE TABLE users (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    username    VARCHAR(64)  NOT NULL UNIQUE,
+    pass_hash   VARCHAR(255) NOT NULL,           -- bcrypt
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    active      TINYINT(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE files (
+    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT UNSIGNED NOT NULL,
+    path        VARCHAR(1024) NOT NULL,           -- relativ zu storage/{user}/
+    size_bytes  BIGINT UNSIGNED DEFAULT 0,
+    mime_type   VARCHAR(128),
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    modified_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    is_dir      TINYINT(1) DEFAULT 0,
+    UNIQUE KEY uq_user_path (user_id, path(768)),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;</pre>
+
+    <div class="note">
+      Die DB speichert nur Metadaten — die Bytes liegen im Filesystem.
+      Erweiterungspunkte: <code>quota_bytes</code>, <code>checksum</code> (SHA-256), <code>share_links</code>-Tabelle.
+    </div>
+
+    <h3>Benutzer anlegen — bcrypt-Hash erzeugen</h3>
+    <p>
+      Das Feld <code>pass_hash</code> enthält keinen Klartext, sondern einen
+      <code>bcrypt</code>-Hash (PHP <code>PASSWORD_BCRYPT</code>).
+      Den Hash erzeugst du einmalig auf der Konsole:
+    </p>
+    <pre># PHP muss installiert sein (php -v zum Prüfen; macOS: brew install php)
+php -r "echo password_hash('DeinPasswort', PASSWORD_BCRYPT) . PHP_EOL;"
+# Ausgabe z.B.: $2y$10$abc123...</pre>
+
+    <p>Den Hash dann direkt in die DB eintragen:</p>
+    <pre>-- Neuen Benutzer anlegen:
+INSERT INTO users (username, pass_hash, active)
+VALUES ('bob', '$2y$10$abc123...', 1);
+
+-- Passwort eines bestehenden Benutzers ändern:
+UPDATE users SET pass_hash = '$2y$10$abc123...' WHERE username = 'bob';</pre>
+
+    <div class="note">
+      Niemals den Klartext direkt in <code>pass_hash</code> eintragen —
+      <code>password_verify()</code> in <code>Auth.php</code> erwartet ausschließlich den bcrypt-Hash.
+      Der Hash ändert sich bei jedem Aufruf von <code>password_hash()</code> (Salt ist eingebettet),
+      das ist korrekt und gewollt.
+    </div>
+  </section>
+
+  <!-- 6. CLIENT PC -->
+  <section id="client-pc">
+    <h2>6 &mdash; Client-Programm PC</h2>
+    <span class="badge badge-c">C</span>
+    <span class="badge badge-linux">Linux</span>
+    <span class="badge badge-mac">macOS</span>
+    <span class="badge badge-win">Windows</span>
+    <span class="badge badge-ssl">libcurl TLS</span>
+
+    <div class="decision">
+      <strong>Sprache:</strong> C (nicht C++), damit ~70 % des Codes mit dem Amiga-Client geteilt
+      werden. HTTPS via libcurl — TLS ist transparent, kein extra Aufwand.
+    </div>
+
+    <h3>Kommandozeileninterface</h3>
+    <pre>amicloud [Optionen] &lt;Befehl&gt; [Argumente]
+
+Optionen:
+  -s &lt;url&gt;    Server-Basis-URL  (z.B. https://srv.example.com/amicloud)
+  -u &lt;user&gt;   Benutzername
+  -p &lt;pass&gt;   Passwort
+  -d &lt;pfad&gt;   Basis-Pfad auf dem Server  (Standard: /)
+  -c &lt;datei&gt;  Konfigurationsdatei        (Standard: ~/.amicloudrc)
+  -k          TLS-Zertifikat nicht prüfen (nur Entwicklung!)
+
+Befehle:
+  list  [/pfad]               Verzeichnis auflisten
+  get   &lt;remote&gt; [lokal]      Datei herunterladen
+  put   &lt;lokal&gt;  [remote]     Datei hochladen
+  del   &lt;remote&gt;              Datei löschen
+  info  &lt;remote&gt;              Dateiinformationen
+  mkdir &lt;/pfad&gt;               Ordner erstellen</pre>
+
+    <h3>Beispielaufrufe</h3>
+    <pre>amicloud -s https://srv.example.com/amicloud -u bob -p s3cr3t list /dokumente
+amicloud -c ~/.amicloudrc put bericht.txt /dokumente/bericht.txt
+amicloud -c ~/.amicloudrc get /dokumente/bericht.txt ./lokal/bericht.txt
+amicloud -c ~/.amicloudrc info /dokumente/bericht.txt</pre>
+
+    <h3>Konfigurationsdatei <code>~/.amicloudrc</code></h3>
+    <pre>server   = https://srv.example.com/amicloud
+username = bob
+password = s3cr3t
+basepath = /</pre>
+
+    <h3>Abhängigkeiten PC</h3>
+    <ul>
+      <li><strong>libcurl</strong> — HTTP/HTTPS inkl. TLS (transparent über System-CA)</li>
+      <li><strong>json-c</strong> — JSON-Parser; auf dem PC via Paketmanager (<code>libjson-c-dev</code> / <code>brew install json-c</code>), auf dem Amiga als <code>json-c.library</code> (<a href="https://aminet.net/package/dev/lib/json-c" style="color:#f97316">Aminet: dev/lib/json-c</a>) — gleiche API auf beiden Plattformen</li>
+    </ul>
+
+    <h3>Build-Anleitung — Schritt für Schritt</h3>
+
+    <h4>macOS</h4>
+    <pre># 1. Xcode Command Line Tools (einmalig, falls noch nicht vorhanden):
+xcode-select --install
+
+# 2. Abhängigkeiten via Homebrew:
+brew install curl
+
+# 3. Client bauen:
+cd client
+make -f Makefile.pc
+
+# 4. Optional: systemweit installieren (dann überall als "amicloud" aufrufbar):
+sudo make -f Makefile.pc install
+
+# 5. Test:
+./amicloud</pre>
+
+    <h4>Linux — Debian / Ubuntu</h4>
+    <pre># 1. Abhängigkeiten:
+sudo apt update
+sudo apt install gcc make libcurl4-openssl-dev
+
+# 2. Client bauen:
+cd client
+make -f Makefile.pc
+
+# 3. Optional: systemweit installieren:
+sudo make -f Makefile.pc install
+
+# 4. Test:
+./amicloud</pre>
+
+    <h4>Linux — AlmaLinux / Rocky / RHEL / Fedora</h4>
+    <pre># 1. Abhängigkeiten:
+sudo dnf install gcc make libcurl-devel
+
+# 2. Client bauen:
+cd client
+make -f Makefile.pc
+
+# 3. Optional: systemweit installieren:
+sudo make -f Makefile.pc install
+
+# 4. Test:
+./amicloud</pre>
+
+    <h4>Windows — MSYS2 / MinGW-w64</h4>
+    <p>
+      Voraussetzung: <strong>MSYS2</strong> installiert (Standard-Pfad <code>C:\msys64</code>).
+      Download: <a href="https://www.msys2.org" style="color:#f97316">msys2.org</a> —
+      danach die <em>MSYS2 MinGW 64-bit</em>-Shell öffnen (nicht die MSYS2-Shell!).
+    </p>
+    <pre># 1. Abhängigkeiten (in der MinGW64-Shell):
+pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-make \
+          mingw-w64-x86_64-curl
+
+# 2. Client bauen:
+cd client
+mingw32-make -f Makefile.win
+
+# 3. Test:
+./amicloud.exe</pre>
+
+    <div class="note">
+      Das <code>Makefile.win</code> erwartet libcurl unter <code>C:/msys64/mingw64</code> —
+      das ist der Standard-Installationspfad von MSYS2. Falls MSYS2 woanders installiert ist,
+      die Variable <code>CURL_DIR</code> oben im Makefile anpassen.
+    </div>
+
+    <div class="warn">
+      Auf Windows muss die erzeugte <code>amicloud.exe</code> zusammen mit den DLLs aus
+      <code>C:\msys64\mingw64\bin\</code> weitergegeben werden
+      (<code>libcurl-4.dll</code>, <code>libgcc_s_seh-1.dll</code>
+      u.ä.) — oder du baust statisch (im Makefile <code>-static</code> zu den
+      <code>LDFLAGS</code> hinzufügen, erfordert statische Varianten der Libraries).
+    </div>
+
+    <h4>Ergebnis nach dem Build</h4>
+    <table>
+      <tr><th>Plattform</th><th>Binary</th><th>Aufruf</th></tr>
+      <tr>
+        <td>macOS / Linux</td>
+        <td><code>client/amicloud</code></td>
+        <td><code>./amicloud list /</code></td>
+      </tr>
+      <tr>
+        <td>Windows</td>
+        <td><code>client\amicloud.exe</code></td>
+        <td><code>amicloud.exe list /</code></td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- 7. CLIENT AMIGA -->
+  <section id="client-amiga">
+    <h2>7 &mdash; Client-Programm Amiga</h2>
+    <span class="badge badge-c">C</span>
+    <span class="badge badge-amiga">AmigaOS 3.x</span>
+    <span class="badge badge-ssl">AmiSSL 5.27</span>
+
+    <h3>Compiler: VBCC (nativ auf dem Amiga)</h3>
+    <p>
+      VBCC (Volker Barthelmann C Compiler) ist ein moderner, freier ISO-C-Compiler
+      der direkt unter AmigaOS läuft — kein Cross-Compiling nötig.
+      Für den Amiga-Client wird nativ auf dem Amiga kompiliert.
+    </p>
+    <ul>
+      <li>VBCC für m68k-AmigaOS installiert in <code>vbcc/</code> (oder systemweit)</li>
+      <li>Targets: <code>m68k-amigaos</code> (Standard), optional <code>m68000</code> für maximale Kompatibilität</li>
+      <li>AmiSSL SDK-Header im VBCC-Includepfad eintragen</li>
+      <li>Linker: <code>vlink</code> (kommt mit VBCC)</li>
+      <li>Alternativ SAS/C 6.x — Makefile.amiga wird für beide Compiler-Varianten kommentiert</li>
+    </ul>
+
+    <h4>Minimales VBCC-Makefile-Snippet</h4>
+    <pre># Makefile.amiga (VBCC) — tatsächliche Pfade
+CC           = vc
+ROADSHOW_INC = Dev:SDK/Roadshow/netinclude
+AMISSL_INC   = Dev:SDK/AmiSSL/Developer/include
+
+CFLAGS = +aos68k -O2 -DAMIGA -DPLATFORM_AMIGA \
+         -I$(ROADSHOW_INC) -I$(AMISSL_INC) \
+         -cpu=68000
+LDFLAGS = +aos68k
+# cJSON wird direkt mitkompiliert — keine externe Library noetig.
+# amisslmaster, amissl, bsdsocket: AmigaOS-Runtime-Libraries (.library),
+# werden per OpenLibrary() geoeffnet — keine statischen Link-Libraries.
+# -lvc und startup.o werden von VBCC via +aos68k automatisch hinzugefuegt.
+
+OBJS = main.o cmd.o http_amiga.o base64.o config.o cJSON.o
+
+amicloud: $(OBJS)
+    $(CC) $(LDFLAGS) -o amicloud $(OBJS)
+
+.c.o:
+    $(CC) $(CFLAGS) -c $&lt;</pre>
+
+    <h3>Voraussetzungen Amiga</h3>
+    <ul>
+      <li>AmigaOS 3.1+</li>
+      <li><strong>GNUMake</strong> — VBCC enthält kein <code>make</code>; GNUMake von Aminet: <code>util/gnu/GNUmake.lha</code></li>
+      <li><strong>Roadshow SDK</strong> — TCP/IP-Headers (<code>Dev:SDK/Roadshow/netinclude</code>); liefert <code>proto/socket.h</code>, <code>netdb.h</code>, <code>sys/socket.h</code> usw.; NDK-Basis-Headers findet VBCC automatisch</li>
+      <li><strong>AmiSSL 5.27 SDK</strong> — Headers unter <code>Dev:SDK/AmiSSL/Developer/include</code>; TLS-Layer auf Basis OpenSSL 3.x, inkl. ISRG Root X1 (Let's Encrypt)</li>
+      <li><strong>cJSON</strong> — im Quellbaum enthalten (<code>cJSON.c</code> + <code>cJSON.h</code>), wird direkt mitkompiliert; keine externe Library nötig</li>
+      <li>Stack: mindestens 32 KB (AmiSSL benötigt mehr als reines bsdsocket)</li>
+      <li>RAM: Programm &lt; 100 KB, AmiSSL-Library shared aus LIBS:</li>
+    </ul>
+
+    <h3>HTTPS-Implementierung: bsdsocket + AmiSSL</h3>
+    <pre>/* Ablauf eines HTTPS-Requests auf dem Amiga */
+
+/* 1. Libraries öffnen */
+SocketBase = OpenLibrary("bsdsocket.library", 4);
+AmiSSLMasterBase = OpenLibrary("amisslmaster.library", AMISSLMASTER_MIN_VERSION);
+InitAmiSSL(...);  // öffnet intern amissl_v5xx.library (AmiSSL 5.27 / OpenSSL 3.x)
+
+/* 2. TCP-Socket + Verbindung (identisch zu reinem HTTP) */
+sock = socket(AF_INET, SOCK_STREAM, 0);
+/* gethostbyname + connect auf Port 443 ... */
+connect(sock, (struct sockaddr*)&amp;addr, sizeof(addr));
+
+/* 3. TLS-Handshake über AmiSSL (OpenSSL-API) */
+ctx = SSL_CTX_new(TLS_client_method());
+SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);   // Zertifikat prüfen!
+SSL_CTX_set_default_verify_paths(ctx);            // AmiSSL CA-Bundle nutzen
+ssl = SSL_new(ctx);
+SSL_set_fd(ssl, sock);
+SSL_connect(ssl);                                 // TLS-Handshake
+
+/* 4. HTTP-Request senden — identisch zu HTTP, nur SSL_write statt send */
+snprintf(req, sizeof(req),
+    "GET /amicloud/api.php?action=list&amp;path=/ HTTP/1.0\r\n"
+    "Host: srv.example.com\r\n"
+    "Authorization: Basic dXNlcjpwYXNz\r\n"
+    "Connection: close\r\n"
+    "\r\n");
+SSL_write(ssl, req, strlen(req));
+
+/* 5. Response lesen via SSL_read statt recv */
+while ((n = SSL_read(ssl, buf, sizeof(buf))) &gt; 0) { /* sammeln */ }
+
+/* 6. Aufräumen */
+SSL_shutdown(ssl);  SSL_free(ssl);  SSL_CTX_free(ctx);
+CloseSocket(sock);
+CleanupAmiSSL(...);
+CloseLibrary(AmiSSLBase);
+CloseLibrary(SocketBase);</pre>
+
+    <div class="note">
+      Die gesamte HTTP-Request-Logik (Header, URL, Methode) ist identisch zu HTTP —
+      nur <code>send/recv</code> wird durch <code>SSL_write/SSL_read</code> ersetzt.
+      Das ist exakt die Trennlinie in <code>http_amiga.c</code>.
+    </div>
+
+    <h3>Gleiche Befehle wie PC-Client</h3>
+    <table>
+      <tr><th>Befehl</th><th>Amiga Shell</th></tr>
+      <tr><td>list</td><td><code>amicloud list /dokumente</code></td></tr>
+      <tr><td>get</td><td><code>amicloud get /dokumente/readme.txt RAM:readme.txt</code></td></tr>
+      <tr><td>put</td><td><code>amicloud put DH0:bericht.txt /dokumente/bericht.txt</code></td></tr>
+      <tr><td>del</td><td><code>amicloud del /dokumente/alt.txt</code></td></tr>
+      <tr><td>info</td><td><code>amicloud info /dokumente/bericht.txt</code></td></tr>
+      <tr><td>mkdir</td><td><code>amicloud mkdir /neuerordner</code></td></tr>
+    </table>
+
+    <h3>Amiga-Besonderheiten</h3>
+    <ul>
+      <li>Libraries explizit öffnen/schließen (<code>OpenLibrary/CloseLibrary</code>).</li>
+      <li>Amiga-Pfade (<code>DH0:</code>, <code>RAM:</code>) direkt an <code>fopen()</code> — AmigaOS versteht diese nativ.</li>
+      <li>Config: <code>ENV:amicloud.cfg</code> (Amiga-Konvention), Fallback: Programmverzeichnis.</li>
+      <li>Stack per <code>Stack 32768</code>-Befehl setzen oder in der Binary fixieren.</li>
+      <li>68000-kompatibel compilieren: kein FPU-Code, kein 68020+-Inline in geteilten Dateien.</li>
+    </ul>
+  </section>
+
+  <!-- 8. CODE SHARING -->
+  <section id="codesharing">
+    <h2>8 &mdash; Code-Sharing-Strategie PC ↔ Amiga</h2>
+
+    <h3>Platform-Defines in <code>amicloud.h</code></h3>
+    <pre>#if defined(__amigaos__) || defined(AMIGA) || defined(__AMIGA__)
+  #define PLATFORM_AMIGA 1
+  #include &lt;proto/socket.h&gt;
+  #include &lt;proto/amisslmaster.h&gt;
+  #include &lt;proto/amissl.h&gt;
+  #include &lt;openssl/ssl.h&gt;    /* AmiSSL 5.27 stellt OpenSSL 3.x-Header bereit */
+  typedef long AC_SOCKET;
+#elif defined(_WIN32)
+  #define PLATFORM_WIN 1
+  #include &lt;winsock2.h&gt;       /* libcurl übernimmt TLS via Schannel */
+#else
+  #define PLATFORM_UNIX 1     /* libcurl übernimmt TLS via OpenSSL/GnuTLS */
+#endif
+
+/* JSON: gleiche API auf allen Plattformen */
+#ifdef PLATFORM_AMIGA
+#  include &lt;json.h&gt;          /* Amiga SDK: json.h liegt direkt in include/ */
+#else
+#  include &lt;json-c/json.h&gt;   /* PC: libjson-c-dev (apt) / json-c (brew) */
+#endif
+
+/* Beispiel-Nutzung (identisch auf PC und Amiga): */
+// struct json_object *root = json_tokener_parse(response_body);
+// struct json_object *entries;
+// json_object_object_get_ex(root, "entries", &entries);
+// int n = json_object_array_length(entries);
+// json_object_put(root);  /* freigeben */</pre>
+
+    <h3>Externe Libraries (Amiga)</h3>
+    <table>
+      <tr><th>Library</th><th>Quelle</th><th>Zweck</th><th>API-Kompatibilität PC</th></tr>
+      <tr>
+        <td><code>bsdsocket.library</code></td>
+        <td>AmiTCP / Miami / Roadshow</td>
+        <td>TCP-Sockets</td>
+        <td>POSIX sockets (send/recv etc.)</td>
+      </tr>
+      <tr>
+        <td><code>amisslmaster.library</code></td>
+        <td>AmiSSL 5.27</td>
+        <td>TLS/HTTPS</td>
+        <td>OpenSSL 3.x API (SSL_*, SSL_CTX_*)</td>
+      </tr>
+      <tr>
+        <td><code>json-c.library</code></td>
+        <td><a href="https://aminet.net/package/dev/lib/json-c" style="color:#f97316">Aminet: dev/lib/json-c</a></td>
+        <td>JSON-Parsing</td>
+        <td>json-c API (identisch auf PC)</td>
+      </tr>
+    </table>
+
+    <h3>Platform-Defines (Fortsetzung)</h3>
+
+typedef struct {
+    const char *server;
+    const char *username;
+    const char *password;
+    const char *basepath;
+    int         verify_ssl;   /* 0 = -k Flag (nur Entwicklung) */
+} AcConfig;</pre>
+
+    <h3>HTTP-Abstraktionsschicht (<code>http.h</code>)</h3>
+    <pre>typedef struct {
+    char *body;
+    long  body_len;
+    int   status_code;
+} HttpResponse;
+
+HttpResponse* http_request(
+    const char *method,     /* "GET", "POST", "DELETE" */
+    const char *url,
+    const char *auth,       /* "user:pass" — intern base64-enkodiert */
+    const char *body,
+    long        body_len,
+    int         verify_ssl
+);
+void http_response_free(HttpResponse *r);</pre>
+
+    <div class="card-grid">
+      <div class="card">
+        <h4>Geteilter Code (~70 %)</h4>
+        <ul>
+          <li><code>main.c</code> — Argument-Parsing</li>
+          <li><code>cmd.c</code> — Befehle (list, get, put, …)</li>
+          <li><code>json-c</code> — gleiche API auf PC und Amiga (kein eingebetteter Parser)</li>
+          <li><code>base64.c</code> — Basic-Auth (pure C)</li>
+          <li><code>config.c</code> — Config-Datei lesen</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Plattformspezifisch (~30 %)</h4>
+        <ul>
+          <li><code>http_pc.c</code> — libcurl (TLS transparent)</li>
+          <li><code>http_amiga.c</code> — bsdsocket + AmiSSL</li>
+          <li>Amiga: Library open/close, Stack-Init</li>
+          <li>Windows: WSAStartup/WSACleanup</li>
+          <li>Pfad-Trenner (<code>/</code> vs AmigaOS-Pfade)</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Build-System</h3>
+    <table>
+      <tr><th>Ziel</th><th>Compiler</th><th>Makefile</th><th>HTTP-Impl.</th><th>TLS</th></tr>
+      <tr>
+        <td>Linux/macOS</td>
+        <td>gcc / clang</td>
+        <td><code>Makefile.pc</code></td>
+        <td><code>http_pc.c</code></td>
+        <td>libcurl → OpenSSL/GnuTLS</td>
+      </tr>
+      <tr>
+        <td>Windows</td>
+        <td>MinGW-w64</td>
+        <td><code>Makefile.win</code></td>
+        <td><code>http_pc.c</code></td>
+        <td>libcurl → Schannel</td>
+      </tr>
+      <tr>
+        <td>AmigaOS (nativ)</td>
+        <td><strong>VBCC</strong> (<code>vc</code>)<br>alt: SAS/C 6</td>
+        <td><code>Makefile.amiga</code></td>
+        <td><code>http_amiga.c</code></td>
+        <td>bsdsocket + AmiSSL 5.27</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- 9. FILESYSTEM HANDLER -->
+  <section id="fshandler">
+    <h2>9 &mdash; AmigaOS Filesystem-Handler (CLOUD:-Device)</h2>
+    <span class="badge badge-amiga">AmigaOS 3.x</span>
+    <span class="badge badge-c">C</span>
+    <span class="badge badge-adv">Erweiterte Komponente</span>
+
+    <p>
+      Der Filesystem-Handler ermöglicht es, den AmiCloud-Speicher als normales
+      Amiga-Laufwerk einzubinden (nur AmiCloud-REST — für OwnCloud gibt es
+      stattdessen das eigenständige AmiCloudSync-Commodity, siehe
+      <code>docs/user/AmiCloudSync-Handbuch.html</code>):
+    </p>
+    <pre>; Nach dem Mounten:
+DIR CLOUD:
+COPY CLOUD:dokumente/readme.txt RAM:
+COPY DH0:bericht.txt CLOUD:dokumente/bericht.txt</pre>
+    <p>
+      Jedes normale Amiga-Programm kann dann auf die Cloud-Dateien zugreifen,
+      ohne den AmiCloud-CLI-Client zu kennen.
+    </p>
+
+    <h3>Konzept: AmigaOS DOSHandler</h3>
+    <p>
+      Ein DOSHandler ist ein spezieller AmigaOS-Prozess, der
+      <strong>DosPackets</strong> von <code>dos.library</code> empfängt und bearbeitet.
+      Er verhält sich wie ein Treiber: wenn ein Programm <code>Open("CLOUD:file", MODE_OLDFILE)</code>
+      aufruft, leitet AmigaOS einen entsprechenden DosPacket an den Handler weiter.
+    </p>
+
+    <h4>Relevante DosPacket-Typen</h4>
+    <table>
+      <tr><th>Paket-Typ</th><th>AmigaOS-Aktion</th><th>AmiCloud-Übersetzung</th></tr>
+      <tr>
+        <td><code>ACTION_LOCATE_OBJECT</code></td>
+        <td><code>Lock()</code> — Datei/Ordner öffnen</td>
+        <td><code>info</code>-API-Call zum Prüfen ob Pfad existiert</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_FREE_LOCK</code></td>
+        <td><code>UnLock()</code></td>
+        <td>Lokalen Lock-State freigeben</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_EXAMINE_OBJECT</code></td>
+        <td><code>Examine()</code> — FileInfoBlock füllen</td>
+        <td><code>info</code>-API-Call → FileInfoBlock</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_EXAMINE_NEXT</code></td>
+        <td><code>ExNext()</code> — nächster Verzeichniseintrag</td>
+        <td>Gecachte <code>list</code>-Antwort iterieren</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_FIND_INPUT</code></td>
+        <td><code>Open(..., MODE_OLDFILE)</code></td>
+        <td>Download-URL vormerken; Daten lazy nachladen</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_FIND_OUTPUT</code></td>
+        <td><code>Open(..., MODE_NEWFILE)</code></td>
+        <td>Puffer anlegen, beim <code>ACTION_END</code> als Upload senden</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_READ</code></td>
+        <td><code>Read()</code></td>
+        <td>Chunked Download via <code>download?offset=N&amp;length=M</code></td>
+      </tr>
+      <tr>
+        <td><code>ACTION_WRITE</code></td>
+        <td><code>Write()</code></td>
+        <td>In lokalen Puffer schreiben</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_END</code></td>
+        <td><code>Close()</code></td>
+        <td>Bei Write-Mode: Puffer via <code>upload</code>-API senden</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_SEEK</code></td>
+        <td><code>Seek()</code></td>
+        <td>Offset-Variable aktualisieren (nächstes <code>ACTION_READ</code> nutzt neuen Offset)</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_DELETE_OBJECT</code></td>
+        <td><code>DeleteFile()</code></td>
+        <td><code>delete</code>-API-Call</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_CREATE_DIR</code></td>
+        <td><code>CreateDir()</code></td>
+        <td><code>mkdir</code>-API-Call</td>
+      </tr>
+      <tr>
+        <td><code>ACTION_DISK_INFO</code></td>
+        <td><code>Info()</code></td>
+        <td>Feste Werte zurückgeben (oder zukünftig Quota-API)</td>
+      </tr>
+    </table>
+
+    <h3>Lese-Strategie: Lazy Streaming mit Offset-Downloads</h3>
+    <p>
+      Das Herunterladen großer Dateien in einem Stück in den Amiga-RAM wäre problematisch.
+      Daher: Der Handler lädt in Chunks der Größe z.B. 4–8 KB herunter,
+      jeweils via <code>download?offset=N&amp;length=M</code>. Das macht den
+      <code>ACTION_SEEK</code> ebenfalls effizient.
+    </p>
+
+    <h3>Schreib-Strategie: Write-Through-Puffer</h3>
+    <p>
+      Beim Schreiben puffert der Handler alle <code>ACTION_WRITE</code>-Daten im Amiga-RAM.
+      Beim <code>ACTION_END</code> (Close) wird der komplette Puffer als ein einziger
+      HTTPS-POST hochgeladen. Dateigröße ist durch verfügbaren RAM begrenzt —
+      für Amiga-typische Dateigrößen aber kein Problem.
+    </p>
+
+    <h3>MountList-Eintrag</h3>
+    <pre>/* DEVS:DOSDrivers/CLOUD oder S:startup-sequence: */
+Mount CLOUD: FROM S:AmiCloud.mount
+
+/* S:AmiCloud.mount: */
+CLOUD:
+    Handler      = L:AmiCloud-Handler
+    StackSize    = 32768
+    Priority     = 5
+    GlobVec      = -1
+    Startup      = "https://srv.example.com/amicloud|bob|s3cr3t"
+    /* Startup-String: URL|user|pass, geparst vom Handler beim Start */</pre>
+
+    <div class="note">
+      Alternativ kann die Konfiguration aus <code>ENV:amicloud.cfg</code> gelesen werden,
+      um das Passwort nicht im MountList-Eintrag im Klartext zu haben.
+    </div>
+
+    <div class="note">
+      <strong>Nachtrag:</strong> Ein WebDAV-Backend <em>im Filesystem-Handler</em>
+      (per <code>BACKEND_WEBDAV</code>/<code>expat.library</code>, wie hier
+      ursprünglich geplant) wurde nie gebaut. Stattdessen entstand OwnCloud-
+      Anbindung als eigenständiges Projekt: <strong>AmiCloudSync</strong>, ein
+      separates Commodity (kein Handler/Laufwerk) mit einem schlanken,
+      selbstgeschriebenen WebDAV-Client (kein <code>expat.library</code> — ein
+      kleiner Tag-Scanner statt eines vollen XML-Parsers, siehe
+      <code>core/libcloudsync/src/webdav.c</code>). Details:
+      <code>docs/user/AmiCloudSync-Handbuch.html</code>.
+    </div>
+
+    <h3>Entwicklungsreihenfolge Handler</h3>
+    <ol>
+      <li>Minimaler DOSHandler-Rahmen (Message-Port, Paket-Loop, Startup)</li>
+      <li><code>ACTION_EXAMINE_OBJECT</code> + <code>ACTION_EXAMINE_NEXT</code> (DIR CLOUD: funktioniert)</li>
+      <li><code>ACTION_FIND_INPUT</code> + <code>ACTION_READ</code> + <code>ACTION_END</code> (Dateien lesen)</li>
+      <li><code>ACTION_FIND_OUTPUT</code> + <code>ACTION_WRITE</code> + <code>ACTION_END</code> (Dateien schreiben)</li>
+      <li><code>ACTION_DELETE_OBJECT</code>, <code>ACTION_CREATE_DIR</code></li>
+      <li><code>ACTION_SEEK</code> + Chunk-Download</li>
+    </ol>
+  </section>
+
+  <!-- 10. WEBINTERFACE -->
+  <section id="webinterface">
+    <h2>10 &mdash; Webinterface (Browser)</h2>
+    <span class="badge badge-php">PHP 7.4</span>
+
+    <p>
+      Das Webinterface ist ein schlankes Browser-Frontend direkt auf dem Server —
+      kein JavaScript-Framework, kein Build-Step. Eine einzelne PHP-Datei
+      (<code>web.php</code>) übernimmt Login, Verzeichnisnavigation, Upload,
+      Download und Löschen.
+    </p>
+
+    <div class="note">
+      <code>web.php</code> nutzt dieselben <code>includes/</code> wie <code>api.php</code>
+      (DB, FileStore) — kein doppelter Code. Anstelle von HTTP Basic Auth
+      wird eine PHP-Session verwendet.
+    </div>
+
+    <h3>Neue Dateien</h3>
+    <pre>/var/www/amicloud/
+    api.php          ← unverändert (CLI-Clients, Amiga)
+    web.php          ← NEU: Webinterface (Login + Dateibrowser)
+    web.css          ← NEU: Styling
+    includes/        ← unverändert</pre>
+
+    <h3>Ablauf</h3>
+    <div class="card-grid">
+      <div class="card">
+        <h4>Login</h4>
+        <ul>
+          <li><code>GET /web.php</code> → Loginformular (wenn keine Session)</li>
+          <li><code>POST /web.php</code> → Credentials gegen DB prüfen</li>
+          <li>Bei Erfolg: <code>session_regenerate_id(true)</code>, <code>$_SESSION['user']</code> setzen, Redirect</li>
+          <li>Bei Fehler: Formular mit Fehlermeldung</li>
+          <li><code>?logout</code> → Session zerstören, Redirect zum Login</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Dateibrowser</h4>
+        <ul>
+          <li><code>GET /web.php?path=/sub</code> → Verzeichnisinhalt</li>
+          <li>Breadcrumb-Navigation (klickbare Pfadanteile)</li>
+          <li>Ordner → Link zu <code>web.php?path=/sub/ordner</code></li>
+          <li>Datei → Download-Link + Löschen-Button</li>
+          <li>Upload-Formular (<code>multipart/form-data</code>)</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>FileStore anpassen</h3>
+    <p>
+      Die bestehenden <code>FileStore</code>-Methoden schreiben JSON direkt in die Ausgabe
+      (für <code>api.php</code>). Für das Webinterface werden interne Varianten benötigt,
+      die Daten als Array zurückgeben:
+    </p>
+    <pre>// bisherig (api.php):
+FileStore::list($path)           // gibt JSON aus &amp; exit
+
+// neu (web.php):
+FileStore::listRaw($path, $uid)  // gibt array zurück
+FileStore::uploadRaw($path, $uid, $tmpFile)
+FileStore::deleteRaw($path, $uid)</pre>
+    <p>
+      Die bestehenden JSON-Methoden rufen intern die <code>*Raw</code>-Varianten auf —
+      reine Refaktorisierung ohne Verhaltensänderung.
+    </p>
+
+    <h3>Grundstruktur web.php</h3>
+    <pre>&lt;?php
+session_start();
+define('AMICLOUD', 1);
+require __DIR__ . '/config.php';
+require __DIR__ . '/includes/DB.php';
+require __DIR__ . '/includes/FileStore.php';
+
+/* HTTPS erzwingen */
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    header('Location: https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
+    exit;
+}
+
+/* Logout */
+if (isset($_GET['logout'])) { session_destroy(); header('Location: /web.php'); exit; }
+
+/* Login-POST */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' &amp;&amp; isset($_POST['username'])) {
+    if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) die('CSRF');
+    $user = DB::findUser(trim($_POST['username']));
+    if ($user &amp;&amp; password_verify($_POST['password'], $user['pass_hash'])) {
+        session_regenerate_id(true);
+        $_SESSION['user']    = $user['username'];
+        $_SESSION['user_id'] = (int)$user['id'];
+        header('Location: /web.php'); exit;
+    }
+    $loginError = 'Ungültige Zugangsdaten';
+}
+
+/* Session prüfen */
+if (empty($_SESSION['user'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+    /* Login-HTML ausgeben */
+    exit;
+}
+
+/* Upload */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' &amp;&amp; isset($_FILES['file'])) {
+    if (!hash_equals($_SESSION['csrf'], $_POST['csrf'] ?? '')) die('CSRF');
+    $dest = sanitizePath(($_GET['path'] ?? '/') . '/' . basename($_FILES['file']['name']));
+    FileStore::uploadRaw($dest, $_SESSION['user_id'], $_FILES['file']['tmp_name']);
+    header('Location: /web.php?path=' . urlencode($_GET['path'] ?? '/')); exit;
+}
+
+/* Löschen */
+if (isset($_GET['delete'])) {
+    FileStore::deleteRaw(sanitizePath($_GET['delete']), $_SESSION['user_id']);
+    header('Location: /web.php?path=' . urlencode($_GET['path'] ?? '/')); exit;
+}
+
+/* Verzeichnislisting */
+$currentPath = sanitizePath($_GET['path'] ?? '/');
+$entries     = FileStore::listRaw($currentPath, $_SESSION['user_id']);
+/* HTML ausgeben */</pre>
+
+    <h3>Sicherheit</h3>
+    <ul>
+      <li>HTTPS erzwungen (Redirect, damit der Browser folgt)</li>
+      <li>PHP-Session mit <code>session_regenerate_id(true)</code> nach Login</li>
+      <li>CSRF-Token in allen Formularen</li>
+      <li>Upload: nur <code>basename()</code> des Dateinamens — kein Path Traversal</li>
+      <li>Alle Pfade durch <code>sanitizePath()</code></li>
+      <li>Download via <code>readfile()</code> mit <code>Content-Disposition</code>-Header — keine direkte URL zu Dateien im Storage</li>
+    </ul>
+
+    <h3>Deployment</h3>
+    <p>
+      <code>web.php</code> und <code>web.css</code> einfach in <code>/var/www/amicloud/</code> kopieren —
+      kein Apache-Neustart, kein neues Zertifikat, keine Config-Änderung.
+    </p>
+  </section>
+
+  <!-- 11. VERZEICHNISSE -->
+  <section id="verzeichnisse">
+    <h2>11 &mdash; Projektverzeichnisstruktur</h2>
+    <pre>AmiCloud/
+├── server/                          ← Servercode (PHP)
+│   ├── api.php
+│   ├── config.php.example
+│   ├── includes/
+│   │   ├── Auth.php
+│   │   ├── DB.php
+│   │   ├── FileStore.php
+│   │   └── Response.php
+│   └── sql/
+│       └── schema.sql
+│
+├── client/                          ← CLI-Client (C, shared)
+│   ├── amicloud.h                   ← Typen + Platform-Defines
+│   ├── main.c
+│   ├── cmd.c / cmd.h
+│   ├── http.h                       ← HTTPS-Interface
+│   ├── http_pc.c                    ← libcurl
+│   ├── http_amiga.c                 ← bsdsocket + AmiSSL
+│   ├── base64.c / base64.h
+│   ├── config.c / config.h
+│   ├── Makefile.pc                  ← Link gegen -lcurl; cJSON im Quellbaum
+│   ├── Makefile.win                 ← Link gegen json-c (vcpkg o.ä.)
+│   └── Makefile.amiga               ← VBCC (vc), Link gegen json-c.library (Aminet)
+│
+├── handler/                         ← AmigaOS Filesystem-Handler
+│   ├── handler.c                    ← DosPacket-Loop, Hauptdatei
+│   ├── handler.h
+│   ├── backend.h                    ← Backend-Interface (nur AmiCloud-REST)
+│   ├── backend_amicloud.c           ← AmiCloud-REST-Backend
+│   ├── http_amiga.c                 ← (symlink/copy aus client/)
+│   ├── base64.c                     ← (symlink/copy aus client/)
+│   ├── Makefile.amiga
+│   └── AmiCloud.mount               ← MountList-Beispiel
+│
+├── docs/
+│   └── API.md
+│
+├── PLAN.html
+└── README.md</pre>
+  </section>
+
+  <!-- 12. MEILENSTEINE -->
+  <section id="meilensteine">
+    <h2>12 &mdash; Meilensteine</h2>
+    <ul class="timeline">
+      <li>
+        <strong>M1: Server-Grundgerüst</strong>
+        <span class="ms-tag">api.php, Auth, DB-Schema, list + download; einfach in Unterordner kopieren, HTTPS via bestehendem Zertifikat</span>
+      </li>
+      <li>
+        <strong>M2: Upload, Delete, mkdir, Teildownload</strong>
+        <span class="ms-tag">FileStore vollständig, offset/length-Parameter, Path-Sanitizing</span>
+      </li>
+      <li>
+        <strong>M3: PC-Client (Linux/macOS)</strong>
+        <span class="ms-tag">main.c + cmd.c + http_pc.c (libcurl+TLS) + cJSON, alle Befehle, Config-Datei</span>
+      </li>
+      <li>
+        <strong>M4: PC-Client (Windows)</strong>
+        <span class="ms-tag">Makefile.win, MinGW-Build, getestet auf allen 3 PC-Plattformen</span>
+      </li>
+      <li>
+        <strong>M5: Amiga CLI-Client (VBCC + AmiSSL)</strong>
+        <span class="ms-tag">http_amiga.c mit TLS-Handshake, nativ mit VBCC compiliert, Test auf AmigaOS 3.x</span>
+      </li>
+      <li>
+        <strong>M6: Amiga Filesystem-Handler — Lesen</strong>
+        <span class="ms-tag">DOSHandler-Rahmen, EXAMINE, FIND_INPUT, READ, END; DIR CLOUD: und COPY aus CLOUD: funktionieren</span>
+      </li>
+      <li>
+        <strong>M7: Amiga Filesystem-Handler — Schreiben &amp; Löschen</strong>
+        <span class="ms-tag">FIND_OUTPUT, WRITE, END (Upload bei Close), DELETE, CREATE_DIR; komplette Datei bei Open in RAM (≤10 MB)</span>
+      </li>
+      <li>
+        <strong>M8: Härtung &amp; Doku</strong>
+        <span class="ms-tag">API.md, README, AmiSSL-Hinweise, MountList-Beispiel, Installationsskript</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 13. ENTSCHEIDUNGEN -->
+  <section id="offen">
+    <h2>13 &mdash; Entscheidungen (alle abgeschlossen)</h2>
+    <table>
+      <tr><th>#</th><th>Frage</th><th>Entscheidung</th><th>Begründung</th></tr>
+      <tr>
+        <td>1</td>
+        <td>Datenspeicherung</td>
+        <td><strong>A</strong> — Filesystem + DB-Metadaten</td>
+        <td>Einfacher, backup-freundlicher; keine BLOBs in MariaDB</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>AmiSSL-Version</td>
+        <td><strong>A</strong> — AmiSSL 5.27</td>
+        <td>Aktuelle Version, OpenSSL 3.x, ISRG Root X1 vorhanden</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Amiga-Compiler</td>
+        <td><strong>A</strong> — VBCC (nativ)</td>
+        <td>Frei, modern, gute AmigaOS-Unterstützung; kein Cross-Compiling</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>JSON-Parser</td>
+        <td><strong>B</strong> — json-c (System-Library)</td>
+        <td>Gleiche API auf PC und Amiga (<a href="https://aminet.net/package/dev/lib/json-c" style="color:#f97316">Aminet: dev/lib/json-c</a>); kein eingebetteter Code</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Config-Datei Amiga</td>
+        <td><strong>A</strong> — <code>ENV:amicloud.cfg</code></td>
+        <td>Amiga-Konvention; Fallback: Programmverzeichnis</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Handler: Lese-Pufferung</td>
+        <td><strong>B</strong> — komplette Datei beim Open in RAM</td>
+        <td>Dateien ≤ 10 MB, passen sicher in den Amiga-RAM; einfacher zu implementieren.<br>
+            <em>Erweiterung:</em> Chunk-Download (Option A) für später offenhalten (z.B. für größere Dateien oder MUI-Client).</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>OwnCloud-Anbindung</td>
+        <td><strong>C</strong> — eigenständiges Commodity statt Handler-Backend</td>
+        <td>Umgesetzt als AmiCloudSync (WebDAV-Sync-Commodity, eigener kleiner
+            Tag-Scanner statt <code>expat.library</code>) statt eines
+            <code>BACKEND_WEBDAV</code> im Filesystem-Handler — siehe Abschnitt 14</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- 14. OWNCLOUD -->
+  <section id="alt">
+    <h2>14 &mdash; OwnCloud auf demselben Server — Verhältnis zu AmiCloud</h2>
+
+    <p>
+      OwnCloud läuft auf demselben Alma Linux 9.8-Server, aber <strong>getrennt</strong>:
+      eigener Apache-VirtualHost, eigenes Verzeichnis (<code>/var/www/owncloud/</code>),
+      eigenes Let's Encrypt-Zertifikat.
+      AmiCloud kommt als Unterordner der eigenen Webseite (<code>/var/www/html/amicloud/</code>)
+      — die beiden Systeme haben keinen gemeinsamen DocumentRoot.
+    </p>
+
+    <ul>
+      <li><strong>Server-Deployment:</strong> AmiCloud unter <code>/var/www/html/amicloud/</code>
+          (Unterordner der eigenen Webseite) — kein neuer vHost, keine Apache-Änderungen.</li>
+      <li><strong>Filesystem-Handler:</strong> spricht ausschließlich AmiCloud-REST — kein
+          WebDAV-Backend darin (s. Abschnitt 9).</li>
+    </ul>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>AmiCloud eigenständig (umgesetzt)</h3>
+        <ul>
+          <li>Einfaches JSON-REST-API statt WebDAV+XML</li>
+          <li>Eigene MariaDB-Tabellen (keine Abhängigkeit von OwnCloud-Interna)</li>
+          <li>Unabhängig von OwnCloud-Versionen und -Updates</li>
+          <li>Eigene Benutzerverwaltung</li>
+          <li>Kein Risiko für bestehende OwnCloud-Daten</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>OwnCloud-Anbindung (umgesetzt, aber anders als hier geplant)</h3>
+        <ul>
+          <li>Kein Handler-Backend, kein <code>expat.library</code>-XML-Parser —
+              stattdessen ein eigenständiges Commodity (<strong>AmiCloudSync</strong>),
+              das per WebDAV mit einem separaten OwnCloud/Nextcloud-Server abgleicht</li>
+          <li>Eigener kleiner Multistatus-Tag-Scanner statt einer vollen XML-Bibliothek
+              (RAM-schonender auf dem 4-MB-Ziel) — siehe
+              <code>core/libcloudsync/src/webdav.c</code></li>
+          <li>Keine gemeinsame Dateisicht mit AmiCloud, kein gemeinsamer Speicher —
+              zwei komplett getrennte Schienen, die nur einen Teil der C-Bibliotheken
+              teilen (siehe <code>docs/user/AmiCloudSync-Handbuch.html</code>)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="decision">
+      <strong>Fazit (aktualisiert):</strong> AmiCloud blieb eigenständig, wie hier
+      empfohlen. Die OwnCloud-Anbindung kam nicht als Backend-Option im
+      Filesystem-Handler (der hier diskutierte <code>BACKEND_WEBDAV</code>/
+      <code>expat.library</code>-Ansatz wurde nie gebaut), sondern als eigenes
+      Projekt: AmiCloudSync, ein separates Sync-Commodity mit eigenem,
+      schlankem WebDAV-Client. OwnCloud und AmiCloud koexistieren weiterhin auf
+      demselben Server ohne Berührungspunkte — jetzt zusätzlich ohne
+      gemeinsamen Client-Code für den WebDAV-Teil.
+    </div>
+  </section>
+
+  <footer>
+    AmiCloud &mdash; Projektplan v0.7 &mdash; 2026-06-27
+    &nbsp;|&nbsp;
+    HTTPS · AmiSSL 5.27 · kein Apache-Eingriff · VBCC nativ · cJSON (eingebettet) · AmigaOS Filesystem-Handler
+    &nbsp;|&nbsp; Alle Entscheidungen abgeschlossen — bereit zur Implementierung
+  </footer>
+
+</div>
+</body>
+</html>

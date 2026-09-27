@@ -1,0 +1,852 @@
+@database "AmiCloud.guide"
+@$VER: AmiCloud.guide 1.0 (27.09.2026)
+@author "Ronny Krueger"
+@(c) "2026 Ronny Krueger, GPL-3.0-or-later"
+@wordwrap
+@index Main
+
+@node Main "AmiCloud - Inhalt"
+
+                              AmiCloud
+                   Eigener Cloud-Speicher für AmigaOS
+                  -------------------------------------
+
+AmiCloud verbindet den Amiga über HTTPS mit einem eigenen AmiCloud-Server.
+Die Dateien darauf lassen sich per Kommandozeile, in einer interaktiven
+Shell, mit einem Dateimanager oder als ganz normales Laufwerk CLOUD:
+benutzen.
+
+  @{" Einführung           " link Einfuehrung}  Was ist AmiCloud?
+  @{" Voraussetzungen      " link Voraussetzungen}  Was wird gebraucht?
+  @{" Installation         " link Installation}  Amiga, mit Install-Skript
+  @{" Manuell installieren " link Manuell}  Wohin gehört welche Datei?
+  @{" PC                   " link PC}  macOS, Linux, Windows
+  @{" Server               " link Server}  Den Server einrichten
+
+  @{" Konfiguration        " link Konfiguration}  amicloud.cfg
+  @{" AmiCloudPrefs        " link Prefs}  Einstellungs-Editor
+
+  @{" amicloud             " link Amicloud}  Kommandozeilen-Client
+  @{" amicloud-shell       " link Shell}  Interaktive Shell
+  @{" cloudsync            " link Cloudsync}  Ordner abgleichen
+  @{" amicloud-commander   " link Commander}  Dateimanager (MUI)
+  @{" CLOUD:-Handler       " link Handler}  Die Cloud als Laufwerk
+
+  @{" Fehlersuche          " link Fehlersuche}  Wenn etwas nicht geht
+  @{" Deinstallation       " link Deinstallation}  AmiCloud entfernen
+  @{" Bauen                " link Bauen}  Aus den Quellen übersetzen
+  @{" Lizenz               " link Lizenz}  GNU GPL Version 3
+  @{" Autor und Kontakt    " link Autor}  Wer, wo?
+  @{" Versionsgeschichte   " link Historie}  Was ist neu?
+
+@endnode
+
+@node Einfuehrung "Einführung"
+@toc Main
+@next Voraussetzungen
+
+EINFÜHRUNG
+
+AmiCloud ist ein selbst betriebener Cloud-Speicher, der für den Amiga
+gemacht ist. Ein kleiner PHP-Server auf einem Linux-Rechner hält die
+Dateien, jeder Benutzer hat seinen eigenen Bereich. Alle Programme
+sprechen den Server ausschließlich über HTTPS an; auf dem Amiga
+übernehmen das bsdsocket.library und AmiSSL 5.
+
+Bestandteile auf dem Amiga:
+
+  amicloud            Kommandozeilen-Client, ein Befehl je Aufruf
+  amicloud-shell      interaktive Sitzung mit cd, ls, get, put ...
+  cloudsync           einmaliger Abgleich lokaler Ordner <-> Cloud
+  amicloud-commander  Dateimanager mit zwei Panels (MUI)
+  AmiCloudPrefs       Einstellungs-Editor für amicloud.cfg
+  amicloud-handler    Handler für das Laufwerk CLOUD:
+  amicloud-worker     Netzwerk-Prozess des Handlers
+
+amicloud, amicloud-shell, cloudsync und der Commander (dort mit Qt 6
+statt MUI) gibt es auch für macOS, Linux und Windows, siehe
+@{" PC " link PC}. Handler und AmiCloudPrefs sind reine Amiga-Programme.
+
+Der Server merkt sich neben dem Dateiinhalt auch Amiga-Eigenschaften:
+Protection-Bits, Dateikommentare und das Änderungsdatum. Über CLOUD:
+funktionieren deshalb auch Protect, FileNote und SetDate.
+
+@endnode
+
+@node Voraussetzungen "Voraussetzungen"
+@toc Main
+@prev Einfuehrung
+@next Installation
+
+VORAUSSETZUNGEN
+
+Amiga:
+
+  - AmigaOS 3.x, Prozessor 68000 oder besser
+  - ein TCP/IP-Stack mit bsdsocket.library (Version 4 oder neuer),
+    zum Beispiel Roadshow, AmiTCP oder Miami
+  - AmiSSL 5 (amisslmaster.library) mit den CA-Zertifikaten der
+    AmiSSL-Installation - ohne AmiSSL startet kein Netzwerkprogramm
+  - MUI 3.8 oder neuer (muimaster.library ab Version 19), nur für
+    amicloud-commander
+  - ein erreichbarer @{" AmiCloud-Server " link Server}
+
+Stack: muss nicht eingestellt werden. Die Programme fordern beim Start
+selbst 64 KB an, der Handler erhält 16 KB über seinen DOSDriver, der
+Worker 64 KB beim Start durch den Handler.
+
+Speicher: Der CLOUD:-Handler hält eine geöffnete Datei vollständig im
+Arbeitsspeicher. Für sehr große Dateien lieber amicloud get/put
+benutzen, die direkt von und auf die Platte übertragen.
+
+AmiCloudPrefs braucht nur Intuition und GadTools, kein Netzwerk.
+
+@endnode
+
+@node Installation "Installation mit Install-AmiCloud"
+@toc Main
+@prev Voraussetzungen
+@next Manuell
+
+INSTALLATION MIT INSTALL-AMICLOUD
+
+Die Installationsschublade AmiCloud (zum Beispiel aus AmiCloud.lha)
+enthält:
+
+  Install-AmiCloud        Installationsskript
+  Uninstall-AmiCloud      Deinstallationsskript
+  ReadMe                  Kurzbeschreibung
+  LICENSE                 GNU GPL Version 3
+  C/                      alle Programme
+  Docs/AmiCloud.guide     dieses Handbuch
+  Examples/               amicloud.cfg.example, CLOUD.mountlist
+  Storage/DOSDrivers/CLOUD   DOSDriver für CLOUD:
+
+In einer Shell:
+
+  CD AmiCloud
+  Execute Install-AmiCloud
+
+Das Skript fragt nacheinander (Antwort y oder n):
+
+  1. Kommandozeilenprogramme nach C:
+  2. amicloud-commander nach SYS:Tools
+  3. AmiCloudPrefs nach SYS:Prefs
+  4. CLOUD:-Handler nach L: und DEVS:DOSDrivers
+
+Danach legt es ENVARC:amicloud.cfg und ENV:amicloud.cfg aus der
+Beispieldatei an - aber nur, wenn es sie noch nicht gibt. Eine
+vorhandene Konfiguration und ein vorhandener DOSDriver
+DEVS:DOSDrivers/CLOUD werden nie überschrieben.
+
+Anschließend bietet das Skript an, AmiCloudPrefs zu starten (dort
+Server, Benutzer und Passwort eintragen und Speichern wählen) und
+CLOUD: sofort zu mounten. Ist HELP: zugewiesen, kopiert es dieses
+Handbuch nach HELP:AmiCloud.guide.
+
+Test:
+
+  amicloud list /
+  Dir CLOUD:
+
+Für die Programme werden keine Icons mitgeliefert. Wer AmiCloudPrefs
+oder den Commander von der Workbench starten möchte, legt sich ein
+Projekt- oder Werkzeug-Icon an.
+
+@endnode
+
+@node Manuell "Manuelle Installation"
+@toc Main
+@prev Installation
+@next PC
+
+MANUELLE INSTALLATION
+
+  Datei aus der Schublade     Ziel
+  -----------------------     ----------------------------------
+  C/amicloud                  C:
+  C/amicloud-shell            C:
+  C/cloudsync                 C:
+  C/amicloud-commander        SYS:Tools/ (oder beliebig)
+  C/AmiCloudPrefs             SYS:Prefs/
+  C/amicloud-handler          L:
+  C/amicloud-worker           L:  (Name und Ort sind fest)
+  Storage/DOSDrivers/CLOUD    DEVS:DOSDrivers/
+  Examples/amicloud.cfg.example
+                              ENVARC:amicloud.cfg und ENV:amicloud.cfg
+  Docs/AmiCloud.guide         HELP: (oder beliebig)
+
+Als Shell-Befehle, in der Schublade:
+
+  Copy C/amicloud C/amicloud-shell C/cloudsync C:
+  Copy C/amicloud-commander SYS:Tools/
+  Copy C/AmiCloudPrefs SYS:Prefs/
+  Copy C/amicloud-handler C/amicloud-worker L:
+  Copy Storage/DOSDrivers/CLOUD DEVS:DOSDrivers/
+  Copy Examples/amicloud.cfg.example ENVARC:amicloud.cfg
+  Copy ENVARC:amicloud.cfg ENV:amicloud.cfg
+
+Die beiden letzten Zeilen nur, wenn es noch keine amicloud.cfg gibt.
+Dann die Datei mit AmiCloudPrefs oder einem Editor anpassen, siehe
+@{" Konfiguration " link Konfiguration}.
+
+amicloud-worker muss als L:amicloud-worker installiert sein: der
+Handler startet ihn beim Mounten genau von dort. Der Handler selbst
+steht im DOSDriver als "Handler = L:amicloud-handler".
+
+@endnode
+
+@node PC "AmiCloud auf dem PC"
+@toc Main
+@prev Manuell
+@next Server
+
+AMICLOUD AUF DEM PC
+
+Für macOS, Linux und Windows gibt es amicloud, amicloud-shell,
+cloudsync und den Dateimanager amicloud-commander (Qt 6). Sie werden aus
+den Quellen gebaut (siehe @{" Bauen " link Bauen}) und mit
+
+  make install                  (nach /usr/local/bin)
+
+installiert, oder man kopiert sie von Hand aus bin/pc/.
+
+Konfiguration: dieselben Schlüssel wie auf dem Amiga, siehe
+@{" Konfiguration " link Konfiguration}. Die Datei heißt dort
+~/.amicloudrc (Windows-Builds ohne MSYS-Umgebung: amicloud.cfg im
+aktuellen Verzeichnis). Der Qt-Commander liest ~/.amicloudrc und fragt
+fehlende Angaben in einem Dialog ab, speichert sie aber nicht.
+
+Die Bedienung ist auf allen Systemen gleich; Unterschiede sind in den
+Kapiteln der Programme vermerkt. Ausführlich: docs/INSTALL.md.
+
+@endnode
+
+@node Server "Den Server einrichten"
+@toc Main
+@prev PC
+@next Konfiguration
+
+DEN SERVER EINRICHTEN
+
+Der Server liegt im Quellcode unter server/ und läuft auf einem
+Linux-Rechner mit Apache 2.4, PHP 7.4 oder neuer (Erweiterungen
+pdo_mysql und fileinfo) und MariaDB/MySQL. HTTPS ist Pflicht: die API
+lehnt Klartext-HTTP ab.
+
+Kurzfassung (Beispielname amicloud.example.com):
+
+  1. Virtual Host mit DocumentRoot /var/www/amicloud und
+     "AllowOverride All" anlegen. Der Server gehört an die Wurzel des
+     Hostnamens (web.php verlinkt sich mit /web.php).
+  2. HTTPS einrichten, z.B. certbot --apache -d amicloud.example.com
+  3. Inhalt von server/ nach /var/www/amicloud kopieren - mit
+     "cp -r server/. ...", damit die .htaccess-Dateien mitkommen.
+  4. config.php.example nach config.php kopieren und ausfüllen:
+     AMICLOUD_TIMEZONE, DB_HOST, DB_NAME, DB_USER, DB_PASS,
+     STORAGE_PATH (außerhalb des Web-Verzeichnisses), MAX_UPLOAD.
+  5. Datenbank: mysql < sql/schema.sql, dann einen DB-Benutzer mit
+     SELECT, INSERT, UPDATE, DELETE auf amicloud.* anlegen.
+     sql/migrate_00x.sql sind nur für ältere Installationen.
+  6. Benutzer anlegen: Passwort-Hash mit
+       php -r 'echo password_hash("geheim", PASSWORD_BCRYPT);'
+     erzeugen und mit
+       INSERT INTO users (username, pass_hash) VALUES ('bob', ...);
+     eintragen.
+  7. Test: https://amicloud.example.com/api.php?action=status
+     (Benutzer bob, Passwort geheim) und die Weboberfläche
+     https://amicloud.example.com/web.php
+
+Die vollständige Anleitung mit allen Befehlen steht in
+docs/INSTALL.md, die REST-API in docs/api/API.md.
+
+AMICLOUD_TIMEZONE bestimmt die Zeitzone aller Zeitangaben des Servers.
+Auf dem Amiga sollten gmt_offset und dst dazu passen.
+
+@endnode
+
+@node Konfiguration "Konfiguration: amicloud.cfg"
+@toc Main
+@prev Server
+@next Prefs
+
+KONFIGURATION: AMICLOUD.CFG
+
+Alle AmiCloud-Programme lesen dieselbe Datei. Jede Zeile hat die Form
+schluessel=wert, Zeilen mit # am Anfang sind Kommentare.
+
+  server=https://amicloud.example.com
+  user=bob
+  pass=geheim
+  #basepath=/
+  #verify_ssl=1
+  #debug=T:amicloud.log
+  #gmt_offset=60
+  #dst=0
+
+Die Schlüssel:
+
+  server      Basis-URL des Servers, ohne /api.php. Pflicht.
+  user        Benutzername (auch: username). Pflicht.
+  pass        Passwort (auch: password). Pflicht. Es steht im
+              Klartext in der Datei.
+  basepath    Startverzeichnis auf dem Server. Standard /.
+              Pfade ohne führenden / beziehen sich darauf.
+  verify_ssl  1 = Serverzertifikat prüfen (Standard),
+              0 = nicht prüfen. Nur zum Testen!
+  debug       Nur für den CLOUD:-Handler (amicloud-worker): Ziel
+              für ein ausführliches HTTP/TLS-Protokoll, z.B.
+              T:amicloud.log oder
+              CON:0/0/640/200/AmiCloud Debug/CLOSE. Leer = aus.
+  gmt_offset  Nur Amiga: Abstand der Systemuhr zu UTC in Minuten
+              (MEZ = 60). Standard 0.
+  dst         Nur Amiga: 1 = Sommerzeit, addiert 60 Minuten.
+              Standard 0.
+
+gmt_offset und dst werden von amicloud-shell und vom CLOUD:-Handler
+ausgewertet. Die Amiga-Uhr kennt keine Zeitzone; ohne passende Werte
+stimmen die Datumsangaben von Dateien nicht mit dem Server überein.
+
+Wo die Datei gesucht wird:
+
+  amicloud, amicloud-shell, cloudsync:
+      -c <datei>, sonst ENV:amicloud.cfg, sonst amicloud.cfg im
+      aktuellen Verzeichnis
+  amicloud-commander:
+      ENV:amicloud.cfg, sonst amicloud.cfg im aktuellen Verzeichnis
+  amicloud-worker (CLOUD:):
+      nur ENV:amicloud.cfg, einmal beim Start
+  AmiCloudPrefs:
+      ENV:amicloud.cfg, sonst ENVARC:amicloud.cfg
+
+ENV: ist nach einem Neustart leer. Damit die Einstellungen bleiben,
+gehört die Datei auch nach ENVARC: - AmiCloudPrefs erledigt das mit
+Speichern. Kommandozeilenoptionen (-s, -u, -p, -d, -k) gehen den
+Werten aus der Datei vor.
+
+@endnode
+
+@node Prefs "AmiCloudPrefs"
+@toc Main
+@prev Konfiguration
+@next Amicloud
+
+AMICLOUDPREFS
+
+Aufruf: SYS:Prefs/AmiCloudPrefs (aus der Shell oder über ein Icon)
+
+Ein Einstellungsfenster für amicloud.cfg mit den Feldern Server,
+Benutzer, Passwort, Basis-Pfad, Zertifikat prüfen, Debug-Ziel,
+GMT-Offset (Min) und Sommerzeit - also allen Schlüsseln aus
+@{" Konfiguration " link Konfiguration}.
+
+Die drei Knöpfe wirken wie bei den Workbench-Voreinstellungen:
+
+  Speichern   schreibt ENVARC:amicloud.cfg und ENV:amicloud.cfg
+              (gilt sofort und dauerhaft)
+  Benutzen    schreibt nur ENV:amicloud.cfg (gilt bis zum Neustart)
+  Abbrechen   schreibt nichts
+
+Unterscheiden sich ENV: und ENVARC:, zeigt die Statuszeile einen
+Hinweis; angezeigt werden dann die Werte aus ENV:.
+
+Der CLOUD:-Handler liest die Datei nur einmal beim Start. Geänderte
+Einstellungen wirken für CLOUD: deshalb erst nach einem Neustart.
+
+@endnode
+
+@node Amicloud "amicloud - Kommandozeilen-Client"
+@toc Main
+@prev Prefs
+@next Shell
+
+AMICLOUD - KOMMANDOZEILEN-CLIENT
+
+Aufruf:
+
+  amicloud [Optionen] <Befehl> [Argumente]
+
+Optionen (vor dem Befehl):
+
+  -s <url>     Server-URL
+  -u <name>    Benutzername
+  -p <pass>    Passwort
+  -d <pfad>    Basis-Pfad auf dem Server (Standard /)
+  -c <datei>   andere Konfigurationsdatei
+  -k           Zertifikat nicht prüfen (nur zum Testen)
+  -v           ausführliches HTTP-Protokoll nach stderr (nur Amiga)
+  --help       Kurzhilfe
+
+Befehle:
+
+  list [pfad]              Verzeichnis auflisten
+  get <remote> [lokal]     Datei herunterladen; ohne lokalen Namen
+                           unter ihrem Namen ins aktuelle Verzeichnis
+  put <lokal> [remote]     Datei hochladen; ohne Zielangabe unter
+                           ihrem Namen in den Basis-Pfad
+  del <remote>             Datei oder leeres Verzeichnis löschen
+  info <remote>            Größe, Datum, MD5 usw. anzeigen
+  mkdir <pfad>             Verzeichnis anlegen
+  rename <alt> <neu>       umbenennen oder verschieben
+  search <muster> [pfad]   rekursiv nach Namen suchen (auch: find)
+  version                  Version anzeigen (ohne Server)
+
+Remote-Pfade mit führendem / sind absolut, alle anderen beziehen sich
+auf den Basis-Pfad. Die MD5-Prüfsumme wird bei get und put während der
+Übertragung geprüft.
+
+Suchmuster: * und ? sowie die AmigaDOS-Form #?. search gibt einen
+Treffer je Zeile aus, Verzeichnisse mit / am Ende. Standard-Bereich ist
+der Basis-Pfad; der Server liefert höchstens 2000 Treffer.
+
+Beispiele:
+
+  amicloud list /
+  amicloud put S:Startup-Sequence /backup/Startup-Sequence
+  amicloud get /backup/Startup-Sequence RAM:ss
+  amicloud mkdir /archiv
+  amicloud rename /backup/Startup-Sequence /archiv/ss-alt
+  amicloud info /archiv/ss-alt
+  amicloud search #?.txt /
+  amicloud -s https://amicloud.example.com -u bob -p geheim list
+
+Hinweis: Bei put mit Laufwerksangabe (z.B. DH0:bericht.txt) auf dem
+Amiga immer das Ziel angeben - der automatisch gebildete Zielname
+würde sonst den Doppelpunkt enthalten, und den lehnt der Server ab.
+
+Rückgabewert: 0 bei Erfolg, sonst ungleich 0.
+
+@endnode
+
+@node Shell "amicloud-shell - interaktive Shell"
+@toc Main
+@prev Amicloud
+@next Cloudsync
+
+AMICLOUD-SHELL - INTERAKTIVE SHELL
+
+Aufruf:
+
+  amicloud-shell [Optionen]
+
+Optionen wie bei @{" amicloud " link Amicloud}: -s, -u, -p, -d, -c, -k,
+-v, --help. Nach dem Start zeigt die Shell Server, Serverversion,
+Benutzer sowie das Remote- und das lokale Verzeichnis und wartet mit
+einem Prompt auf Befehle. Mit Cursor hoch/runter lassen sich frühere
+Eingaben wiederholen (nur während der Sitzung).
+
+Befehle:
+
+  help                        Übersicht
+  pwd / lpwd                  Remote- / lokales Verzeichnis zeigen
+  cd [pfad]                   Remote-Verzeichnis wechseln
+                              (ohne Pfad: zurück zum Basis-Pfad)
+  lcd [pfad]                  lokales Verzeichnis wechseln
+                              (ohne Pfad: zurück zum Startverz.)
+  ls|dir|list [pfad] [-n|-s|-d|-m]
+                              Remote-Verzeichnis auflisten
+  lls|ldir|llist [pfad] [-n|-s|-d|-m]
+                              lokales Verzeichnis auflisten
+  get [-r] <remote/muster> [lokal]
+                              herunterladen
+  put [-r] <lokal/muster> [remote]
+                              hochladen
+  del|rm|delete [-r|-f] <pfad>
+                              löschen
+  mkdir|makedir <pfad>        Verzeichnis anlegen
+  rename|mv <alt> <neu>       umbenennen / verschieben
+  info|stat <pfad>            Metadaten anzeigen
+  search|find <muster> [pfad] rekursiv suchen, Standard: aktuelles
+                              Remote-Verzeichnis
+  md5 <remote>                MD5 einer Datei auf dem Server
+  lmd5 <lokal>                MD5 einer lokalen Datei
+  history [clear]             Verlauf anzeigen / löschen
+  quit|exit|bye               beenden
+
+Listen-Optionen: -n nur Namen, -s mit Größe, -d mit Datum, -m mit MD5
+(lokal wird die MD5 jedes Mal neu berechnet). Ohne Option: Name, Größe,
+Datum und Typ.
+
+Gleichwertige Schreibweisen: -r, --recursive, RECURSIVE (auch ALL) für
+rekursiv; -f, --force, FORCE für löschen ohne Rückfrage. -r bei get und
+put überträgt ganze Verzeichnisbäume. Muster (* ? #?) sind bei get und
+put erlaubt.
+
+Kurzformen für lcd: ".." eine Ebene höher (auf dem Amiga wie "/"),
+":" oder "\\" Wurzel des aktuellen Laufwerks.
+
+Befehle lassen sich auch aus einer Datei lesen, dann ohne
+Zeilenbearbeitung:
+
+  amicloud-shell <befehle.txt
+
+Beispiel:
+
+  /> cd archiv
+  /archiv> lcd RAM:
+  /archiv> get -r fotos
+  /archiv> put #?.txt
+  /archiv> ls -d
+  /archiv> quit
+
+@endnode
+
+@node Cloudsync "cloudsync - Ordner abgleichen"
+@toc Main
+@prev Shell
+@next Commander
+
+CLOUDSYNC - ORDNER ABGLEICHEN
+
+Aufruf:
+
+  cloudsync [Optionen] <lokaler-ordner> <remote-ordner>
+
+Optionen:
+
+  -s <url>     Server-URL
+  -u <name>    Benutzername
+  -p <pass>    Passwort
+  -c <datei>   andere Konfigurationsdatei
+  -k           Zertifikat nicht prüfen (nur zum Testen)
+  -n           Probelauf: zeigt, was passieren würde, ändert nichts
+  --help       Kurzhilfe
+
+cloudsync gleicht einen lokalen Ordner einmalig in beide Richtungen mit
+einem Ordner auf dem Server ab und beendet sich dann. Es ist kein
+Hintergrunddienst; für regelmäßigen Abgleich den Aufruf wiederholen.
+
+So wird entschieden:
+
+  - Nur auf einer Seite geändert: wird zur anderen Seite übertragen.
+  - Auf beiden Seiten gleich geändert: nichts zu tun.
+  - Auf beiden Seiten verschieden geändert: Konflikt. Die Datei wird
+    übersprungen und gemeldet, nichts wird überschrieben.
+  - Auf einer Seite gelöscht und auf der anderen unverändert: die
+    Löschung wird übertragen.
+
+Dafür merkt sich cloudsync den Stand des letzten Abgleichs in der Datei
+.amicloudsync im lokalen Ordner. Fehlende Ordner werden auf beiden
+Seiten angelegt (nicht beim Probelauf).
+
+Beispiel:
+
+  cloudsync -n Work:Texte /texte      (erst schauen)
+  cloudsync Work:Texte /texte         (dann abgleichen)
+
+Rückgabewert: 1, wenn beim Abgleich Fehler auftraten, sonst 0.
+
+@endnode
+
+@node Commander "amicloud-commander - Dateimanager"
+@toc Main
+@prev Cloudsync
+@next Handler
+
+AMICLOUD-COMMANDER - DATEIMANAGER
+
+Aufruf: amicloud-commander [-v]   (braucht MUI 3.8)
+
+Ein Dateimanager mit zwei Panels nebeneinander. Jedes Panel zeigt über
+seinen Umschalter entweder die lokalen Laufwerke (Local) oder die Cloud
+(Cloud). Beim Start zeigt links das aktuelle Verzeichnis, rechts der
+Basis-Pfad in der Cloud. Das zuletzt angeklickte Panel ist das aktive.
+
+Server und Zugangsdaten kommen aus ENV:amicloud.cfg (sonst
+amicloud.cfg im aktuellen Verzeichnis). Fehlt dort server, user oder
+pass, meldet der Commander das und beendet sich.
+
+Tasten und Knöpfe:
+
+  F2   Neu laden
+  F3   Info zum gewählten Eintrag
+  F4   Suchen: Muster eingeben (* ? #?), sucht rekursiv ab dem Pfad
+       des aktiven Panels. Die Treffer erscheinen in einem eigenen
+       Fenster; Doppelklick oder "Gehe zu" springt hin.
+  F5   Kopieren ins andere Panel (Mehrfachauswahl möglich)
+  F6   Verschieben des gewählten Eintrags ins andere Panel, nur
+       zwischen Local und Cloud, mit Rückfrage
+  F7   Verzeichnis anlegen
+  F8   Löschen des gewählten Eintrags, mit Rückfrage. Verzeichnisse
+       in der Cloud samt Inhalt, lokale nur, wenn sie leer sind.
+  F10  Beenden
+
+Menü Projekt:
+
+  Über AmiCloud Commander...  (Amiga-?)
+  Prüfsumme anzeigen          (Amiga-M)  MD5 der Auswahl
+  Umbenennen                  (Amiga-R)
+  Suchen...                   (Amiga-S)
+  Beenden                     (Amiga-Q)
+
+Existiert eine Datei beim Kopieren schon, zeigt eine Abfrage Größe,
+Datum und MD5 beider Seiten; zur Wahl stehen Überschreiben,
+Überspringen, Alle überschreiben, Alle überspringen und Abbruch.
+Laufende Übertragungen zeigen einen Fortschrittsbalken mit
+Abbrechen-Knopf. Kopieren von Cloud zu Cloud ist nicht möglich.
+
+Der Commander gibt normalerweise nichts auf der Konsole aus. Zur
+Fehlersuche: -v beim Start aus der Shell, oder beim Start von der
+Workbench der Merkmal-Eintrag (Tooltype) DEBUG im Icon.
+
+Auf dem PC heißt das Programm ebenso und arbeitet mit Qt 6: gleiche
+Funktionstasten, dazu Menüs Ansicht (Versteckte Dateien ausblenden),
+Extras (Prüfsumme, Suchen) und Hilfe. Dort erledigt F6 auch das
+Umbenennen, wenn beide Panels dieselbe Quelle zeigen, und F4 bietet
+zusätzlich die Wahl des Suchbereichs.
+
+Hinweis: Die MUI-Fassung ist auf echter Hardware noch wenig erprobt;
+die Programmversion meldet sich deshalb als "0.1 (unverified)".
+
+@endnode
+
+@node Handler "CLOUD:-Handler - die Cloud als Laufwerk"
+@toc Main
+@prev Commander
+@next Fehlersuche
+
+CLOUD:-HANDLER - DIE CLOUD ALS LAUFWERK
+
+Der Handler macht den eigenen Cloud-Bereich zu einem AmigaDOS-Laufwerk
+CLOUD:. Auf der Workbench erscheint es als Datenträger AmiCloud.
+
+Installation: amicloud-handler und amicloud-worker nach L:, der
+DOSDriver CLOUD nach DEVS:DOSDrivers/, dazu eine vollständige
+ENV:amicloud.cfg (siehe @{" Installation " link Installation}).
+
+Mounten:
+
+  Mount CLOUD:              sofort
+                            (oder beim nächsten Systemstart
+                            automatisch aus DEVS:DOSDrivers)
+
+Danach wie jedes andere Laufwerk:
+
+  Dir CLOUD:
+  MakeDir CLOUD:Texte
+  Copy DH0:bericht.txt CLOUD:Texte/
+  Copy CLOUD:Texte/bericht.txt RAM:
+  Rename CLOUD:Texte/bericht.txt CLOUD:Texte/alt.txt
+  Protect CLOUD:Texte/alt.txt +p
+  FileNote CLOUD:Texte/alt.txt "Mein Kommentar"
+  SetDate CLOUD:Texte/alt.txt today
+  Delete CLOUD:Texte ALL
+
+Was funktioniert: Lesen, Schreiben, Anlegen, Löschen und Umbenennen von
+Dateien und Verzeichnissen, Protection-Bits, Dateikommentare (bis 79
+Zeichen), Datum setzen, Workbench-Fenster auf AmiCloud.
+
+So arbeitet er: Der Handler selbst (amicloud-handler) beantwortet nur die
+DOS-Pakete. Die gesamte Netzwerkarbeit erledigt ein zweiter Prozess,
+amicloud-worker, den der Handler beim Mounten aus L: startet. Der
+Worker liest ENV:amicloud.cfg einmal beim Start und baut die
+Netzverbindung erst bei der ersten Anfrage auf; das Mounten beim Booten
+klappt deshalb auch, wenn der TCP/IP-Stack später startet.
+Verzeichnisinhalte werden 10 Sekunden zwischengespeichert. Eine
+geöffnete Datei wird ganz in den Speicher geladen und beim Schließen
+hochgeladen, wenn sie geändert wurde.
+
+Grenzen:
+
+  - Kein Abmelden: CLOUD: bleibt bis zum Neustart gemountet. Neue
+    Programmversionen und geänderte Einstellungen wirken erst danach.
+  - Anfragen laufen nacheinander; eine langsame Übertragung hält
+    andere Zugriffe auf CLOUD: so lange auf.
+  - Antwortet der Worker 60 Sekunden lang nicht, schlägt die Anfrage
+    fehl, und alle weiteren Zugriffe scheitern sofort bis zum
+    Neustart - das Laufwerk friert aber nicht ein.
+  - Ein nicht leeres Verzeichnis lässt sich nicht direkt löschen;
+    Delete ... ALL funktioniert (DOS löscht Eintrag für Eintrag).
+  - Info CLOUD: zeigt eine feste, plausible Kapazität, keine echte
+    Belegung.
+  - Ein Laufwerk, kein Diskwechsel, kein Formatieren, kein Umbenennen
+    des Datenträgers.
+  - Große Dateien brauchen entsprechend viel freien Speicher.
+  - Eine Datei namens debuglog im Wurzelverzeichnis der Cloud ist über
+    CLOUD: nicht erreichbar (der Name ist für die Diagnose reserviert,
+    siehe @{" Fehlersuche " link Fehlersuche}).
+
+@endnode
+
+@node Fehlersuche "Fehlersuche"
+@toc Main
+@prev Handler
+@next Deinstallation
+
+FEHLERSUCHE
+
+"server URL required" / "username required" / "password required"
+  Die Konfiguration fehlt oder ist unvollständig. ENV:amicloud.cfg
+  prüfen oder AmiCloudPrefs starten und Speichern wählen.
+
+"network initialisation failed"
+  Der TCP/IP-Stack läuft nicht (bsdsocket.library fehlt) oder AmiSSL 5
+  ist nicht installiert. Mit -v zeigen amicloud und amicloud-shell,
+  an welcher Stelle es scheitert.
+
+Zertifikatsfehler / keine Verbindung über HTTPS
+  Uhrzeit des Amiga prüfen (ein falsches Datum macht Zertifikate
+  ungültig) und die AmiSSL-Installation samt CA-Zertifikaten. Nur zum
+  Testen: -k bzw. verify_ssl=0.
+
+Anmeldung wird abgelehnt (401)
+  Benutzername/Passwort prüfen. Serverseitig: siehe docs/INSTALL.md,
+  Abschnitt Fehlersuche (z.B. CGIPassAuth bei PHP-FPM).
+
+Datum von Dateien stimmt nicht
+  gmt_offset und dst passend zur Uhrzeit des Amiga setzen und mit der
+  Zeitzone des Servers (AMICLOUD_TIMEZONE) vergleichen.
+
+Mount CLOUD: schlägt fehl
+  Liegt amicloud-worker in L:? Der Handler wartet bis zu 30 Sekunden
+  darauf, dass der Worker startet.
+
+CLOUD: reagiert nicht wie erwartet
+  In ENV:amicloud.cfg zum Beispiel debug=T:amicloud.log eintragen,
+  neu starten, den Fehler auslösen und die Datei ansehen: der Worker
+  protokolliert jeden Schritt vom Öffnen der Bibliotheken bis zur
+  HTTP-Anfrage. Zusätzlich zeigt
+    Type CLOUD:debuglog
+  das Protokoll der Handler-Seite (Anfragen an den Worker).
+
+Commander startet nicht
+  MUI 3.8 installiert? Ist die Konfiguration vollständig? Zur
+  Fehlersuche mit -v aus der Shell starten.
+
+Pfeiltasten in amicloud-shell wirken nicht
+  Die Shell braucht ein interaktives Konsolenfenster. Kommen die
+  Befehle aus einer Datei oder Pipe, gibt es keine Zeilenbearbeitung.
+
+@endnode
+
+@node Deinstallation "Deinstallation"
+@toc Main
+@prev Fehlersuche
+@next Bauen
+
+DEINSTALLATION
+
+In der Installationsschublade:
+
+  Execute Uninstall-AmiCloud
+
+Das Skript löscht die Programme aus C:, SYS:Tools, SYS:Prefs und L:,
+den DOSDriver DEVS:DOSDrivers/CLOUD und HELP:AmiCloud.guide. Die
+Konfiguration (ENV:amicloud.cfg, ENVARC:amicloud.cfg) löscht es nur
+nach Rückfrage. Ein gemountetes CLOUD: verschwindet erst mit dem
+nächsten Neustart.
+
+Von Hand:
+
+  Delete C:amicloud C:amicloud-shell C:cloudsync
+  Delete SYS:Tools/amicloud-commander SYS:Prefs/AmiCloudPrefs
+  Delete L:amicloud-handler L:amicloud-worker
+  Delete DEVS:DOSDrivers/CLOUD HELP:AmiCloud.guide
+  Delete ENV:amicloud.cfg ENVARC:amicloud.cfg
+
+@endnode
+
+@node Bauen "Bauen aus den Quellen"
+@toc Main
+@prev Deinstallation
+@next Lizenz
+
+BAUEN AUS DEN QUELLEN
+
+Die Quellen liegen auf GitHub (siehe @{" Autor " link Autor}). Die
+gemeinsamen Bibliotheken stecken im Projekt AmiCloudCore, das als
+Submodul core/ eingebunden ist:
+
+  git clone --recurse-submodules https://github.com/dangelrk/AmiCloud.git
+
+Cross-Compile vom PC (macOS, Linux, Windows) mit vbcc:
+
+  export VBCC=/pfad/zu/vbcc
+  make amiga            Programme nach bin/amiga/
+  make dist-amiga       Installationsschublade build/dist/AmiCloud/
+
+Nativ auf dem Amiga (vbcc, AmiSSL-SDK, Roadshow-SDK, MUI-SDK), im
+Projektverzeichnis:
+
+  Execute Build-Amiga
+
+Die SDK-Pfade stehen oben im Skript (AMISSL_INC, NET_INC, MUI_INC)
+oder werden über die Zuweisungen AmiSSL:, NetInclude: und MUI:
+gesetzt. Das Skript ist auf echter Hardware noch ungetestet.
+
+PC: make pc (Kommandozeilenprogramme, braucht libcurl) und make qt
+(Qt-Commander, braucht Qt 6 und CMake).
+
+Alle Einzelheiten: docs/BUILD.md.
+
+@endnode
+
+@node Lizenz "Lizenz"
+@toc Main
+@prev Bauen
+@next Autor
+
+LIZENZ
+
+AmiCloud - Copyright (C) 2026 Ronny Krueger
+
+AmiCloud ist freie Software. Sie dürfen es unter den Bedingungen der
+GNU General Public License, wie von der Free Software Foundation
+veröffentlicht, weitergeben und/oder verändern, entweder gemäß
+Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren Version.
+
+Kurz gesagt:
+
+  - Sie dürfen das Programm benutzen, kopieren und weitergeben.
+  - Sie dürfen es verändern und veränderte Fassungen weitergeben.
+  - Wer es (verändert oder nicht) weitergibt, muss den Quellcode
+    mitliefern oder zugänglich machen, und zwar wieder unter der GPL.
+  - Es gibt KEINE GEWÄHRLEISTUNG, soweit gesetzlich zulässig.
+
+Maßgeblich ist allein der englische Lizenztext in der Datei LICENSE
+(in der Installationsschublade und im Quellcode).
+
+Der enthaltene JSON-Parser Parson (c) Krzysztof Gabis steht unter der
+MIT-Lizenz.
+
+@endnode
+
+@node Autor "Autor und Kontakt"
+@toc Main
+@prev Lizenz
+@next Historie
+
+AUTOR UND KONTAKT
+
+AmiCloud wurde geschrieben von Ronny Krueger.
+
+Quellcode, Fehlermeldungen und Vorschläge:
+
+  https://github.com/dangelrk/AmiCloud
+
+Verwandte Projekte desselben Autors:
+
+  https://github.com/dangelrk/AmiCloudCore  gemeinsame Bibliotheken
+  https://github.com/dangelrk/AmiOwnCloud   OwnCloud/Nextcloud (WebDAV)
+  https://github.com/dangelrk/AmiVCS        Versionsverwaltung
+
+@endnode
+
+@node Historie "Versionsgeschichte"
+@toc Main
+@prev Autor
+
+VERSIONSGESCHICHTE
+
+Programme 0.1 (2026)
+  - Erste Fassung: Server mit REST-API und Weboberfläche, amicloud,
+    amicloud-shell, amicloud-commander (MUI und Qt), cloudsync,
+    AmiCloudPrefs und der CLOUD:-Handler.
+  - Suche über alle Programme (search/find, F4 im Commander).
+  - Keep-Alive-Verbindungen auf dem Amiga.
+
+Handbuch 1.0 (27.09.2026)
+  - Neu geschrieben für das eigenständige Projekt AmiCloud mit
+    Installationsschublade, Install-AmiCloud und Uninstall-AmiCloud.
+
+@endnode

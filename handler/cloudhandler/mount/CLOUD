@@ -1,0 +1,17 @@
+/* CLOUD: -- AmiCloud DOS handler (DOSDriver). Installation (automatisch
+ * per Install-AmiCloud, Details in docs/INSTALL.md und
+ * handler/cloudhandler/README.md):
+ *   Copy amicloud-handler L:
+ *   Copy amicloud-worker  L:        <- backend_init() startet ihn beim
+ *                                      Mount aus L: (SystemTags)
+ *   Copy CLOUD DEVS:DOSDrivers/     <- diese Datei
+ * amicloud-worker liest ENV:amicloud.cfg (server/user/pass, Vorlage
+ * config-examples/amicloud.cfg.example, Editor AmiCloudPrefs) -- ohne
+ * sie startet er zwar, aber jede echte Anfrage schlaegt fehl.
+ * Danach neu starten oder in der Shell "Mount CLOUD:" eingeben.
+ * Inhaltsgleiche Kopie: config-examples/CLOUD.mountlist */
+Handler   = L:amicloud-handler
+StackSize = 16384
+Priority  = 5
+GlobVec   = -1      /* pflicht fuer C-Handler -- kein BCPL-GlobVec */
+Activate  = 1

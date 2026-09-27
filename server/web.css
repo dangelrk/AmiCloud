@@ -1,0 +1,382 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright (C) 2026 Ronny Krueger
+ */
+:root {
+    --bg:      #1a1a2e;
+    --surface: #16213e;
+    --card:    #0f3460;
+    --accent:  #e94560;
+    --teal:    #0f9b8e;
+    --text:    #e0e0e0;
+    --muted:   #8892a4;
+    --border:  #2a3a5c;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+a { color: var(--teal); text-decoration: none; }
+a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Brand colours ────────────────────────────────────────────────────── */
+.c-ami   { color: var(--accent); }
+.c-cloud { color: var(--teal); }
+
+/* ── Login ────────────────────────────────────────────────────────────── */
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 8rem;
+}
+
+.login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 340px;
+}
+
+.login-box h1 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.login-box label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+}
+
+.login-box input[type="text"],
+.login-box input[type="password"] {
+    display: block;
+    width: 100%;
+    margin-top: 0.3rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+}
+
+.login-box input:focus {
+    border-color: var(--teal);
+}
+
+.login-box button {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    padding: 0.65rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.login-box button:hover { background: #c9304f; }
+
+.msg-error {
+    background: rgba(233, 69, 96, 0.12);
+    border: 1px solid var(--accent);
+    border-radius: 5px;
+    padding: 0.55rem 0.9rem;
+    color: var(--accent);
+    font-size: 0.9rem;
+    margin-bottom: 1.2rem;
+}
+
+/* ── Top bar ──────────────────────────────────────────────────────────── */
+.topbar {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 0.7rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.brand { font-size: 1.4rem; font-weight: bold; letter-spacing: 0.03em; }
+
+.userinfo { font-size: 0.88rem; color: var(--muted); }
+
+.btn-logout {
+    margin-left: 0.75rem;
+    padding: 0.25rem 0.7rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 0.82rem;
+}
+
+.btn-logout:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    text-decoration: none;
+}
+
+/* ── Main layout ──────────────────────────────────────────────────────── */
+main {
+    max-width: 900px;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+}
+
+/* ── Breadcrumb ───────────────────────────────────────────────────────── */
+.breadcrumb {
+    font-size: 0.92rem;
+    padding: 0.45rem 0.9rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    margin-bottom: 0.9rem;
+}
+
+.breadcrumb .sep { color: var(--muted); margin: 0 0.15rem; }
+
+/* ── Upload-Ergebnis-Hinweiszeile (Abschnitt 22.1) ───────────────────── */
+.msg-info {
+    background: rgba(15, 155, 142, 0.12);
+    border: 1px solid var(--teal);
+    border-radius: 5px;
+    padding: 0.5rem 0.9rem;
+    color: var(--text);
+    font-size: 0.88rem;
+    margin-bottom: 0.9rem;
+}
+
+/* ── Ordner-zuerst-Toggle ─────────────────────────────────────────────── */
+.foldersfirst-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+}
+
+/* ── File table ───────────────────────────────────────────────────────── */
+.filetable {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.filetable thead th {
+    padding: 0.55rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+}
+
+.sort-link { color: var(--muted); }
+.sort-link:hover { color: var(--teal); text-decoration: none; }
+.sort-arrow { color: var(--teal); font-size: 0.7rem; }
+
+.filetable tbody tr {
+    border-bottom: 1px solid var(--border);
+}
+
+.filetable tbody tr:last-child { border-bottom: none; }
+.filetable tbody tr:hover { background: rgba(15, 52, 96, 0.5); }
+
+.filetable td { padding: 0.5rem 1rem; font-size: 0.9rem; }
+
+.col-meta {
+    color: var(--muted);
+    white-space: nowrap;
+    width: 8rem;
+}
+
+.col-act { width: 13rem; text-align: right; white-space: nowrap; }
+.col-act .form-inline { display: inline-block; margin-left: 0.35rem; }
+
+/* ── Bulk-select checkbox column ─────────────────────────────────────── */
+.col-check { width: 1.75rem; text-align: center; }
+
+/* ── MD5 column (Abschnitt 22.2) ──────────────────────────────────────── */
+.col-md5 {
+    width: 7rem;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+}
+
+/* .md5-cell truncates visually via CSS ellipsis but keeps the FULL 32-hex
+ * value as its text content — double-click/Strg-C always grabs the whole
+ * checksum, no JavaScript needed. The title attribute (see web.php) gives
+ * the full value on hover too. */
+.md5-cell {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+/* Pruefsummen-Vergleich ist ein Desktop-Anwendungsfall — auf schmalen
+ * Viewports lieber Platz fuer Name/Groesse/Aktionen lassen. */
+@media (max-width: 700px) {
+    .col-md5 { display: none; }
+}
+
+.link-dir  { color: var(--teal); font-weight: 500; }
+.link-dir::before  { content: '▸ '; }
+.link-file { color: var(--text); }
+
+.empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 2rem 1rem;
+    font-style: italic;
+}
+
+/* ── Delete button ────────────────────────────────────────────────────── */
+.btn-del {
+    background: transparent;
+    border: 1px solid #6b2030;
+    color: #a03050;
+    border-radius: 4px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.btn-del:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+/* ── Rename button ────────────────────────────────────────────────────── */
+.btn-rename {
+    background: transparent;
+    border: 1px solid #1f5c56;
+    color: var(--teal);
+    border-radius: 4px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.btn-rename:hover {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #fff;
+}
+
+/* ── Actions bar ──────────────────────────────────────────────────────── */
+/* Drei gleich breite Elemente (loeschen/upload/mkdir), zusammen genauso
+ * breit wie die Tabelle darueber -- .actions hat selbst keine eigene
+ * Breite, erbt die volle Content-Breite von <main> wie .filetable auch. */
+.actions {
+    margin-top: 0.9rem;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.actions > .btn-del {
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.55rem 0.9rem;
+    flex: 1;
+    min-width: 240px;
+}
+
+.form-row input[type="text"] {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 0.35rem 0.6rem;
+    font-size: 0.88rem;
+    outline: none;
+    min-width: 0;
+}
+
+.form-row input[type="text"]:focus {
+    border-color: var(--teal);
+}
+
+.form-row button {
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 0.38rem 1rem;
+    font-size: 0.88rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.form-row button:hover:not(:disabled) { background: #0c8275; }
+.form-row button:disabled { opacity: 0.5; cursor: default; }
+
+/* Ersetzt das native, im engen .form-row abgeschnittene Datei-Widget
+ * ("Datei ausgewaehlt"/"Keine ausgewaehlt") -- "Datei hochladen"/"Ordner
+ * hochladen" sind zwei ganz normale <button>, die per JS nur die
+ * ausgeblendeten (hidden) echten <input type="file"> ansteuern; die
+ * Auswahl selbst laedt sofort hoch (nach confirm()-Rueckfrage), kein
+ * separater "Hochladen"-Klick, keine Statuszeile noetig. */
+.btn-pick {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.38rem 0.8rem;
+    font-size: 0.88rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-pick:hover { border-color: var(--teal); color: var(--teal); }
+
+/* ── Page footer ──────────────────────────────────────────────────────── */
+.pagefooter {
+    text-align: center;
+    margin: 2rem 0 1rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+}

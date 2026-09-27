@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AmiCloud — Implementierungsplan: Suchfunktion</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a2e; --muted: #5a5a72;
+    --accent: #1e5aa8; --accent2: #8a4d1f;
+    --card: #f4f6fa; --border: #d8dde6; --code-bg: #eef1f6;
+    --warn-bg: #fff6e8; --warn-border: #e0b060;
+    --rule-bg: #eef6ee; --rule-border: #6aa06a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --fg: #e4e6eb; --muted: #9aa0ad;
+      --accent: #7ab0f0; --accent2: #e0a060;
+      --card: #1e222a; --border: #333a46; --code-bg: #242933;
+      --warn-bg: #2a2418; --warn-border: #8a6a30;
+      --rule-bg: #1b2a1b; --rule-border: #4a7a4a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 { font-size: 1.7rem; border-bottom: 3px solid var(--accent); padding-bottom: .4rem; }
+  h2 { font-size: 1.3rem; color: var(--accent); margin-top: 2.2rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+  h3 { font-size: 1.05rem; color: var(--accent2); margin-top: 1.6rem; }
+  code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .875em; }
+  code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: .9rem 1rem; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 1.4rem; }
+  li { margin: .25rem 0; }
+  li > ul, li > ol { margin: .25rem 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  .tablewrap { overflow-x: auto; }
+  th, td { border: 1px solid var(--border); padding: .4rem .6rem; text-align: left; vertical-align: top; }
+  th { background: var(--card); }
+  td.c { text-align: center; white-space: nowrap; }
+  .stage { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: .2rem 1.2rem 1rem; margin: 1.4rem 0; }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); border-radius: 6px; padding: .7rem 1rem; margin: 1rem 0; }
+  .rule { background: var(--rule-bg); border-left: 4px solid var(--rule-border); border-radius: 6px; padding: .7rem 1rem; margin: 1rem 0; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+<h1>Implementierungsplan: Suchfunktion (<code>search</code> / <code>find</code>)</h1>
+<p class="meta">Stand: 2026-07-15 · Markdown-Fassung: <code>search-plan.md</code> · Nur Planung — Umsetzung folgt nach Review.</p>
+
+<h2>Context</h2>
+<p>AmiCloud hat bisher keinen Weg, im Cloud-Baum nach Dateien/Ordnern zu suchen —
+man kann nur Verzeichnis für Verzeichnis mit <code>ls</code>/Panel navigieren.
+Diese Änderung ergänzt einen <strong><code>search</code>- (Alias <code>find</code>)
+Befehl</strong> in allen drei Front-Ends (CLI <code>amicloud</code>,
+<code>amicloud-shell</code>, GUI <code>amicloud-commander</code>), der mit den
+klassischen Jokern <strong><code>*</code>, <code>?</code> und AmigaDOS
+<code>#?</code></strong> nach Datei- oder Ordnernamen sucht.</p>
+
+<p>Zwei per Rückfrage bestätigte Design-Entscheidungen:</p>
+<ol>
+  <li><strong>Server-seitige Suche</strong> — ein neuer <code>api.php?action=search</code>-Endpunkt
+    fragt die <code>files</code>-DB in <strong>einem</strong> Request ab (blitzschnell,
+    auch bei großen Bäumen), statt clientseitig Verzeichnis für Verzeichnis zu laufen.</li>
+  <li><strong>Standard-Scope = aktuelles Verzeichnis rekursiv</strong> (Shell-cwd bzw.
+    aktives Commander-Panel), mit Option „ganze Cloud ab <code>/</code>".</li>
+</ol>
+
+<div class="rule">
+  Damit braucht <strong>kein</strong> Client-Makefile eine neue Lib: der Server macht
+  das Matching, die Clients rufen nur <code>cmd_search()</code> in libcloudhttp auf.
+  Der existierende <code>changes()</code>-Endpunkt ist die fast wörtliche Vorlage;
+  der Wildcard-Matcher <code>pattern.h</code> (libcloudfs) wird nur im Commander
+  für die <strong>lokale</strong> Panel-Seite gebraucht.
+</div>
+
+<h2>1. Server: neuer <code>action=search</code></h2>
+<h3><code>server/api.php</code></h3>
+<p>Neuen <code>case</code> in den Dispatch-<code>switch</code> (nach <code>case 'changes'</code>, ~Zeile 35):</p>
+<pre><code>case 'search':   FileStore::search($path, trim($_GET['q'] ?? ''),
+                     isset($_GET['dirs']) ? (bool)$_GET['dirs'] : true); break;</code></pre>
+<p><code>$path</code> ist der Scope-Root (schon via <code>sanitizePath</code> geholt);
+<code>q</code> ist das Wildcard-Muster.</p>
+
+<h3><code>server/includes/FileStore.php</code></h3>
+<p>Nach <code>changes()</code> (Zeile 501–532) analog aufbauen — dieselbe SELECT-Form,
+dieselbe Envelope-Struktur (<code>entries</code>-Array mit <code>/</code>-präfixierten Pfaden):</p>
+<pre><code>/* Glob (*,?,#?) -> SQL-LIKE. Reihenfolge wichtig: #? vor ? behandeln.
+   %,_,\ im Literal-Text werden via likeEscape() maskiert. */
+private static function globToLike(string $glob): string { ... }
+
+public static function search(string $path, string $glob, bool $dirsToo): void
+{
+    if ($glob === '') { Response::error(400, 'search requires q'); return; }
+    $scope = dbPath($path);                    // relativ, ohne führenden '/'
+    $like  = self::globToLike($glob);
+    $sql = 'SELECT id, path, is_dir, size_bytes, checksum, revision,
+                   change_seq, UNIX_TIMESTAMP(modified_at) AS mtime_ts
+            FROM files
+            WHERE user_id = ? AND deleted_at IS NULL
+              AND SUBSTRING_INDEX(path, "/", -1) LIKE ? ESCAPE "\\\\" ';
+    $args = [Auth::$user_id, $like];
+    if ($scope !== '') {                        // nur unterhalb des Scopes
+        $sql   .= 'AND path LIKE ? ESCAPE "\\\\" ';
+        $args[] = self::likeEscape($scope) . '/%';
+    }
+    if (!$dirsToo) { $sql .= 'AND is_dir = 0 '; }
+    $sql .= 'ORDER BY path ASC LIMIT 2000';     // Sicherheitskappe
+    // fetchAll -> entries[] wie in changes(): path => '/'.$row['path'],
+    //   type file|dir, size, md5, mtime, id, revision, change_seq
+    // Response::ok(['entries'=>$entries, 'truncated'=> count==2000]);
+}</code></pre>
+
+<div class="warn">
+  <strong>Repo-Memory:</strong> PHP <strong>7.4-kompatibel</strong> bleiben (kein
+  <code>match</code>, keine enums/union types). Prepared Statements +
+  <code>likeEscape()</code> wie überall sonst. Matching auf dem
+  <strong>Basename</strong> (<code>SUBSTRING_INDEX(path,'/',-1)</code>), da die
+  Joker per <code>pattern.h</code>-Konvention nur das letzte Pfadsegment betreffen.
+</div>
+
+<p>Grenze: reine AmigaDOS-Klassen (<code>[abc]</code>, <code>(a|b)</code>) übersetzt
+<code>globToLike</code> nicht 1:1 — für <code>*</code>/<code>?</code>/<code>#?</code>
+(der plattformübergreifende Standard) ist die Abbildung exakt. Das reicht für die
+Anforderung.</p>
+
+<h3><code>docs/api/API.md</code></h3>
+<p><code>action=search</code> dokumentieren (Parameter <code>path</code>, <code>q</code>,
+<code>dirs</code>; Envelope).</p>
+
+<h2>2. Client-Kern: <code>cmd_search()</code> in libcloudhttp</h2>
+<h3><code>core/libcloudcore/include/cloudcore/entry.h</code></h3>
+<p>Neuer Trefferty­p neben <code>AcChange</code>:</p>
+<pre><code>typedef struct {
+    char path[1024];   /* voller '/'-Pfad, wie AcChange.path */
+    int  is_dir;
+    long size;
+    long mtime;
+} AcSearchHit;</code></pre>
+
+<h3><code>core/libcloudhttp/include/cloudhttp/cmd.h</code> + <code>src/cmd.c</code></h3>
+<p>Neue Funktion, modelliert nach <code>cmd_changes()</code> (cmd.c:371–430):</p>
+<pre><code>/* GET api.php?action=search&amp;path=&lt;root&gt;&amp;q=&lt;glob&gt;. Trefferliste als
+   malloc'd AcSearchHit[], mit cmd_search_free() freigeben. 1 = ok. */
+int  cmd_search(const AcConfig *cfg, const char *root, const char *pattern,
+                AcSearchHit **out, int *out_n);
+void cmd_search_free(AcSearchHit *hits);</code></pre>
+<p>Nutzt vorhandenes <code>build_url()</code>/<code>url_encode()</code> (cmd.c:31,68)
+für den <code>&amp;q=</code>-Parameter, <code>check_status()</code> + parson zum
+Parsen der <code>entries</code>. Rückgabe der Server-<code>truncated</code>-Flag
+optional per zusätzlichem <code>int*</code>.</p>
+
+<h2>3. CLI <code>amicloud</code></h2>
+<h3><code>apps/amicloud/src/main.c</code></h3>
+<p>Neuen Zweig in die <code>if/else if</code>-Kette (nach <code>rename</code>, ~Zeile 118):</p>
+<pre><code>} else if (strcmp(cmd,"search")==0 || strcmp(cmd,"find")==0) {
+    if (i &gt;= argc) { fprintf(stderr,"amicloud: search requires &lt;pattern&gt;\n"); rc=1; }
+    else {
+        const char *pat  = argv[i++];
+        const char *root = (i &lt; argc) ? argv[i] : NULL; /* NULL = basepath/"/" */
+        rc = cmd_search_print(&amp;cfg, root, pat);         /* dünner Drucker um cmd_search */
+    }
+}</code></pre>
+<p><code>cmd_search_print</code> (in cmd.c oder main.c): ruft <code>cmd_search</code>,
+druckt jeden Treffer als vollen Pfad je Zeile (Verzeichnisse mit <code>/</code>-Suffix).</p>
+
+<h3><code>core/libcloudcore/src/config.c</code></h3>
+<p><code>config_usage()</code> (Zeile 116–141): Zeile
+<code>&nbsp;&nbsp;search &lt;pattern&gt; [path]&nbsp;&nbsp;...</code> ergänzen.
+<strong>Kein Makefile-Change</strong> (nur libcloudhttp nötig, schon gelinkt).</p>
+
+<h2>4. <code>amicloud-shell</code></h2>
+<h3><code>apps/amicloud-shell/src/shell.c</code></h3>
+<ul>
+  <li><code>dispatch()</code> (Zeile 741+):
+    <code>if (ac_strcasecmp(cmd,"search")==0 || ac_strcasecmp(cmd,"find")==0) { do_search(s, tok+1, n-1); return 1; }</code></li>
+  <li>Neues <code>do_search()</code>: <code>pattern = tok[0]</code>, optionaler
+    Scope <code>tok[1]</code> (sonst Standard = cwd). Nutzt <code>eff_config()</code>
+    (shell.c:181), damit der Scope relativ zum aktuellen <code>remote_cwd</code>
+    aufgelöst wird → <code>cmd_search(&amp;eff, scope, pat,…)</code>, Treffer
+    zeilenweise drucken.</li>
+  <li><code>print_help()</code> (Zeile 233): <code>search</code>/<code>find</code>
+    in die Hilfe aufnehmen (~70 Sp.).</li>
+</ul>
+<p><strong>Kein Makefile-Change</strong> (libcloudhttp schon gelinkt).</p>
+<pre><code>amicloud search '*.txt' /            # ganze Cloud
+&gt; cd docs
+&gt; search #?.info                    # cwd-relativ, rekursiv
+&gt; find foo?</code></pre>
+
+<h2>5. <code>amicloud-commander</code> (der aufwändige Teil)</h2>
+<p>Aktives Panel entscheidet die Quelle: <strong>PANEL_CLOUD → <code>cmd_search</code></strong>
+(Server), <strong>PANEL_LOCAL → lokaler Walk</strong> (<code>localfs_readdir</code> +
+<code>pattern_match</code>). Für die lokale Seite kommt der Wildcard-Matcher
+<code>pattern.h</code> ins Spiel.</p>
+
+<h3>Geteilter Kern — <code>core/common/{include/common/search.h,src/search.c}</code> (neu)</h3>
+<pre><code>typedef struct { char path[1024]; int is_dir; long size, mtime; } SearchHit;
+typedef void (*SearchHitFn)(const SearchHit*, void *ud);
+/* lokaler rekursiver Walk: localfs_opendir/readdir (Vorlage:
+   count_local_tree(), panel.c:135) + pattern_match() auf Basenamen. */
+int search_local(const char *root, const char *pattern, SearchHitFn cb, void *ud);</code></pre>
+<p>(Cloud-Suche im Commander ruft direkt <code>cmd_search</code>;
+<code>search_local</code> deckt die lokale Panel-Seite ab. Vorlage-Rekursion
+existiert in <code>panel.c</code>.)</p>
+
+<h3>Ablauf</h3>
+<ul>
+  <li><strong>Requester</strong> — schöner Such-Dialog: Muster-Eingabe, Scope
+    (aktueller Ordner / ganze Cloud), Checkbox „auch Ordner".</li>
+  <li><strong>Ergebnisfenster</strong> — <em>modelos</em>, listet alle Treffer
+    als volle Pfade. <strong>Einzelinstanz: wird bei neuer Suche
+    wiederverwendet</strong> (neu befüllen + nach vorn), nicht ein zweites Fenster.</li>
+  <li><strong>Gehe zu</strong> — Doppelklick/Enter auf einen Treffer: das
+    <em>auslösende</em> Panel springt in den Ordner und markiert die Datei.</li>
+</ul>
+
+<h3>Qt (<code>apps/amicloud-commander-qt/</code>)</h3>
+<p>Neue Dateien:</p>
+<ul>
+  <li><strong><code>src/searchdialog.{h,cpp}</code></strong> — „schöner Requester":
+    <code>QLineEdit</code> Suchmuster, Radiobuttons <em>aktueller Ordner</em> /
+    <em>ganze Cloud (/)</em>, Checkbox „auch Ordner". Modaler <code>QDialog</code>
+    (Vorlage: <code>connectdialog.cpp</code>, <code>QFormLayout</code>+<code>QDialogButtonBox</code>).
+    Liefert Muster + Scope zurück.</li>
+  <li><strong><code>src/searchresultswindow.{h,cpp}</code></strong> —
+    <strong>modeloses</strong> Ergebnisfenster (<code>QDialog</code>/<code>QWidget</code>,
+    kein <code>exec()</code>): eigener <code>QTableView</code> über ein neues
+    <code>SearchResultsModel : QAbstractTableModel</code> über
+    <code>QVector&lt;SearchHit&gt;</code> (Spalten Pfad/Größe/Datum). Signal
+    <code>activated(SearchHit)</code> bei Doppelklick/Enter/„Gehe zu"-Button.
+    (Vorlage-Shape: <code>paneltablemodel.cpp</code>, <code>logtablemodel</code>
+    in <code>amivcs-gui-qt</code>.)</li>
+</ul>
+<p>Änderungen:</p>
+<ul>
+  <li><strong><code>src/mainwindow.{h,cpp}</code></strong>
+    <ul>
+      <li><code>void doSearch();</code> Slot: Requester zeigen → auf aktivem
+        Panel suchen (Cloud: <code>cmd_search</code>; Local: <code>search_local</code>)
+        → <strong>Einzelinstanz</strong> <code>SearchResultsWindow *m_searchResults=nullptr</code>:
+        existiert es, <code>setResults()</code> + <code>raise()</code>/<code>activateWindow()</code>;
+        sonst neu bauen, <code>activated</code>-Signal an <code>gotoSearchHit()</code>
+        binden, <code>destroyed</code>→Pointer nullen. <strong>Ergebnisfenster wird
+        wiederverwendet.</strong></li>
+      <li>Merkt sich das <strong>auslösende Panel</strong> (<code>m_active</code>
+        zum Suchzeitpunkt).</li>
+      <li><code>void gotoSearchHit(const SearchHit&amp;)</code>: Pfad in
+        Ordner+Basename splitten, <code>launchPanel-&gt;revealEntry(dir, name)</code>,
+        Hauptfenster nach vorn.</li>
+      <li>Einbinden über die drei Registrierungspunkte:
+        <code>addButton(tr("F4 Suchen"), &amp;MainWindow::doSearch)</code>
+        (mainwindow.cpp:62), Menüpunkt (Extras-Menü, :91),
+        <code>keyPressEvent</code>-<code>case Qt::Key_F4:</code> (F4/F9 frei, :134).</li>
+    </ul>
+  </li>
+  <li><strong><code>src/panelwidget.{h,cpp}</code></strong> — neue Methode
+    <code>void revealEntry(const QString &amp;dir, const QString &amp;name)</code>:
+    <code>navigateTo(dir)</code> (lädt synchron via <code>reload()</code>/<code>panel_read</code>),
+    dann Zeile über neue Modell-Hilfe finden, <code>m_table-&gt;setCurrentIndex(...)</code>
+    + <code>scrollTo(...)</code>, Zeile markieren.</li>
+  <li><strong><code>src/paneltablemodel.{h,cpp}</code></strong> —
+    <code>int rowForName(const QString&amp;) const</code> (findet Datei
+    <strong>oder</strong> Ordner; <code>entryByName()</code> matcht heute nur
+    Nicht-Dirs).</li>
+  <li><strong><code>CMakeLists.txt</code></strong> — Quellen ergänzen:
+    <code>libcloudfs/src/pattern_pc.c</code> (bislang nicht kompiliert!),
+    <code>common/src/search.c</code>, und die neuen
+    <code>searchdialog.cpp</code>/<code>searchresultswindow.cpp</code>.</li>
+</ul>
+
+<h3>MUI (<code>apps/amicloud-commander-mui/</code>) — UNVERIFIED, spiegelbildlich</h3>
+<ul>
+  <li><strong><code>src/gui.c</code></strong>: <code>#define ID_SEARCH</code>
+    (ID-Block ~:38); <code>do_search()</code>: <code>ask_string("Suchmuster:", …)</code>
+    (vorhandener Requester, gui.c:305) für das Muster; Suche auf aktivem Panel
+    (Cloud <code>cmd_search</code> / Local <code>search_local</code>).
+    Ergebnisfenster als <strong>globale Einzelinstanz</strong>
+    <code>g_search_window</code> mit <code>ListObject</code>+<code>MUIA_List_DisplayHook</code>
+    (Vorlage: <code>amivcs-gui-mui/src/historylist.c</code>); offen →
+    <code>MUIM_List_Clear</code>+neu füllen+<code>MUIM_Window_ToFront</code>
+    (<strong>wiederverwenden</strong>). Go-to bei Doppelklick/Return: Pfad
+    splitten → <code>panel_mui_set_cloud/set_local(g_active, dir)</code> +
+    reload + <code>set(list_obj, MUIA_List_Active, idx)</code> zum Markieren.
+    Registrierung: <code>NM_ITEM</code> in <code>MenuData[]</code> (:739),
+    Toolbar-Button (:828), F-Key-Notify (<code>"-f4"</code>, :878),
+    <code>case ID_SEARCH:</code> im <code>switch(id)</code> (:928).</li>
+  <li><strong><code>Makefile.amiga-cross</code></strong>: <code>search.o</code>
+    (aus common) ergänzen (<code>pattern_amiga.o</code> ist bereits dabei).</li>
+</ul>
+
+<h2>6. Doku</h2>
+<ul>
+  <li><code>docs/api/API.md</code> — <code>action=search</code>.</li>
+  <li><code>docs/user/AmiCloud-Handbuch.html</code> <strong>und</strong>
+    <code>docs/user/AmiCloud.guide</code> — <code>search</code>/<code>find</code>
+    (CLI, Shell) + Commander-Suchfenster beschreiben.</li>
+</ul>
+
+<h2>Wiederverwendete Bausteine (nicht neu bauen)</h2>
+<ul>
+  <li><code>cmd_changes()</code> / <code>changes()</code> — fast wörtliche Vorlage für Endpoint+Client.</li>
+  <li><code>build_url()</code>, <code>url_encode()</code>, <code>check_status()</code>, parson — in cmd.c vorhanden.</li>
+  <li><code>likeEscape()</code>, <code>dbPath()</code>, <code>Response::ok/error</code> — Server-Helfer da.</li>
+  <li><code>pattern_compile/match/free</code> (libcloudfs) — nur für lokale Commander-Suche.</li>
+  <li><code>count_local_tree()</code> (panel.c:135) — Rekursions-Vorlage für <code>search_local</code>.</li>
+  <li><code>eff_config()</code> (shell.c:181) — cwd-relativer Scope in der Shell.</li>
+  <li><code>ask_string()</code> (MUI), <code>ConnectDialog</code>/<code>QFormLayout</code> (Qt) — Requester-Muster.</li>
+  <li><code>PanelTableModel</code>/<code>entryAt</code> bzw. <code>historylist.c</code>-DisplayHook — Ergebnisliste.</li>
+</ul>
+
+<h2>Zu ändernde Dateien</h2>
+<div class="tablewrap">
+<table>
+<tr><th>Datei</th><th>Art</th><th>Was</th></tr>
+<tr><td><code>server/api.php</code></td><td class="c">edit</td><td>Dispatch-<code>case 'search'</code></td></tr>
+<tr><td><code>server/includes/FileStore.php</code></td><td class="c">edit</td><td><code>search()</code> + <code>globToLike()</code></td></tr>
+<tr><td><code>core/libcloudcore/include/cloudcore/entry.h</code></td><td class="c">edit</td><td><code>AcSearchHit</code></td></tr>
+<tr><td><code>core/libcloudhttp/include/cloudhttp/cmd.h</code>, <code>src/cmd.c</code></td><td class="c">edit</td><td><code>cmd_search()</code> / <code>cmd_search_free()</code></td></tr>
+<tr><td><code>apps/amicloud/src/main.c</code></td><td class="c">edit</td><td><code>search</code>/<code>find</code>-Zweig</td></tr>
+<tr><td><code>core/libcloudcore/src/config.c</code></td><td class="c">edit</td><td>Usage-Zeile</td></tr>
+<tr><td><code>apps/amicloud-shell/src/shell.c</code></td><td class="c">edit</td><td>Dispatch + <code>do_search</code> + Hilfe</td></tr>
+<tr><td><code>core/common/include/common/search.h</code>, <code>src/search.c</code></td><td class="c">neu</td><td><code>search_local()</code> (Commander-Local)</td></tr>
+<tr><td><code>apps/amicloud-commander-qt/src/searchdialog.{h,cpp}</code></td><td class="c">neu</td><td>Such-Requester</td></tr>
+<tr><td><code>apps/amicloud-commander-qt/src/searchresultswindow.{h,cpp}</code></td><td class="c">neu</td><td>Ergebnisfenster + Modell</td></tr>
+<tr><td><code>apps/amicloud-commander-qt/src/{mainwindow,panelwidget,paneltablemodel}.*</code></td><td class="c">edit</td><td>doSearch/Go-to/reveal/rowForName</td></tr>
+<tr><td><code>apps/amicloud-commander-qt/CMakeLists.txt</code></td><td class="c">edit</td><td>+ pattern_pc.c, search.c, neue .cpp</td></tr>
+<tr><td><code>apps/amicloud-commander-mui/src/gui.c</code></td><td class="c">edit</td><td>ID_SEARCH, do_search, Ergebnisfenster</td></tr>
+<tr><td><code>apps/amicloud-commander-mui/Makefile.amiga-cross</code></td><td class="c">edit</td><td>+ search.o</td></tr>
+<tr><td><code>docs/api/API.md</code>, <code>docs/user/AmiCloud.*</code></td><td class="c">edit</td><td>Endpoint + Befehl dokumentieren</td></tr>
+</table>
+</div>
+
+<h2>Verifikation</h2>
+<ol>
+  <li><strong>Server</strong>: <code>globToLike()</code> isoliert testen
+    (Beispiele <code>*.txt</code>, <code>#?.info</code>, <code>foo?</code>,
+    Literal mit <code>%</code>). Endpoint per curl gegen Test-DB:
+    <code>curl '…/api.php?action=search&amp;path=/&amp;q=*.txt' -u user:pass</code>
+    → JSON-<code>entries</code> prüfen; Scope (<code>path=/docs</code>) und
+    <code>dirs=0</code> prüfen. PHP 7.4-Lint (<code>php -l</code>, keine
+    <code>match</code>/enums).</li>
+  <li><strong>CLI/Shell (PC)</strong>: <code>make -f Makefile.pc</code> für
+    amicloud + amicloud-shell; <code>amicloud search '*.txt' /</code>, in der
+    Shell <code>cd docs</code> + <code>search #?.info</code> (cwd-relativ) und
+    <code>find foo?</code> — Trefferpfade gegen bekannten Baum prüfen.</li>
+  <li><strong>Commander (Qt)</strong>: <code>cmake --build build-qt</code>; App
+    starten (<code>/run</code>), F4/Suchbutton → Requester, Muster eingeben,
+    Ergebnisfenster prüfen; Doppelklick auf Treffer → korrektes Panel springt
+    in den Ordner und markiert die Datei; zweite Suche → <strong>dasselbe</strong>
+    Fenster wird wiederbenutzt; Cloud- <strong>und</strong> Local-Panel testen.</li>
+  <li><strong>Amiga cross-compile</strong> (Toolchain <code>$VBCC</code>,
+    s. docs/BUILD.md): libs + amicloud + amicloud-shell + commander-mui
+    kompilieren/linken sauber (<code>Makefile.amiga-cross</code>). MUI-Laufzeit
+    bleibt UNVERIFIED (keine Hardware).</li>
+</ol>
+
+</main>
+</body>
+</html>

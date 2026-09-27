@@ -1,0 +1,51 @@
+AmiCloud 0.1 - eigener Cloud-Speicher für AmigaOS 3.x
+======================================================
+
+AmiCloud verbindet den Amiga über HTTPS mit einem eigenen
+AmiCloud-Server (PHP + MariaDB). Dateien lassen sich per Kommandozeile,
+in einer interaktiven Shell, mit einem Dateimanager (MUI) oder als
+ganz normales Laufwerk CLOUD: benutzen. Kommandozeilenprogramme und
+Dateimanager gibt es auch für macOS, Linux und Windows.
+
+Inhalt dieser Schublade
+-----------------------
+  Install-AmiCloud      Installationsskript
+  Uninstall-AmiCloud    Deinstallationsskript
+  ReadMe                diese Datei
+  LICENSE               GNU General Public License, Version 3
+  C/amicloud            Kommandozeilen-Client (ein Befehl je Aufruf)
+  C/amicloud-shell      interaktive Shell (cd, ls, get, put, ...)
+  C/cloudsync           einmaliger Abgleich lokaler Ordner <-> Cloud
+  C/amicloud-commander  Dateimanager mit zwei Fenstern (MUI)
+  C/AmiCloudPrefs       Einstellungs-Editor für amicloud.cfg
+  C/amicloud-handler    Handler für das Laufwerk CLOUD:
+  C/amicloud-worker     Netzwerk-Prozess des Handlers
+  Storage/DOSDrivers/CLOUD   DOSDriver für CLOUD:
+  Docs/AmiCloud.guide   Handbuch (AmigaGuide)
+  Examples/             Beispielkonfiguration und Mountlist
+
+Installation
+------------
+  1. In einer Shell:  CD AmiCloud
+  2. Execute Install-AmiCloud  (fragt, was installiert werden soll)
+  3. In AmiCloudPrefs Server, Benutzer und Passwort eintragen,
+     Speichern wählen.
+  4. Testen:  amicloud list /
+  5. Laufwerk:  Mount CLOUD:  (oder neu starten), dann  Dir CLOUD:
+
+Voraussetzungen
+---------------
+  - AmigaOS 3.x, 68000 oder besser
+  - TCP/IP-Stack mit bsdsocket.library (z.B. Roadshow, AmiTCP, Miami)
+  - AmiSSL 5
+  - MUI 3.8 oder neuer (nur für amicloud-commander)
+  - ein AmiCloud-Server (Einrichtung: docs/INSTALL.md im Quellcode)
+
+Lizenz
+------
+AmiCloud ist freie Software unter der GNU General Public License,
+Version 3 oder neuer (siehe LICENSE). Enthält den JSON-Parser Parson
+(MIT-Lizenz). Keine Garantie.
+
+Autor: Ronny Krueger
+Quellcode: https://github.com/dangelrk/AmiCloud
