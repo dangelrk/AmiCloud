@@ -22,13 +22,14 @@ $serverUrl = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'amicloud.example.com');
   <title>AmiCloud v<?= AMICLOUD_VERSION ?></title>
   <meta name="description" content="AmiCloud – eigener Cloud-Speicher für den Amiga und den PC">
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/web.css">
+  <link rel="stylesheet" href="/web.css?v=<?= filemtime(__DIR__ . '/web.css') ?>">
 </head>
 <body class="landing">
   <div class="copper" aria-hidden="true"></div>
 
+  <div class="landing-bg" aria-hidden="true"><?php readfile(__DIR__ . '/logo.svg'); ?></div>
+
   <header class="hero">
-    <div class="hero-logo"><?php readfile(__DIR__ . '/logo.svg'); ?></div>
     <h1 class="hero-title"><span class="c-ami">Ami</span><span class="c-cloud">Cloud</span></h1>
     <p class="hero-tagline">Der eigene Cloud-Speicher für den Amiga – und den PC.</p>
     <div class="hero-actions">

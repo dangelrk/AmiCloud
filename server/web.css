@@ -395,34 +395,45 @@ main {
 
 .hero {
     text-align: center;
-    padding: 3.5rem 1rem 2.5rem;
+    padding: 4rem 1rem 2.5rem;
 }
 
-.hero-logo svg {
-    width: 220px;
-    max-width: 60vw;
+/* Logo als abgedunkelter Hintergrund; der Boing-Ball huepft hinter der
+ * Wolke, wie in der Amiga-Demo */
+.landing-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.09;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.landing-bg svg {
+    width: min(110vmin, 900px);
     height: auto;
     overflow: visible;
 }
 
-/* Der Boing-Ball huepft hinter der Wolke, wie in der Amiga-Demo */
-.hero-logo .ball {
-    animation: boing 1.6s cubic-bezier(.45, 0, .55, 1) infinite alternate;
+.landing-bg .ball {
+    animation: boing 2.4s cubic-bezier(.45, 0, .55, 1) infinite alternate;
 }
 
 @keyframes boing {
-    from { transform: translateY(14px); }
-    to   { transform: translateY(-14px); }
+    from { transform: translateY(20px); }
+    to   { transform: translateY(-20px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .hero-logo .ball { animation: none; }
+    .landing-bg .ball { animation: none; }
 }
 
 .hero-title {
     font-size: 3rem;
     letter-spacing: 0.03em;
-    margin-top: 0.8rem;
 }
 
 .hero-tagline {
@@ -465,7 +476,7 @@ main {
 
 .feature,
 .setup {
-    background: var(--surface);
+    background: rgba(22, 33, 62, 0.85);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 1.1rem 1.2rem;

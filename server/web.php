@@ -314,7 +314,7 @@ function renderLogin(string $error): void
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AmiCloud v<?= AMICLOUD_VERSION ?> — Login</title>
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/web.css">
+  <link rel="stylesheet" href="/web.css?v=<?= filemtime(__DIR__ . '/web.css') ?>">
 </head>
 <body class="login-page">
   <div class="login-box">
@@ -377,7 +377,7 @@ function renderBrowser(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AmiCloud v<?= AMICLOUD_VERSION ?> — <?= h($path) ?></title>
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/web.css">
+  <link rel="stylesheet" href="/web.css?v=<?= filemtime(__DIR__ . '/web.css') ?>">
 </head>
 <body>
 
