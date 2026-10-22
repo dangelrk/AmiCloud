@@ -31,19 +31,23 @@ Der Server liegt im Ordner `server/`:
 |---|---|
 | `index.php`, `logo.svg` | Startseite (`/`) mit Logo und Link zur Weboberfläche; per `DirectoryIndex` in `.htaccess` |
 | `api.php` | REST-API für alle Client-Programme (Referenz: [api/API.md](api/API.md)) |
-| `web.php`, `web.css` | Weboberfläche: Anmelden, Dateien ansehen, hoch-/herunterladen, umbenennen, löschen, Ordner anlegen |
+| `web.php`, `web.css`, `web.js` | Weboberfläche im Stil von ownCloud: Dateien (Hochladen per Drag & Drop, Umbenennen, Verschieben, Löschen, ZIP), Suche, Details mit Amiga-Kommentar, öffentliche Links, persönliche Einstellungen mit App-Passwörtern, Benutzerverwaltung für Admins |
+| `share.php` | öffentliche Linkseite (Download ohne Konto, optional mit Passwort/Ablaufdatum) |
+| `bin/amicloud-admin.php` | Verwaltung auf der Kommandozeile (Benutzer anlegen, Passwort, Admin, Kontingent …); `bin/` ist für den Browser gesperrt |
 | `includes/` | PHP-Klassen (per `.htaccess` für Browser gesperrt) |
 | `sql/schema.sql` | Datenbankschema für eine Neuinstallation (`sql/` per `.htaccess` für Browser gesperrt) |
-| `sql/migrate_001.sql` … `migrate_003.sql` | Nachrüsten älterer Installationen |
+| `sql/migrate_001.sql` … `migrate_004.sql` | Nachrüsten älterer Installationen |
 | `config.php.example` | Vorlage für `config.php` |
-| `.htaccess` | sperrt `config.php` und `config.php.example` |
+| `.user.ini` | Upload-Grenzen für PHP-FPM (100 MB, passend zu `MAX_UPLOAD`) |
+| `.htaccess` | sperrt `config.php`, `config.php.example` und `.user.ini` |
 
 ### Voraussetzungen (Server)
 
 - Linux-Server mit **Apache 2.4** (für die `.htaccess`-Dateien wird
   `AllowOverride All` benötigt)
 - **PHP 7.4 oder neuer** (PHP 8 geht ebenso) mit den Erweiterungen
-  `pdo_mysql` und `fileinfo`
+  `pdo_mysql`, `fileinfo` und `mbstring`; `zip` für ZIP-Downloads in der
+  Weboberfläche (optional)
 - **MariaDB** oder MySQL
 - ein DNS-Name und ein TLS-Zertifikat (z. B. Let's Encrypt): die API
   lehnt Klartext-HTTP ab (Antwort 403), die Weboberfläche setzt ihr
@@ -102,8 +106,8 @@ lässt die `.htaccess`-Dateien weg, und dann wären `config.php` und
 `scp -r server/. benutzer@amicloud.example.com:/var/www/amicloud/`.
 
 Das Speicherverzeichnis (`/var/amicloud-storage`) muss **außerhalb** des
-Web-Verzeichnisses liegen. Jeder Benutzer bekommt darin automatisch einen
-eigenen Unterordner (beim ersten Zugriff).
+Web-Verzeichnisses liegen. Jeder Benutzer bekommt darin einen eigenen
+Unterordner mit seinem Benutzernamen (beim Anlegen des Benutzers).
 
 ### 4. `config.php` ausfüllen
 
@@ -127,9 +131,13 @@ define('MAX_UPLOAD',    100 * 1024 * 1024);      // Bytes
 | `AMICLOUD_ALLOW_HTTP` | erlaubt Klartext-HTTP, nur für einen lokalen Test mit `php -S`; in Produktion nie setzen |
 
 Uploads kommen als Rumpf einer POST-Anfrage und werden im Speicher
-verarbeitet. In der `php.ini` deshalb `post_max_size` mindestens so groß
-wie `MAX_UPLOAD` wählen und `memory_limit` deutlich größer; für Uploads
-über die Weboberfläche zusätzlich `upload_max_filesize`.
+verarbeitet. `post_max_size` muss deshalb mindestens so groß wie
+`MAX_UPLOAD` sein und `memory_limit` deutlich größer; für Uploads über
+die Weboberfläche zusätzlich `upload_max_filesize`. Unter **PHP-FPM**
+erledigt das die mitgelieferte `.user.ini` (wirkt nur für das
+AmiCloud-Verzeichnis, PHP liest sie spätestens nach 5 Minuten neu);
+unter `mod_php` dieselben Werte in die `php.ini` oder per `php_value`
+in den Virtual Host eintragen.
 
 ### 5. Datenbank anlegen
 
@@ -139,29 +147,55 @@ sudo mysql -e "CREATE USER 'amicloud'@'localhost' IDENTIFIED BY 'ein-langes-db-p
   GRANT SELECT, INSERT, UPDATE, DELETE ON amicloud.* TO 'amicloud'@'localhost';"
 ```
 
-`schema.sql` legt die Datenbank `amicloud` mit den Tabellen `users` und
-`files` an und enthält bereits alle Spalten. Die Dateien
-`sql/migrate_001.sql` bis `migrate_003.sql` sind **nur** für ältere,
+`schema.sql` legt die Datenbank `amicloud` mit allen Tabellen (`users`,
+`files`, `app_passwords`, `shares`, `auth_failures`) an. Die Dateien
+`sql/migrate_001.sql` bis `migrate_004.sql` sind **nur** für ältere,
 bereits laufende Installationen gedacht; sie werden der Reihe nach
 eingespielt (`mysql amicloud < migrate_00x.sql`) und sind nicht
 wiederholbar – vorher mit dem in jeder Datei genannten
 `SHOW COLUMNS …` prüfen, ob sie schon angewendet wurden.
 
-### 6. Ersten Benutzer anlegen
+### 6. Ersten Administrator anlegen
 
-Es gibt keine Benutzerverwaltung im Browser; Benutzer werden direkt in
-der Datenbank angelegt. Das Passwort wird als bcrypt-Hash gespeichert:
+Den ersten Benutzer legt man auf der Kommandozeile an, als Benutzer des
+Webservers (dann gehört sein Speicherordner gleich Apache); das Passwort
+wird ohne Echo abgefragt:
 
 ```sh
-php -r 'echo password_hash("geheim", PASSWORD_BCRYPT), PHP_EOL;'
-# Ausgabe z. B.: $2y$10$abc...xyz
-sudo mysql amicloud -e \
-  "INSERT INTO users (username, pass_hash) VALUES ('bob', '\$2y\$10\$abc...xyz');"
+cd /var/www/amicloud
+sudo -u apache php bin/amicloud-admin.php user:add --admin --display="Bob Beispiel" bob
 ```
 
-Die `$`-Zeichen des Hashes in doppelten Anführungszeichen mit `\`
-schützen (oder den Befehl interaktiv in `mysql` eingeben). Einen Benutzer
-sperren: `UPDATE users SET active = 0 WHERE username = 'bob';`.
+Alle weiteren Benutzer verwaltet der Administrator in der Weboberfläche
+(Benutzermenü → *Benutzer*): anlegen, Kontingent setzen, Passwort
+zurücksetzen, deaktivieren, löschen. Dasselbe geht mit dem
+Kommandozeilenwerkzeug:
+
+| Befehl | Wirkung |
+|---|---|
+| `user:list` | alle Benutzer mit Belegung und letzter Anmeldung |
+| `user:add [--admin] [--quota=5G] [--display=…] [--email=…] <name>` | Benutzer anlegen |
+| `user:passwd <name>` | Passwort setzen (beendet dessen Browser-Sitzungen) |
+| `user:admin <name> on\|off` | Administratorrecht vergeben/entziehen |
+| `user:quota <name> <größe\|unbegrenzt>` | Kontingent, z. B. `500M`, `5G` |
+| `user:disable <name>` / `user:enable <name>` | Anmeldung sperren/erlauben |
+| `user:delete <name>` | Benutzer **samt allen Dateien** löschen (Name zur Bestätigung eintippen) |
+
+Mit `--password-stdin` liest `user:add`/`user:passwd` das Passwort aus
+einer Zeile der Standardeingabe (für Skripte). Benutzernamen bestehen aus
+Kleinbuchstaben, Ziffern, `.`, `-` und `_` und lassen sich später nicht
+ändern (sie bilden den Speicherordner); änderbar ist der Anzeigename.
+Der letzte aktive Administrator kann weder gelöscht noch deaktiviert noch
+herabgestuft werden.
+
+**Nachrüsten einer bestehenden Installation:** `migrate_004.sql` als
+MariaDB-root einspielen (der Datenbankbenutzer `amicloud` darf kein
+`ALTER`), danach einen vorhandenen Benutzer zum Administrator machen:
+`sudo -u apache php bin/amicloud-admin.php user:admin bob on`.
+
+Für die Clients empfiehlt sich je Gerät ein **App-Passwort** statt des
+Kontopassworts (Weboberfläche → *Persönliche Einstellungen → Geräte &
+App-Passwörter*); es lässt sich einzeln widerrufen.
 
 ### 7. Apache neu laden und testen
 
@@ -191,6 +225,9 @@ Fehlersuche:
 - **500 bei jeder Anfrage**: `AllowOverride` erlaubt die `.htaccess` nicht,
   oder `config.php` fehlt. Apache-Fehlerlog prüfen.
 - **403 „HTTPS required“**: Anfrage lief über `http://`.
+- **429 „Too many failed logins“**: Nach 5 Fehlversuchen (pro Benutzer und
+  IP) sperrt der Server 15 Minuten lang. Oft ein Gerät mit altem Passwort
+  in der Konfiguration.
 
 ### Lokaler Test ohne Apache
 
@@ -203,8 +240,9 @@ php -S 127.0.0.1:8180 -t server/
 AC_SERVER=http://127.0.0.1:8180 AC_USER=bob AC_PASS=geheim sh scripts/test_api.sh
 ```
 
-Die Weboberfläche funktioniert so nicht (ihr Sitzungs-Cookie ist nur für
-HTTPS freigegeben), die API schon.
+Mit `AMICLOUD_ALLOW_HTTP` funktionieren API und Weboberfläche auch über
+`http://` (das Sitzungs-Cookie ist dann nicht als `Secure` markiert – nur
+lokal verwenden).
 
 ---
 

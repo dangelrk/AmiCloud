@@ -127,7 +127,7 @@
 <div class="wrap">
 
 <h1>AmiCloud</h1>
-<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Version 1.0 (27.09.2026)</p>
+<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Version 1.1 (22.10.2026)</p>
 
 <p>AmiCloud verbindet den Amiga über HTTPS mit einem eigenen AmiCloud-Server.
 Die Dateien darauf lassen sich per Kommandozeile, in einer interaktiven
@@ -305,7 +305,8 @@ amicloud list /</pre>
 
 <p>Der Server liegt im Quellcode unter <code>server/</code> und läuft auf
 Linux mit Apache&nbsp;2.4, PHP&nbsp;7.4 oder neuer (Erweiterungen
-<code>pdo_mysql</code> und <code>fileinfo</code>) und MariaDB/MySQL. HTTPS
+<code>pdo_mysql</code>, <code>fileinfo</code> und <code>mbstring</code>, für
+ZIP-Downloads <code>zip</code>) und MariaDB/MySQL. HTTPS
 ist Pflicht: die API lehnt Klartext-HTTP mit 403 ab. Die vollständige
 Anleitung mit allen Befehlen steht in <code>docs/INSTALL.md</code>; hier
 die Kurzfassung für <code>amicloud.example.com</code>:</p>
@@ -325,11 +326,11 @@ kopieren und ausfüllen (Tabelle unten).</li>
 <li><strong>Datenbank</strong>: <code>sudo mysql &lt; /var/www/amicloud/sql/schema.sql</code>,
 dann einen DB-Benutzer mit <code>SELECT, INSERT, UPDATE, DELETE</code> auf
 <code>amicloud.*</code> anlegen. <code>sql/migrate_001.sql</code> bis
-<code>migrate_003.sql</code> sind nur für ältere Installationen.</li>
-<li><strong>Benutzer anlegen</strong>:
-<pre>php -r 'echo password_hash("geheim", PASSWORD_BCRYPT), PHP_EOL;'
-sudo mysql amicloud -e \
-  "INSERT INTO users (username, pass_hash) VALUES ('bob', '\$2y\$10\$...');"</pre></li>
+<code>migrate_004.sql</code> sind nur für ältere Installationen.</li>
+<li><strong>Ersten Administrator anlegen</strong> (Passwort wird abgefragt):
+<pre>cd /var/www/amicloud
+sudo -u apache php bin/amicloud-admin.php user:add --admin bob</pre>
+Weitere Benutzer legt der Administrator in der Weboberfläche an.</li>
 <li><strong>Testen</strong>:
 <pre>curl -u bob:geheim "https://amicloud.example.com/api.php?action=status"
 AC_SERVER=https://amicloud.example.com AC_USER=bob AC_PASS=geheim \
@@ -351,6 +352,33 @@ Läuft PHP als FPM/CGI, reicht Apache die Basic-Auth-Daten nicht von selbst
 weiter – jede Anfrage endet dann mit 401. Abhilfe: <code>CGIPassAuth On</code>
 im <code>&lt;Directory&gt;</code>-Block.</div>
 
+<h3 id="webui">Die Weboberfläche</h3>
+
+<p>Unter <code>https://amicloud.example.com/web.php</code> bedient sich die
+Cloud im Browser ähnlich wie ownCloud:</p>
+<ul>
+<li>Dateien hochladen (auch ganze Ordner und per Ziehen und Ablegen),
+umbenennen, verschieben, löschen, mehrere als ZIP herunterladen</li>
+<li>Suche über alle eigenen Dateien, Liste <em>Zuletzt geändert</em></li>
+<li>Details zu jeder Datei mit MD5, Protection-Bits und dem
+Amiga-Dateikommentar, der sich dort auch ändern lässt</li>
+<li><strong>Öffentliche Links</strong>: eine Datei oder einen Ordner
+freigeben, wahlweise mit Passwort und Ablaufdatum</li>
+<li><strong>Persönliche Einstellungen</strong>: Anzeigename, E-Mail,
+Passwort und App-Passwörter</li>
+<li>für Administratoren: <strong>Benutzer</strong> anlegen,
+Speicherkontingent festlegen, Passwort zurücksetzen, sperren, löschen</li>
+</ul>
+
+<h3 id="apppw">App-Passwörter</h3>
+
+<p>Statt des Kontopassworts gehört in <code>amicloud.cfg</code> am besten ein
+eigenes <strong>App-Passwort je Gerät</strong> (<em>Persönliche
+Einstellungen → Geräte &amp; App-Passwörter</em>). Es hat die Form
+<code>xxxxx-xxxxx-xxxxx-xxxxx-xxxxx</code>, wird nur einmal angezeigt (mit
+fertigen Zeilen für <code>amicloud.cfg</code>) und lässt sich einzeln
+widerrufen, wenn ein Gerät verloren geht.</p>
+
 <h2 id="konfiguration">7. Konfiguration: amicloud.cfg</h2>
 
 <p>Alle AmiCloud-Programme lesen dieselbe Datei. Jede Zeile hat die Form
@@ -370,7 +398,7 @@ pass=geheim
 <tr><th>Schlüssel</th><th>Standard</th><th>Bedeutung</th></tr>
 <tr><td><code>server</code></td><td>– (Pflicht)</td><td>Basis-URL des Servers, ohne <code>/api.php</code></td></tr>
 <tr><td><code>user</code> / <code>username</code></td><td>– (Pflicht)</td><td>Benutzername</td></tr>
-<tr><td><code>pass</code> / <code>password</code></td><td>– (Pflicht)</td><td>Passwort (steht im Klartext in der Datei)</td></tr>
+<tr><td><code>pass</code> / <code>password</code></td><td>– (Pflicht)</td><td>Passwort (steht im Klartext in der Datei) – am besten ein <a href="#apppw">App-Passwort</a></td></tr>
 <tr><td><code>basepath</code></td><td><code>/</code></td><td>Startverzeichnis auf dem Server; Pfade ohne führenden <code>/</code> beziehen sich darauf</td></tr>
 <tr><td><code>verify_ssl</code></td><td><code>1</code></td><td><code>1</code> = Serverzertifikat prüfen, <code>0</code> = nicht prüfen (nur zum Testen)</td></tr>
 <tr><td><code>debug</code></td><td>leer</td><td>nur <code>CLOUD:</code>-Handler (<code>amicloud-worker</code>): Ziel für ein ausführliches HTTP/TLS-Protokoll, z.&nbsp;B. <code>T:amicloud.log</code> oder <code>CON:0/0/640/200/AmiCloud Debug/CLOSE</code></td></tr>
@@ -446,6 +474,7 @@ Neustart.</p>
 <tr><td><code>mkdir &lt;pfad&gt;</code></td><td>Verzeichnis anlegen</td></tr>
 <tr><td><code>rename &lt;alt&gt; &lt;neu&gt;</code></td><td>umbenennen oder verschieben</td></tr>
 <tr><td><code>search &lt;muster&gt; [pfad]</code> (auch <code>find</code>)</td><td>rekursiv nach Namen suchen; ein Treffer je Zeile, Verzeichnisse mit <code>/</code>; Standard-Bereich ist der Basis-Pfad; höchstens 2000 Treffer</td></tr>
+<tr><td><code>quota</code> (auch <code>df</code>)</td><td>Konto und belegten Speicher anzeigen</td></tr>
 <tr><td><code>version</code></td><td>Version anzeigen (ohne Server)</td></tr>
 </table>
 
@@ -508,6 +537,7 @@ sich frühere Eingaben der Sitzung wiederholen.</p>
 <tr><td><code>info</code>|<code>stat &lt;pfad&gt;</code></td><td>Metadaten anzeigen</td></tr>
 <tr><td><code>search</code>|<code>find &lt;muster&gt; [pfad]</code></td><td>rekursiv suchen, Standard: aktuelles Remote-Verzeichnis</td></tr>
 <tr><td><code>md5 &lt;remote&gt;</code> / <code>lmd5 &lt;lokal&gt;</code></td><td>MD5 einer Datei auf dem Server / lokal</td></tr>
+<tr><td><code>quota</code>|<code>df</code></td><td>Konto und belegten Speicher anzeigen</td></tr>
 <tr><td><code>history [clear]</code></td><td>Verlauf anzeigen / löschen</td></tr>
 <tr><td><code>quit</code>|<code>exit</code>|<code>bye</code></td><td>beenden</td></tr>
 </table>
@@ -630,6 +660,8 @@ Datum und MD5 beider Seiten; zur Wahl stehen Überschreiben, Überspringen,
 Alle überschreiben, Alle überspringen und Abbruch.</li>
 <li>Laufende Übertragungen zeigen einen Fortschrittsbalken mit
 Abbrechen-Knopf.</li>
+<li>Die Statuszeile zeigt den belegten Cloud-Speicher (höchstens alle
+30&nbsp;Sekunden neu abgefragt).</li>
 <li>Kopieren von Cloud zu Cloud ist nicht möglich.</li>
 </ul>
 
@@ -681,8 +713,13 @@ Laufwerk friert aber nicht ein.</li>
 <li>Ein nicht leeres Verzeichnis lässt sich nicht direkt löschen;
 <code>Delete … ALL</code> funktioniert (DOS löscht Eintrag für
 Eintrag).</li>
-<li><code>Info CLOUD:</code> zeigt eine feste, plausible Kapazität, keine
-echte Belegung.</li>
+<li><code>Info CLOUD:</code> zeigt die Belegung des eigenen Kontos: bei einem
+Speicherkontingent dessen Größe, sonst belegt plus freier Platz auf dem
+Server. Die Zahlen kommen mit dem nächsten Verzeichnislesen und sind bis zu
+30&nbsp;Sekunden alt; vorher (und bei älteren Servern) erscheint eine feste
+Kapazität. Manche alten Programme rechnen den freien Platz in 32&nbsp;Bit und
+zeigen über 4&nbsp;GB falsch an.</li>
+<li>Ist das Kontingent voll, scheitert das Schreiben mit „Disk full“.</li>
 <li>Ein Laufwerk, kein Diskwechsel, kein Formatieren, kein Umbenennen des
 Datenträgers.</li>
 <li>Große Dateien brauchen entsprechend viel freien Speicher.</li>
@@ -698,7 +735,9 @@ reserviert, siehe <a href="#fehlersuche">Fehlersuche</a>).</li>
 <tr><td>„server URL required“, „username required“, „password required“</td><td>Konfiguration fehlt oder ist unvollständig: <code>ENV:amicloud.cfg</code> bzw. <code>~/.amicloudrc</code> prüfen, auf dem Amiga AmiCloudPrefs starten und <em>Speichern</em> wählen.</td></tr>
 <tr><td>„network initialisation failed“</td><td>TCP/IP-Stack läuft nicht (<code>bsdsocket.library</code> fehlt) oder AmiSSL&nbsp;5 ist nicht installiert. Mit <code>-v</code> zeigen <code>amicloud</code> und <code>amicloud-shell</code> auf dem Amiga, wo es scheitert.</td></tr>
 <tr><td>Zertifikatsfehler</td><td>Uhrzeit des Amiga prüfen (ein falsches Datum macht Zertifikate ungültig) sowie die AmiSSL-Installation samt CA-Zertifikaten. Nur zum Testen: <code>-k</code> bzw. <code>verify_ssl=0</code>.</td></tr>
-<tr><td>Anmeldung abgelehnt (401)</td><td>Benutzername/Passwort prüfen; serverseitig bei PHP-FPM <code>CGIPassAuth On</code> (<a href="#server">Kapitel 6</a>).</td></tr>
+<tr><td>Anmeldung abgelehnt (401)</td><td>Benutzername/Passwort prüfen – App-Passwort widerrufen oder Konto gesperrt? Serverseitig bei PHP-FPM <code>CGIPassAuth On</code> (<a href="#server">Kapitel 6</a>). <code>CLOUD:</code> meldet dann „Disk not validated“.</td></tr>
+<tr><td>„Zu viele Fehlversuche“ (429)</td><td>Nach 5 falschen Anmeldungen sperrt der Server 15&nbsp;Minuten. Meist hat ein anderes Gerät noch ein altes Passwort in <code>amicloud.cfg</code>.</td></tr>
+<tr><td>„Quota exceeded“ (507)</td><td>Speicherkontingent voll: <code>amicloud quota</code> zeigt die Belegung; Dateien löschen oder den Administrator fragen.</td></tr>
 <tr><td>Datum von Dateien stimmt nicht</td><td><code>gmt_offset</code>/<code>dst</code> passend zur Amiga-Uhr setzen und mit <code>AMICLOUD_TIMEZONE</code> des Servers vergleichen.</td></tr>
 <tr><td><code>Mount CLOUD:</code> schlägt fehl</td><td>Liegt <code>amicloud-worker</code> in <code>L:</code>? Der Handler wartet bis zu 30&nbsp;Sekunden auf den Worker.</td></tr>
 <tr><td><code>CLOUD:</code> reagiert nicht wie erwartet</td><td>In <code>ENV:amicloud.cfg</code> z.&nbsp;B. <code>debug=T:amicloud.log</code> eintragen, neu starten, Fehler auslösen und das Protokoll ansehen – der Worker protokolliert jeden Schritt vom Öffnen der Bibliotheken bis zur HTTP-Anfrage. Zusätzlich zeigt <code>Type CLOUD:debuglog</code> das Protokoll der Handler-Seite.</td></tr>
@@ -757,7 +796,7 @@ Anfrage. Antworten: <code>{"status":"ok",…}</code> bzw.
 
 <table>
 <tr><th>Action</th><th>Bedeutung</th></tr>
-<tr><td><code>status</code></td><td>Version, Serverzeit, Änderungszähler</td></tr>
+<tr><td><code>status</code></td><td>Version, Serverzeit, Änderungszähler, Konto und Speicherkontingent</td></tr>
 <tr><td><code>list</code></td><td>Verzeichnis auflisten inkl. Protection-Bits, Kommentar, MD5</td></tr>
 <tr><td><code>download</code></td><td>Datei herunterladen (auch Teilbereiche mit <code>offset</code>/<code>length</code>)</td></tr>
 <tr><td><code>upload</code></td><td>Datei hochladen (POST-Rumpf, optional <code>md5=</code>, 422 bei Abweichung)</td></tr>
@@ -772,16 +811,21 @@ Anfrage. Antworten: <code>{"status":"ok",…}</code> bzw.
 <ul>
 <li>HTTPS erzwungen (außer im lokalen Testmodus <code>AMICLOUD_ALLOW_HTTP</code>),
 Zertifikatsprüfung in den Clients standardmäßig an</li>
-<li>Passwörter nur als bcrypt-Hash in der Datenbank</li>
+<li>Kontopasswörter nur als bcrypt-Hash in der Datenbank, App-Passwörter als SHA-256;
+nach 5 Fehlversuchen 15&nbsp;Minuten Sperre (429)</li>
+<li>Öffentliche Links liefern Dateien immer als Download (nie im Browser
+dargestellt), bleiben im geteilten Ordner und enden bei Ablauf oder gesperrtem
+Eigentümer</li>
 <li>Speicherverzeichnis außerhalb des Web-Verzeichnisses, jeder Benutzer in
 eigenem Unterordner; Pfade mit <code>..</code> und Sonderzeichen werden
 abgelehnt</li>
-<li><code>.htaccess</code> sperrt <code>config.php</code> und
-<code>includes/</code></li>
+<li><code>.htaccess</code> sperrt <code>config.php</code>, <code>includes/</code>,
+<code>sql/</code> und <code>bin/</code></li>
 <li>Weboberfläche: Sitzungs-Cookie nur über HTTPS, <code>SameSite=Strict</code>,
 CSRF-Token in allen Formularen</li>
 <li>Client-seitig steht das Passwort im Klartext in <code>amicloud.cfg</code>
-bzw. <code>~/.amicloudrc</code> – Datei entsprechend schützen</li>
+bzw. <code>~/.amicloudrc</code> – Datei entsprechend schützen und ein
+widerrufbares App-Passwort verwenden</li>
 </ul>
 
 <h2 id="lizenz">18. Lizenz</h2>
@@ -822,14 +866,19 @@ und Vorschläge: <a href="https://github.com/dangelrk/AmiCloud">github.com/dange
 <code>amicloud</code>, <code>amicloud-shell</code>,
 <code>amicloud-commander</code> (MUI und Qt), <code>cloudsync</code>,
 AmiCloudPrefs und der <code>CLOUD:</code>-Handler; Suche in allen Programmen;
-Keep-Alive-Verbindungen auf dem Amiga.</dd>
+Keep-Alive-Verbindungen auf dem Amiga. Benutzerverwaltung,
+App-Passwörter, Speicherkontingente und öffentliche Links; Weboberfläche im
+Stil von ownCloud; <code>quota</code> in CLI und Shell, Belegung in den
+Commander-Statuszeilen und bei <code>Info CLOUD:</code>.</dd>
+<dt><strong>Handbuch 1.1 (22.10.2026)</strong></dt>
+<dd>Weboberfläche, App-Passwörter, Benutzerverwaltung, <code>quota</code>.</dd>
 <dt><strong>Handbuch 1.0 (27.09.2026)</strong></dt>
 <dd>Neu geschrieben für das eigenständige Projekt AmiCloud mit
 Installationsschublade, Install-AmiCloud und Uninstall-AmiCloud.</dd>
 </dl>
 
 <footer>
-AmiCloud-Handbuch 1.0 · Amiga-Fassung: <code>docs/user/AmiCloud.guide</code>
+AmiCloud-Handbuch 1.1 · Amiga-Fassung: <code>docs/user/AmiCloud.guide</code>
 (AmigaGuide) · Installation: <code>docs/INSTALL.md</code> · Bauen:
 <code>docs/BUILD.md</code>
 </footer>

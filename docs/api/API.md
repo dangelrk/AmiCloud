@@ -4,8 +4,18 @@ Basis-URL: `https://amicloud.example.com/api.php`
 
 Alle Anfragen laufen ausschließlich über **HTTPS** (Plain-HTTP → 403).
 Authentifizierung per **HTTP Basic Auth** bei jedem Request — stateless,
-kein Cookie, kein Token. Passwörter liegen serverseitig als bcrypt-Hash
-in MariaDB.
+kein Cookie, kein Token. Als Passwort gilt das **Kontopasswort** oder ein
+**App-Passwort** desselben Benutzers (in der Weboberfläche unter
+*Persönliche Einstellungen → Geräte & App-Passwörter* angelegt, Format
+`xxxxx-xxxxx-xxxxx-xxxxx-xxxxx`, einzeln widerrufbar; empfohlen für alle
+Clients). Kontopasswörter liegen als bcrypt-Hash in MariaDB,
+App-Passwörter als SHA-256. Deaktivierte Benutzer erhalten 401. Nach
+5 Fehlversuchen pro Benutzer und IP (bzw. 30 pro IP) innerhalb von
+15 Minuten antwortet der Server mit **429** `Too many failed logins`
+(`Retry-After: 900`), auch bei danach richtigem Passwort.
+
+Benutzer, Kontingente und öffentliche Links werden in der Weboberfläche
+bzw. mit `bin/amicloud-admin.php` verwaltet, nicht über diese API.
 
 Anfragen sind einfache Query-Strings; HTTP/1.0 mit `Connection: close`
 genügt (kein Chunked Transfer, kein Keep-Alive nötig). Der Amiga-Client
@@ -67,13 +77,21 @@ GET api.php?action=status
 ```
 
 ```json
-{ "status": "ok", "version": "0.1", "time": "2026-07-04 12:00:00", "global_revision": 42 }
+{ "status": "ok", "version": "0.1", "time": "2026-07-04 12:00:00", "global_revision": 42,
+  "user":  { "name": "bob", "display_name": "Bob Beispiel" },
+  "quota": { "used": 1234567, "total": 5368709120, "free": 5367474553, "unlimited": false } }
 ```
 
 Erfordert wie alle Actions Basic Auth; dient als leichter Verbindungs-Check (z.&nbsp;B. Start-Banner
 eines interaktiven Clients) und liefert die Server-Version. `global_revision` ist der aktuelle Stand
 des in `changes` beschriebenen Änderungszählers dieses Users — ein Client kann damit billig prüfen,
 ob sich seit dem letzten Sync überhaupt etwas geändert hat, ohne `list`/`changes` aufzurufen.
+
+`user` und `quota` liefern Server ab Migration 004 (Benutzerverwaltung); ältere Clients ignorieren
+die Felder. `quota` in Bytes: `used` = Summe aller Dateien des Benutzers, `free` nie negativ. Bei
+unbegrenztem Kontingent (`unlimited: true`) ist `free` der freie Plattenplatz des Servers und
+`total = used + free` – wie bei ownCloud, damit Clients immer eine sinnvolle Gesamtgröße anzeigen
+können (der `CLOUD:`-Handler meldet daraus die Laufwerksbelegung).
 
 ### list — Verzeichnis auflisten
 
@@ -220,8 +238,11 @@ unverändertes Verhalten (abwärtskompatibel für Handler/ältere Clients).
 Pfades belebt dessen Zeile wieder (inkl. Übernahme der bisherigen `revision`, sofern der Inhalt mit
 dem Stand vor der Löschung übereinstimmt).
 
-Fehler: 413 (größer als `MAX_UPLOAD`), 422 (`md5`-Parameter stimmt nicht
-mit dem empfangenen Body überein), 500.
+Fehler: 400 (`path=/`), 409 (an dem Pfad liegt ein Verzeichnis), 413
+(größer als `MAX_UPLOAD`), 422 (`md5`-Parameter stimmt nicht mit dem
+empfangenen Body überein), **507** `Quota exceeded` (die Datei würde das
+Speicherkontingent überschreiten – es wird nichts geschrieben; beim
+Überschreiben zählt nur die Größendifferenz), 500.
 
 ### delete — Datei/Verzeichnis löschen
 
@@ -237,7 +258,9 @@ Protection/Revision) bleiben dagegen als **Tombstone** in der DB erhalten (`dele
 `change_seq` erhöht) statt gelöscht zu werden — sichtbar über `list`/`info` verschwindet der Pfad
 sofort (die Datei existiert ja nicht mehr), aber `changes` liefert ihn mit `"deleted": true`, damit
 ein Client die Löschung von einer echten Neuanlage auf der Gegenseite unterscheiden kann.
-Fehler: 404, 409 (nicht-leer, nur ohne `recursive`), 500.
+Öffentliche Links auf den Pfad (und alles darunter) werden mitgelöscht.
+Fehler: 400 (`path=/` – der Stammordner selbst ist nicht löschbar), 404, 409 (nicht-leer, nur ohne
+`recursive`), 500.
 
 ### info — Datei-/Verzeichnisinformationen
 
@@ -281,10 +304,10 @@ POST api.php?action=rename&path=/alt&to=/neu
 Funktioniert für Dateien **und Verzeichnisse** (Metadaten aller
 enthaltenen Einträge ziehen mit um). Quelle und Ziel dürfen in
 verschiedenen Verzeichnissen liegen (= Verschieben). Das
-Elternverzeichnis des Ziels muss existieren.
+Elternverzeichnis des Ziels muss existieren. Öffentliche Links ziehen mit um.
 
-Fehler: 400 (Root), 404 (Quelle/Ziel-Parent fehlt), 409 (Ziel existiert),
-500.
+Fehler: 400 (Root, oder ein Verzeichnis soll in sich selbst verschoben werden),
+404 (Quelle/Ziel-Parent fehlt), 409 (Ziel existiert), 500.
 
 ### setcomment — Amiga-Filecomment setzen
 
@@ -337,12 +360,14 @@ Fehler: 400 (Format), 404.
 | Code | Bedeutung |
 |------|-----------|
 | 400  | Ungültige Action, Pfad-Traversal, ungültige Parameter |
-| 401  | Basic Auth fehlt/falsch |
+| 401  | Basic Auth fehlt/falsch, Benutzer deaktiviert |
 | 403  | Plain-HTTP statt HTTPS |
 | 404  | Objekt nicht gefunden |
 | 409  | Objekt existiert bereits / Verzeichnis nicht leer |
 | 413  | Upload zu groß |
 | 422  | `upload`: `md5`-Parameter stimmt nicht mit dem empfangenen Body überein |
+| 429  | Zu viele fehlgeschlagene Anmeldungen (15 Minuten warten) |
+| 507  | `upload`: Speicherkontingent überschritten |
 | 500  | Serverfehler (Filesystem/DB) |
 
 ## Testsuite

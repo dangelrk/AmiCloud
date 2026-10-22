@@ -42,7 +42,7 @@ Kommentar ein. Parser: `core/libcloudcore/src/config.c`.
 |---|---|---|
 | `server` | – (Pflicht) | Basis-URL des Servers ohne `/api.php`, z. B. `https://amicloud.example.com` |
 | `user` / `username` | – (Pflicht) | Benutzername |
-| `pass` / `password` | – (Pflicht) | Passwort (steht im Klartext in der Datei) |
+| `pass` / `password` | – (Pflicht) | Passwort (steht im Klartext in der Datei); am besten ein App-Passwort aus der Weboberfläche, das sich je Gerät widerrufen lässt |
 | `basepath` | `/` | Startverzeichnis auf dem Server |
 | `verify_ssl` | `1` | `1` = TLS-Zertifikat prüfen, `0` = nicht prüfen (nur zum Testen) |
 | `debug` | leer | Nur `amicloud-worker`: Ziel für das HTTP/TLS-Protokoll des `CLOUD:`-Handlers, z. B. `T:amicloud.log` oder `CON:0/0/640/200/AmiCloud Debug/CLOSE` |

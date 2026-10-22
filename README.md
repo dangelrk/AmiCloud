@@ -17,13 +17,13 @@ Datumsangaben.
 
 | Programm | Plattform | Zweck |
 |---|---|---|
-| `amicloud` | Amiga + PC | Kommandozeilen-Client: ein Befehl je Aufruf (`list`, `get`, `put`, `del`, `info`, `mkdir`, `rename`, `search`, `version`) |
+| `amicloud` | Amiga + PC | Kommandozeilen-Client: ein Befehl je Aufruf (`list`, `get`, `put`, `del`, `info`, `mkdir`, `rename`, `search`, `quota`, `version`) |
 | `amicloud-shell` | Amiga + PC | interaktive Sitzung mit `cd`, `ls`, `get`/`put` (auch rekursiv und mit Mustern), `md5`, `search` … |
 | `cloudsync` | Amiga + PC | einmaliger Zwei-Wege-Abgleich eines lokalen Ordners mit einem Cloud-Ordner |
 | `amicloud-commander` | Amiga (MUI) + PC (Qt 6) | Dateimanager mit zwei Panels, jedes wahlweise lokal oder Cloud |
 | `AmiCloudPrefs` | Amiga | Einstellungs-Editor für `amicloud.cfg` |
 | `CLOUD:`-Handler (`amicloud-handler` + `amicloud-worker`) | Amiga | bindet die Cloud als AmigaDOS-Laufwerk ein |
-| Server (`server/`) | Linux, Apache, PHP ≥ 7.4, MariaDB | REST-API (`api.php`) und Weboberfläche (`web.php`) |
+| Server (`server/`) | Linux, Apache, PHP ≥ 7.4, MariaDB | REST-API (`api.php`) und Weboberfläche (`web.php`) im Stil von ownCloud: Benutzerverwaltung, App-Passwörter, Speicherkontingente, öffentliche Links |
 
 ## Schnellstart
 

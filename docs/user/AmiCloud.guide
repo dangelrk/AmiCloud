@@ -1,5 +1,5 @@
 @database "AmiCloud.guide"
-@$VER: AmiCloud.guide 1.0 (27.09.2026)
+@$VER: AmiCloud.guide 1.1 (22.10.2026)
 @author "Ronny Krueger"
 @(c) "2026 Ronny Krueger, GPL-3.0-or-later"
 @wordwrap
@@ -232,7 +232,8 @@ DEN SERVER EINRICHTEN
 
 Der Server liegt im Quellcode unter server/ und läuft auf einem
 Linux-Rechner mit Apache 2.4, PHP 7.4 oder neuer (Erweiterungen
-pdo_mysql und fileinfo) und MariaDB/MySQL. HTTPS ist Pflicht: die API
+pdo_mysql, fileinfo und mbstring, für ZIP-Downloads zip) und
+MariaDB/MySQL. HTTPS ist Pflicht: die API
 lehnt Klartext-HTTP ab.
 
 Kurzfassung (Beispielname amicloud.example.com):
@@ -249,17 +250,41 @@ Kurzfassung (Beispielname amicloud.example.com):
   5. Datenbank: mysql < sql/schema.sql, dann einen DB-Benutzer mit
      SELECT, INSERT, UPDATE, DELETE auf amicloud.* anlegen.
      sql/migrate_00x.sql sind nur für ältere Installationen.
-  6. Benutzer anlegen: Passwort-Hash mit
-       php -r 'echo password_hash("geheim", PASSWORD_BCRYPT);'
-     erzeugen und mit
-       INSERT INTO users (username, pass_hash) VALUES ('bob', ...);
-     eintragen.
+  6. Ersten Administrator anlegen (Passwort wird abgefragt):
+       sudo -u apache php bin/amicloud-admin.php user:add --admin bob
+     Weitere Benutzer legt der Administrator in der Weboberfläche an.
   7. Test: https://amicloud.example.com/api.php?action=status
      (Benutzer bob, Passwort geheim) und die Weboberfläche
      https://amicloud.example.com/web.php
 
 Die vollständige Anleitung mit allen Befehlen steht in
 docs/INSTALL.md, die REST-API in docs/api/API.md.
+
+DIE WEBOBERFLÄCHE
+
+Unter https://amicloud.example.com/web.php bedient sich die Cloud im
+Browser ähnlich wie ownCloud:
+
+  - Dateien hochladen (auch ganze Ordner und per Ziehen und Ablegen),
+    umbenennen, verschieben, löschen, mehrere als ZIP herunterladen.
+  - Suche über alle eigenen Dateien, Liste "Zuletzt geändert".
+  - Details zu jeder Datei mit MD5, Protection-Bits und dem
+    Amiga-Dateikommentar, der sich dort auch ändern lässt.
+  - Öffentliche Links: eine Datei oder einen Ordner für andere
+    freigeben, wahlweise mit Passwort und Ablaufdatum.
+  - Persönliche Einstellungen: Anzeigename, Passwort und
+    App-Passwörter.
+  - Für Administratoren: Benutzer anlegen, Speicherkontingent
+    festlegen, Passwort zurücksetzen, sperren, löschen.
+
+APP-PASSWÖRTER
+
+Statt des Kontopassworts gehört in amicloud.cfg am besten ein eigenes
+App-Passwort je Gerät (Weboberfläche: Persönliche Einstellungen,
+Geräte und App-Passwörter). Es hat die Form xxxxx-xxxxx-xxxxx-xxxxx-xxxxx,
+wird nur einmal angezeigt und lässt sich einzeln widerrufen, wenn ein
+Gerät verloren geht. Die Weboberfläche zeigt dazu fertige Zeilen für
+amicloud.cfg an.
 
 AMICLOUD_TIMEZONE bestimmt die Zeitzone aller Zeitangaben des Servers.
 Auf dem Amiga sollten gmt_offset und dst dazu passen.
@@ -290,7 +315,8 @@ Die Schlüssel:
   server      Basis-URL des Servers, ohne /api.php. Pflicht.
   user        Benutzername (auch: username). Pflicht.
   pass        Passwort (auch: password). Pflicht. Es steht im
-              Klartext in der Datei.
+              Klartext in der Datei - daher am besten ein
+              App-Passwort (siehe @{" Server " link Server}).
   basepath    Startverzeichnis auf dem Server. Standard /.
               Pfade ohne führenden / beziehen sich darauf.
   verify_ssl  1 = Serverzertifikat prüfen (Standard),
@@ -392,6 +418,8 @@ Befehle:
   mkdir <pfad>             Verzeichnis anlegen
   rename <alt> <neu>       umbenennen oder verschieben
   search <muster> [pfad]   rekursiv nach Namen suchen (auch: find)
+  quota                    Konto und belegten Speicher anzeigen
+                           (auch: df)
   version                  Version anzeigen (ohne Server)
 
 Remote-Pfade mit führendem / sind absolut, alle anderen beziehen sich
@@ -476,6 +504,7 @@ Befehle:
                               Remote-Verzeichnis
   md5 <remote>                MD5 einer Datei auf dem Server
   lmd5 <lokal>                MD5 einer lokalen Datei
+  quota|df                    Konto und belegten Speicher anzeigen
   history [clear]             Verlauf anzeigen / löschen
   quit|exit|bye               beenden
 
@@ -612,6 +641,8 @@ Datum und MD5 beider Seiten; zur Wahl stehen Überschreiben,
 Überspringen, Alle überschreiben, Alle überspringen und Abbruch.
 Laufende Übertragungen zeigen einen Fortschrittsbalken mit
 Abbrechen-Knopf. Kopieren von Cloud zu Cloud ist nicht möglich.
+Die Statuszeile eines Cloud-Panels zeigt neben der Anzahl der Einträge
+den belegten Speicher (höchstens alle 30 Sekunden neu abgefragt).
 
 Der Commander gibt normalerweise nichts auf der Konsole aus. Zur
 Fehlersuche: -v beim Start aus der Shell, oder beim Start von der
@@ -684,8 +715,14 @@ Grenzen:
     Neustart - das Laufwerk friert aber nicht ein.
   - Ein nicht leeres Verzeichnis lässt sich nicht direkt löschen;
     Delete ... ALL funktioniert (DOS löscht Eintrag für Eintrag).
-  - Info CLOUD: zeigt eine feste, plausible Kapazität, keine echte
-    Belegung.
+  - Info CLOUD: zeigt die Belegung des eigenen Kontos: bei einem
+    Speicherkontingent dessen Größe, sonst belegt plus freier Platz
+    auf dem Server. Die Zahlen kommen mit dem nächsten
+    Verzeichnislesen und sind bis zu 30 Sekunden alt; vorher (und bei
+    älteren Servern) erscheint eine feste Kapazität. Manche alten
+    Programme rechnen den freien Platz in 32 Bit und zeigen über 4 GB
+    freien Platz falsch an.
+  - Ist das Kontingent voll, scheitert das Schreiben mit "Disk full".
   - Ein Laufwerk, kein Diskwechsel, kein Formatieren, kein Umbenennen
     des Datenträgers.
   - Große Dateien brauchen entsprechend viel freien Speicher.
@@ -717,8 +754,18 @@ Zertifikatsfehler / keine Verbindung über HTTPS
   Testen: -k bzw. verify_ssl=0.
 
 Anmeldung wird abgelehnt (401)
-  Benutzername/Passwort prüfen. Serverseitig: siehe docs/INSTALL.md,
-  Abschnitt Fehlersuche (z.B. CGIPassAuth bei PHP-FPM).
+  Benutzername/Passwort prüfen. Wurde das App-Passwort widerrufen
+  oder das Konto gesperrt? Serverseitig: siehe docs/INSTALL.md,
+  Abschnitt Fehlersuche (z.B. CGIPassAuth bei PHP-FPM). CLOUD:
+  meldet in diesem Fall "Disk not validated".
+
+"Zu viele Fehlversuche" (429)
+  Nach 5 falschen Anmeldungen sperrt der Server 15 Minuten. Meist
+  hat ein anderes Gerät noch ein altes Passwort in amicloud.cfg.
+
+Kontingent überschritten ("Quota exceeded", 507)
+  Das Speicherkontingent ist voll. amicloud quota zeigt die
+  Belegung; Dateien löschen oder den Administrator fragen.
 
 Datum von Dateien stimmt nicht
   gmt_offset und dst passend zur Uhrzeit des Amiga setzen und mit der
@@ -872,6 +919,13 @@ Programme 0.1 (2026)
     AmiCloudPrefs und der CLOUD:-Handler.
   - Suche über alle Programme (search/find, F4 im Commander).
   - Keep-Alive-Verbindungen auf dem Amiga.
+  - Benutzerverwaltung, App-Passwörter, Speicherkontingente und
+    öffentliche Links; Weboberfläche im Stil von ownCloud.
+  - amicloud quota, quota in der Shell, Belegung in den
+    Commander-Statuszeilen und bei Info CLOUD:.
+
+Handbuch 1.1 (22.10.2026)
+  - Benutzerverwaltung, App-Passwörter, Weboberfläche, quota.
 
 Handbuch 1.0 (27.09.2026)
   - Neu geschrieben für das eigenständige Projekt AmiCloud mit

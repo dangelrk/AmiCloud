@@ -13,7 +13,10 @@
 # Basis-URL des Servers (ohne /api.php):
 server=https://amicloud.example.com
 
-# Zugangsdaten (user/pass und username/password sind gleichwertig):
+# Zugangsdaten (user/pass und username/password sind gleichwertig).
+# Empfohlen: als pass ein App-Passwort aus der Weboberflaeche
+# (Persoenliche Einstellungen -> Geraete & App-Passwoerter), dann
+# steht nicht das Kontopasswort in dieser Datei:
 user=bob
 pass=geheim
 
