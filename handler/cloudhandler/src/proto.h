@@ -105,6 +105,13 @@ typedef struct WorkerMsg {
                                    * base by vol.c since the handler's
                                    * packet loop has no clock access of its
                                    * own (exec.library only). */
+    LONG    quota_used_kb;       /* out: WREQ_LIST, only if quota_valid --
+                                   * account usage piggybacked on a
+                                   * successful listing (worker.c), so
+                                   * ACTION_INFO never needs its own
+                                   * network round trip */
+    LONG    quota_total_kb;
+    BYTE    quota_valid;
 
     LONG    result;               /* out: finished DOS error code, 0 = ok */
 } WorkerMsg;

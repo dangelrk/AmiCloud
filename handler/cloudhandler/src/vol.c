@@ -14,6 +14,12 @@ CNode *g_root;
 static ULONG g_seq = 0;
 static LONG  g_now = 0; /* see vol_note_now() */
 
+/* Last quota the worker piggybacked on a WREQ_LIST reply (worker.c);
+ * read by fill_info() via vol_quota(), never fetched on demand. */
+static LONG g_quota_used_kb  = 0;
+static LONG g_quota_total_kb = 0;
+static int  g_quota_valid    = 0;
+
 ULONG vol_next_seq(void)
 {
     return ++g_seq;
@@ -176,6 +182,14 @@ void vol_note_now(LONG server_now)
     if (server_now > g_now) g_now = server_now;
 }
 
+int vol_quota(LONG *used_kb, LONG *total_kb)
+{
+    if (!g_quota_valid) return 0;
+    *used_kb  = g_quota_used_kb;
+    *total_kb = g_quota_total_kb;
+    return 1;
+}
+
 void vol_invalidate(CNode *dir)
 {
     if (dir) dir->listed = 0;
@@ -196,6 +210,11 @@ void vol_refresh(CNode *dir)
     if (err) return; /* leave the existing cache as-is; next access retries */
 
     vol_note_now(reply->server_now);
+    if (reply->quota_valid) {
+        g_quota_used_kb  = reply->quota_used_kb;
+        g_quota_total_kb = reply->quota_total_kb;
+        g_quota_valid    = 1;
+    }
 
     for (c = dir->children; c; c = c->next) c->seen = 0;
 

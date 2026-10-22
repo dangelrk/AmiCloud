@@ -126,6 +126,11 @@ void   vol_child_path(CNode *dir, const char *leaf, char *out, ULONG outsz);
  * only), so this is the only source of "now" there is; see file header. */
 void   vol_note_now(LONG server_now);
 
+/* Account usage in KiB as last reported by the worker alongside a
+ * directory listing. Returns 0 (outputs untouched) until the first
+ * report arrives or if the server has no quota support. Never blocks. */
+int    vol_quota(LONG *used_kb, LONG *total_kb);
+
 /* Refreshes dir (must be CN_DIR) via a synchronous WREQ_LIST + merge:
  * updates/creates/removes children to match the server, except any child
  * that's locked, exclusively locked, or open, which always survives

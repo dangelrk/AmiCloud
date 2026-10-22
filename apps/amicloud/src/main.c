@@ -159,6 +159,9 @@ int main(int argc, char **argv)
             rc = cmd_search_print(&cfg, root, pat);
         }
 
+    } else if (strcmp(cmd, "quota") == 0 || strcmp(cmd, "df") == 0) {
+        rc = cmd_quota(&cfg);
+
     } else {
         fprintf(stderr, "amicloud: unknown command '%s'\n", cmd);
         config_usage(argv[0]);

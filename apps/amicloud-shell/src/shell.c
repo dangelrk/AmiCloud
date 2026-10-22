@@ -15,6 +15,7 @@
 #include "md5.h"
 #include "ui_hooks.h"
 #include "panel.h"
+#include "progress.h"   /* ac_format_kb() */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -222,21 +223,33 @@ static void eff_config(const ShellSession *s, AcConfig *eff)
 /* ------------------------------------------------------------------ */
 static void print_banner(const ShellSession *s)
 {
-    char version[32] = "";
+    AcStatus st;
     char localcwd[AC_MAX_PATH];
     int online;
 
     printf("AmiCloud Shell v" AC_VERSION " (%s)\n", platform_name());
 
-    online = cmd_status(&s->base_cfg, version, sizeof(version), NULL);
+    online = cmd_status_ex(&s->base_cfg, &st);
     if (online)
         printf("Server   : %s  (Server v%s, TLS %s)\n",
-               s->base_cfg.server, version, s->base_cfg.verify_ssl ? "ok" : "off");
+               s->base_cfg.server, st.version, s->base_cfg.verify_ssl ? "ok" : "off");
     else
         printf("Server   : %s  (WARNUNG: nicht erreichbar oder Health-Check nicht unterstuetzt)\n",
                s->base_cfg.server);
 
-    printf("User     : %s\n", s->base_cfg.username);
+    if (online && st.display_name[0] && strcmp(st.display_name, st.user) != 0)
+        printf("User     : %s (%s)\n", s->base_cfg.username, st.display_name);
+    else
+        printf("User     : %s\n", s->base_cfg.username);
+    if (online && st.has_quota) {
+        char used[24], total[24];
+        ac_format_kb(st.quota_used_kb, used, sizeof(used));
+        ac_format_kb(st.quota_total_kb, total, sizeof(total));
+        if (st.quota_unlimited)
+            printf("Speicher : %s belegt (unbegrenzt)\n", used);
+        else
+            printf("Speicher : %s von %s belegt\n", used, total);
+    }
     printf("Remote   : %s\n", s->remote_cwd);
     if (localfs_getcwd(localcwd, sizeof(localcwd)))
         printf("Local    : %s\n", localcwd);
@@ -292,6 +305,7 @@ static void print_help(void)
         "                               Standard-Scope: aktuelles Verzeichnis)\n"
         "  md5 <remote>                 MD5-Pruefsumme einer Remote-Datei\n"
         "  lmd5 <lokal>                 MD5-Pruefsumme einer lokalen Datei\n"
+        "  quota|df                     Konto und belegten Speicher anzeigen\n"
         "  history [clear]              Verlauf anzeigen/leeren\n"
         "  quit|exit|bye                Shell beenden\n"
     );
@@ -903,6 +917,8 @@ static int dispatch(ShellSession *s, char **tok, int n)
     if (ac_strcasecmp(cmd, "search") == 0 || ac_strcasecmp(cmd, "find") == 0)
         { do_search(s, tok + 1, n - 1); return 1; }
     if (ac_strcasecmp(cmd, "md5") == 0)  { do_md5(s, n > 1 ? tok[1] : NULL); return 1; }
+    if (ac_strcasecmp(cmd, "quota") == 0 || ac_strcasecmp(cmd, "df") == 0)
+        { cmd_quota(&s->base_cfg); return 1; }
     if (ac_strcasecmp(cmd, "lmd5") == 0) { do_lmd5(n > 1 ? tok[1] : NULL); return 1; }
     if (ac_strcasecmp(cmd, "history") == 0) {
         if (n > 1 && ac_strcasecmp(tok[1], "clear") == 0) {

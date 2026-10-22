@@ -52,6 +52,17 @@ const char amiga_ver[] = "$VER: amicloud-worker " AC_VERSION " (27.09.2026)";
 static AcConfig g_cfg;
 static int      g_net_ready = 0;
 
+/* Quota for ACTION_INFO (docs/design/user-management-plan.md §12.9): the
+ * backend has no timeout (backend.c AC_BACKEND_TIMER_ENABLED 0), so the
+ * handler must never block Workbench on a status request of its own.
+ * Instead the worker fetches action=status right after a successful
+ * WREQ_LIST -- at most every QUOTA_INTERVAL seconds, or sooner after a
+ * PUT/DEL changed the usage -- and hands the numbers back with the
+ * listing. A failed or old-server status just leaves quota_valid at 0. */
+#define QUOTA_INTERVAL 30
+static long g_quota_time  = 0;
+static int  g_quota_dirty = 1;
+
 /* Thin wrappers binding libcloudcore's ac_*_datestamp() to this worker's
  * g_cfg -- the Amiga system clock carries no timezone info at all, so
  * converting to/from the server's UTC epoch needs gmt_offset/dst from
@@ -125,6 +136,7 @@ static LONG map_get_status(int status)
     switch (status) {
     case 404: return ERROR_OBJECT_NOT_FOUND;
     case 401: return ERROR_DISK_NOT_VALIDATED;
+    case 429: return ERROR_DISK_NOT_VALIDATED; /* login throttled, like 401 */
     case 403: return ERROR_WRITE_PROTECTED;
     case 0:   return ERROR_SEEK_ERROR;    /* transport failure, READ direction */
     default:  return ERROR_INVALID_LOCK;
@@ -136,8 +148,10 @@ static LONG map_put_status(int status)
     switch (status) {
     case 404: return ERROR_OBJECT_NOT_FOUND;
     case 401: return ERROR_DISK_NOT_VALIDATED;
+    case 429: return ERROR_DISK_NOT_VALIDATED; /* login throttled, like 401 */
     case 403: return ERROR_WRITE_PROTECTED;
     case 413: return ERROR_DISK_FULL;
+    case 507: return ERROR_DISK_FULL;          /* quota exceeded */
     case 422: return ERROR_DISK_FULL;
     case 0:   return ERROR_DISK_FULL;     /* transport failure, WRITE/END direction */
     default:  return ERROR_INVALID_LOCK;
@@ -185,6 +199,17 @@ static void dispatch(WorkerMsg *m)
         cmd_entries_free(entries);
         m->server_now = (LONG)time(NULL);
         m->result = 0;
+
+        if (g_quota_dirty || m->server_now - g_quota_time >= QUOTA_INTERVAL) {
+            AcStatus st;
+            g_quota_time  = m->server_now;
+            g_quota_dirty = 0;
+            if (cmd_status_ex(&g_cfg, &st) && st.has_quota) {
+                m->quota_used_kb  = st.quota_used_kb;
+                m->quota_total_kb = st.quota_total_kb;
+                m->quota_valid    = 1;
+            }
+        }
         break;
     }
 
@@ -231,12 +256,14 @@ static void dispatch(WorkerMsg *m)
             break;
         }
         m->result = 0;
+        g_quota_dirty = 1;
         break;
     }
 
     case WREQ_DEL:
         if (!ensure_net_ready()) { m->result = map_put_status(0); break; }
         m->result = cmd_del(&g_cfg, m->path) ? map_put_status(cmd_last_status()) : 0;
+        if (m->result == 0) g_quota_dirty = 1;
         break;
 
     case WREQ_MKDIR:

@@ -913,16 +913,27 @@ void act_set_date(struct DosPacket *pkt)
 
 /* ---- volume-level ------------------------------------------------------- */
 
-/* Fixed placeholder capacity -- refined in Stage 3 to reflect real tree
- * size (docs/design/handler-plan.md "DISK_INFO mit plausiblen Zahlen"). */
+/* Real account usage once the worker has reported it (vol_quota(), one
+ * block = 1 KiB; an unlimited quota arrives as used + free disk space),
+ * otherwise the old fixed placeholder. Never triggers a network request:
+ * Workbench asks for this often, and the backend has no timeout
+ * (docs/design/user-management-plan.md §12.9). */
 static void fill_info(struct InfoData *id)
 {
+    LONG used_kb, total_kb;
+
     id->id_NumSoftErrors = 0;
     id->id_UnitNumber = 0;
     id->id_DiskState = ID_VALIDATED;
-    id->id_NumBlocks = 0x003FFFFF;
-    id->id_NumBlocksUsed = id->id_NumBlocks / 2;
-    id->id_BytesPerBlock = 512;
+    if (vol_quota(&used_kb, &total_kb) && total_kb > 0) {
+        id->id_NumBlocks = total_kb;
+        id->id_NumBlocksUsed = used_kb > total_kb ? total_kb : used_kb;
+        id->id_BytesPerBlock = 1024;
+    } else {
+        id->id_NumBlocks = 0x003FFFFF;
+        id->id_NumBlocksUsed = id->id_NumBlocks / 2;
+        id->id_BytesPerBlock = 512;
+    }
     id->id_DiskType = ID_DOS_DISK;
     id->id_VolumeNode = g_volume_bptr;
     id->id_InUse = 1;

@@ -13,6 +13,7 @@ extern "C" {
 #include "md5.h"
 #include "cmd.h"
 #include "search.h"
+#include "progress.h"   /* ac_format_kb() */
 }
 
 #include <QSplitter>
@@ -24,6 +25,7 @@ extern "C" {
 #include <QKeyEvent>
 #include <QDir>
 #include <QFile>
+#include <QDateTime>
 #include <QFileInfo>
 #include <QMenuBar>
 #include <QMenu>
@@ -117,6 +119,40 @@ MainWindow::MainWindow(const AcConfig &cfg, QWidget *parent)
     m_busyLabel = new QLabel(this);
     m_busyLabel->hide();
     statusBar()->addPermanentWidget(m_busyLabel);
+
+    m_quotaLabel = new QLabel(this);
+    statusBar()->addPermanentWidget(m_quotaLabel);
+    updateQuota(true);
+}
+
+/* Cloud usage in the status bar. Runs on the GUI thread like the Cloud
+ * panel's own reload: the PC HTTP layer shares one CURL handle
+ * (http_pc.c), so a background status request could collide with a
+ * panel reload. Hence only at start, after jobs and on manual reload,
+ * and at most every 30 s unless forced. */
+void MainWindow::updateQuota(bool force)
+{
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (!force && now - m_quotaTime < 30000) return;
+    m_quotaTime = now;
+
+    AcStatus st;
+    setBusy(true);
+    int ok = cmd_status_ex(&m_cfg, &st);
+    setBusy(false);
+    if (!ok || !st.has_quota) {
+        m_quotaLabel->clear();
+        return;
+    }
+    char used[24], total[24];
+    ac_format_kb(st.quota_used_kb, used, sizeof(used));
+    ac_format_kb(st.quota_total_kb, total, sizeof(total));
+    m_quotaLabel->setText(st.quota_unlimited
+        ? tr("Cloud: %1 belegt").arg(QString::fromUtf8(used))
+        : tr("Cloud: %1 von %2 belegt").arg(QString::fromUtf8(used), QString::fromUtf8(total)));
+    m_quotaLabel->setToolTip(st.quota_unlimited
+        ? tr("Unbegrenztes Kontingent, %1 insgesamt auf dem Server").arg(QString::fromUtf8(total))
+        : QString());
 }
 
 void MainWindow::setBusy(bool on)
@@ -182,6 +218,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 void MainWindow::doReload()
 {
     activePanel()->reload();
+    updateQuota(false);
 }
 
 void MainWindow::doInfo()
@@ -545,6 +582,7 @@ void MainWindow::startJob(TransferJob::Op op, QVector<TransferJob::Item> items)
         m_job = nullptr;
         m_left->reload();
         m_right->reload();
+        updateQuota(true);
         m_statusLabel->setText(cancelled ? tr("Abgebrochen")
                                         : tr("%1 ok, %2 Fehler").arg(okCount).arg(errCount));
     });

@@ -37,6 +37,7 @@ private slots:
      * one's "done" prematurely clear the indicator the second one still
      * needs. See PanelWidget::reload(). */
     void setBusy(bool on);
+    void updateQuota(bool force);
 
 private:
     void doReload();     /* F2 */
@@ -63,6 +64,8 @@ private:
     QProgressDialog *m_progressDlg = nullptr;
     QLabel          *m_statusLabel;
     QLabel          *m_busyLabel;
+    QLabel          *m_quotaLabel;
+    qint64           m_quotaTime = 0;  /* ms since epoch of the last status request */
     int              m_busyCount = 0;
     QAction         *m_hideHiddenAction = nullptr;
 

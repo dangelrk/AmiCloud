@@ -24,6 +24,10 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+
+#include "cmd.h"        /* cmd_status_ex() */
+#include "progress.h"   /* ac_format_kb() */
 
 /* ------------------------------------------------------------------ */
 /* List display hook: NULL entry means "give me the column titles"      */
@@ -195,10 +199,36 @@ void panel_mui_path_entered(AmigaPanel *p)
     else                          panel_mui_set_local(p, (char *)text);
 }
 
+/* Cloud-Belegung fuer die Statuszeile ("1,2 MB von 5,0 GB"). Ein
+ * zusaetzlicher status-Request kostet auf dem 68k einen TLS-Handshake,
+ * daher hoechstens alle 30 s, gemeinsam fuer beide Panels. */
+static long g_quota_time = 0;
+static char g_quota_txt[48] = "";
+
+static const char *cloud_quota_text(const AcConfig *cfg)
+{
+    long now = (long)time(NULL);
+    if (g_quota_time == 0 || now - g_quota_time >= 30) {
+        AcStatus st;
+        g_quota_time = now;
+        g_quota_txt[0] = '\0';
+        if (cmd_status_ex(cfg, &st) && st.has_quota) {
+            char used[24], total[24];
+            ac_format_kb(st.quota_used_kb, used, sizeof(used));
+            ac_format_kb(st.quota_total_kb, total, sizeof(total));
+            if (st.quota_unlimited)
+                sprintf(g_quota_txt, " - %s belegt", used);
+            else
+                sprintf(g_quota_txt, " - %s von %s belegt", used, total);
+        }
+    }
+    return g_quota_txt;
+}
+
 void panel_mui_reload(AmigaPanel *p)
 {
     int i;
-    char statusbuf[64];
+    char statusbuf[96];
     int  ok;
 
     panel_list_free(&p->list);
@@ -229,7 +259,15 @@ void panel_mui_reload(AmigaPanel *p)
     set(p->list_obj, MUIA_List_Quiet, FALSE);
     DoMethod(p->list_obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
 
-    sprintf(statusbuf, "%ld Objekt(e)", (long)p->list.n);
+    if (p->source == PANEL_CLOUD) {
+        const char *q;
+        gui_busy_begin();
+        q = cloud_quota_text(&p->cfg);
+        gui_busy_end();
+        sprintf(statusbuf, "%ld Objekt(e)%s", (long)p->list.n, q);
+    } else {
+        sprintf(statusbuf, "%ld Objekt(e)", (long)p->list.n);
+    }
     set(p->status_text, MUIA_Text_Contents, statusbuf);
 }
 
