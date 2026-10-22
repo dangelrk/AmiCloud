@@ -313,10 +313,12 @@ function renderLogin(string $error): void
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AmiCloud v<?= AMICLOUD_VERSION ?> — Login</title>
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/web.css">
 </head>
 <body class="login-page">
   <div class="login-box">
+    <a href="/" class="login-logo"><img src="/logo.svg" alt="" width="96" height="89"></a>
     <h1><span class="c-ami">Ami</span><span class="c-cloud">Cloud</span></h1>
     <?php if ($error !== ''): ?>
       <div class="msg-error"><?= h($error) ?></div>
@@ -374,6 +376,7 @@ function renderBrowser(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AmiCloud v<?= AMICLOUD_VERSION ?> — <?= h($path) ?></title>
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/web.css">
 </head>
 <body>

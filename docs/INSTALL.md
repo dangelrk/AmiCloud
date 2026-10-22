@@ -29,6 +29,7 @@ Der Server liegt im Ordner `server/`:
 
 | Datei | Aufgabe |
 |---|---|
+| `index.php`, `logo.svg` | Startseite (`/`) mit Logo und Link zur Weboberfläche; per `DirectoryIndex` in `.htaccess` |
 | `api.php` | REST-API für alle Client-Programme (Referenz: [api/API.md](api/API.md)) |
 | `web.php`, `web.css` | Weboberfläche: Anmelden, Dateien ansehen, hoch-/herunterladen, umbenennen, löschen, Ordner anlegen |
 | `includes/` | PHP-Klassen (per `.htaccess` für Browser gesperrt) |
@@ -170,6 +171,7 @@ curl -u bob:geheim "https://amicloud.example.com/api.php?action=status"
 # {"status":"ok","version":"0.1",...}
 ```
 
+- Startseite: `https://amicloud.example.com/`
 - API: `https://amicloud.example.com/api.php`
 - Weboberfläche: `https://amicloud.example.com/web.php`
 - Testsuite (legt ein temporäres Verzeichnis an und räumt es wieder weg):
