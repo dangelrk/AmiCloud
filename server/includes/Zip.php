@@ -9,6 +9,28 @@ if (!defined('AMICLOUD')) { http_response_code(403); exit; }
 class Zip
 {
     const MAX_BYTES = 1073741824; // 1 GB
+    const MAX_FILES = 20000;
+    const SLOTS     = 2;          // gleichzeitige ZIP-Erstellungen je Server
+
+    /* Begrenzt parallele ZIP-Erstellungen (CPU, Platte in /tmp): einer
+     * von SLOTS Sperrdateien muss frei sein. Der Lock faellt mit dem
+     * Request-Ende automatisch weg. */
+    private static $slot = null;
+
+    private static function takeSlot(): bool
+    {
+        for ($i = 0; $i < self::SLOTS; $i++) {
+            $fp = @fopen(sys_get_temp_dir() . '/amicloud-zip-' . $i . '.lock', 'c');
+            if ($fp && flock($fp, LOCK_EX | LOCK_NB)) {
+                self::$slot = $fp;
+                return true;
+            }
+            if ($fp) {
+                fclose($fp);
+            }
+        }
+        return false;
+    }
 
     /* $paths: benutzerrelative Pfade ("/a/b"). Liefert nur bei Fehler
      * zurueck (Meldung), sonst endet der Request mit dem Download. */
@@ -37,16 +59,25 @@ class Zip
             );
             foreach ($it as $f) {
                 $rel = $base . '/' . substr($f->getPathname(), strlen($abs) + 1);
+                if ($f->isLink()) {
+                    continue;
+                }
                 if ($f->isDir()) {
                     $files[] = [null, $rel . '/'];
                 } else {
                     $files[] = [$f->getPathname(), $rel];
                     $total  += $f->getSize();
                 }
+                if ($total > self::MAX_BYTES || count($files) > self::MAX_FILES) {
+                    break;
+                }
             }
-            if ($total > self::MAX_BYTES) {
+            if ($total > self::MAX_BYTES || count($files) > self::MAX_FILES) {
                 break;
             }
+        }
+        if (count($files) > self::MAX_FILES) {
+            return 'Die Auswahl enthält mehr als ' . self::MAX_FILES . ' Dateien – bitte kleinere Ordner wählen.';
         }
         if ($files === []) {
             return 'Nichts zum Herunterladen ausgewählt.';
@@ -55,6 +86,10 @@ class Zip
             return 'Die Auswahl ist größer als 1 GB – bitte einzeln herunterladen.';
         }
 
+        if (!self::takeSlot()) {
+            http_response_code(429);
+            return 'Gerade werden zu viele ZIP-Dateien erstellt. Bitte gleich noch einmal versuchen.';
+        }
         $tmp = tempnam(sys_get_temp_dir(), 'amizip');
         register_shutdown_function(function () use ($tmp) {
             @unlink($tmp);
@@ -68,6 +103,9 @@ class Zip
                 $zip->addEmptyDir(rtrim($name, '/'));
             } else {
                 $zip->addFile($abs, $name);
+                /* Ohne Kompression: spart CPU, Amiga-Archive sind meist
+                 * ohnehin gepackt */
+                $zip->setCompressionName($name, ZipArchive::CM_STORE);
             }
         }
         $zip->close();

@@ -27,9 +27,24 @@ require __DIR__ . '/includes/Shares.php';
 require __DIR__ . '/includes/Auth.php';
 require __DIR__ . '/includes/FileStore.php';
 
-Auth::requireBasicAuth();
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
 
 $action = trim($_GET['action'] ?? '');
+
+/* Die Clients (Amiga/PC) schicken nie Sec-Fetch-*-Header, Browser schon.
+ * Hat ein Browser die Basic-Auth-Daten zwischengespeichert, koennte ein
+ * Link oder Formular auf einer fremden Seite sonst Dateien loeschen oder
+ * aendern (alle Aktionen sind GET/POST ohne Token). Aendernde Aktionen
+ * aus dem Browser werden deshalb nur bei direkter Eingabe zugelassen. */
+$fetchSite = (string)($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '');
+if ($fetchSite !== '' && $fetchSite !== 'none'
+    && in_array($action, ['upload', 'delete', 'mkdir', 'rename', 'setcomment', 'setprotect', 'setdate'], true)) {
+    Response::error(403, 'Cross-site requests are not allowed');
+}
+
+Auth::requireBasicAuth();
+
 $path   = sanitizePath($_GET['path'] ?? '/');
 
 switch ($action) {

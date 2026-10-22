@@ -7,7 +7,7 @@ if (!defined('AMICLOUD')) { http_response_code(403); exit; }
 
 function h(string $s): string
 {
-    return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
 function fmtSize(int $bytes): string

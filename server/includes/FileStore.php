@@ -25,10 +25,30 @@ function sanitizePath(string $raw): string
         if (preg_match('/[\x00<>:"|?*]/', $part)) {
             Response::error(400, 'Illegal character in path');
         }
+        /* files.path vergleicht binaer (migrate_005): ungueltiges UTF-8
+         * und ueberlange Namen wuerden sonst erst beim INSERT scheitern --
+         * nachdem die Datei schon auf der Platte liegt. */
+        if (!mb_check_encoding($part, 'UTF-8')) {
+            Response::error(400, 'Path is not valid UTF-8');
+        }
+        if (strlen($part) > 255) {
+            Response::error(400, 'Path segment too long');
+        }
+        if (strncmp($part, UPLOAD_TMP_PREFIX, strlen(UPLOAD_TMP_PREFIX)) === 0) {
+            Response::error(400, 'Reserved name');
+        }
         $safe[] = $part;
     }
-    return '/' . implode('/', $safe);
+    $out = '/' . implode('/', $safe);
+    if (strlen($out) > 1000) {
+        Response::error(400, 'Path too long');
+    }
+    return $out;
 }
+
+/* Namensvorsatz der Temp-Dateien laufender Uploads (uploadImpl());
+ * Listings blenden sie aus, Clients koennen sie nicht anlegen. */
+const UPLOAD_TMP_PREFIX = '.amicloud-upload-';
 
 /* Absolute filesystem path for a user-relative path */
 function storagePath(string $relpath = ''): string
@@ -218,7 +238,8 @@ class FileStore
         $items   = [];
         $dbPaths = [];
         foreach (scandir($dir) as $item) {
-            if ($item === '.' || $item === '..') {
+            if ($item === '.' || $item === '..'
+                || strncmp($item, UPLOAD_TMP_PREFIX, strlen(UPLOAD_TMP_PREFIX)) === 0) {
                 continue;
             }
             $items[]   = $item;
@@ -253,7 +274,14 @@ class FileStore
             Response::error(404, 'File not found');
         }
 
-        $mime = mime_content_type($file) ?: 'application/octet-stream';
+        /* Immer als Download und sandboxed: hochgeladenes HTML/SVG darf
+         * unter der eigenen Origin nie gerendert werden (es kaeme an die
+         * Web-Session heran). Die Clients werten den Typ nicht aus. */
+        $mime = 'application/octet-stream';
+        header('X-Content-Type-Options: nosniff');
+        header("Content-Security-Policy: sandbox; default-src 'none'");
+        header('Content-Disposition: attachment; filename="'
+               . preg_replace('/[^\x20-\x7e]|["\\\\]/', '_', basename($file)) . '"');
 
         /* X-AmiCloud-MD5 gilt immer fuer die Gesamtdatei — bei Teil-
          * Downloads (offset/length gesetzt) wird der Header weggelassen
@@ -339,17 +367,22 @@ class FileStore
                 }
             }
 
+            /* Erst in eine Temp-Datei daneben schreiben und erst nach dem
+             * erfolgreichen INSERT ans Ziel umbenennen: scheitert der
+             * DB-Teil, bleibt keine ungezaehlte Datei liegen. */
+            $stage   = $dir . '/' . UPLOAD_TMP_PREFIX . bin2hex(random_bytes(8));
             $written = $data !== null
-                ? file_put_contents($file, $data, LOCK_EX) !== false
+                ? file_put_contents($stage, $data) !== false
                 : (is_uploaded_file((string)$tmpFile)
-                    ? move_uploaded_file((string)$tmpFile, $file)
-                    : rename((string)$tmpFile, $file));
+                    ? move_uploaded_file((string)$tmpFile, $stage)
+                    : rename((string)$tmpFile, $stage));
             if (!$written) {
+                @unlink($stage);
                 $db->rollBack();
                 return [500, 'Write failed'];
             }
 
-            $mime     = mime_content_type($file) ?: 'application/octet-stream';
+            $mime     = mime_content_type($stage) ?: 'application/octet-stream';
             $revision = ($existing === false)
                 ? 1
                 : (($existing['checksum'] === $sum) ? (int)$existing['revision'] : (int)$existing['revision'] + 1);
@@ -376,8 +409,14 @@ class FileStore
                 ':rev'  => $revision,
                 ':cs'   => $changeSeq,
             ]);
+            if (!rename($stage, $file)) {
+                throw new RuntimeException('rename to target failed');
+            }
             $db->commit();
         } catch (Throwable $e) {
+            if (isset($stage) && is_file($stage)) {
+                @unlink($stage);
+            }
             if ($db->inTransaction()) {
                 $db->rollBack();
             }
@@ -497,10 +536,10 @@ class FileStore
                 continue;
             }
             $fp = $dir . '/' . $item;
-            if (is_dir($fp)) {
+            if (is_dir($fp) && !is_link($fp)) {
                 self::deleteTree($fp);
             } else {
-                unlink($fp);
+                unlink($fp);  /* Symlink: nur den Link entfernen, nie das Ziel */
             }
         }
         rmdir($dir);
@@ -539,7 +578,7 @@ class FileStore
             new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
         );
         foreach ($it as $file) {
-            if ($file->isFile()) {
+            if ($file->isFile() && !$file->isLink()) {
                 $size += $file->getSize();
             }
         }
@@ -640,7 +679,7 @@ class FileStore
                        change_seq, UNIX_TIMESTAMP(modified_at) AS mtime_ts
                 FROM files
                 WHERE user_id = ? AND deleted_at IS NULL
-                  AND SUBSTRING_INDEX(path, "/", -1) LIKE ? ESCAPE \'\\\\\' ';
+                  AND CONVERT(SUBSTRING_INDEX(path, "/", -1) USING utf8mb4) LIKE ? ESCAPE \'\\\\\' ';
         $args = [Auth::$user_id, $like];
 
         if ($scope !== '') {
@@ -738,7 +777,7 @@ class FileStore
 
     public static function setcommentRaw(string $path, string $comment): bool
     {
-        $comment = substr(preg_replace('/[\x00-\x1f\x7f]/', '', $comment), 0, 79);
+        $comment = mb_substr(preg_replace('/[\x00-\x1f\x7f]/', '', $comment), 0, 79, 'UTF-8');
         return self::metaImpl($path, 'comment', $comment)[0] === 0;
     }
 
@@ -857,7 +896,7 @@ class FileStore
     public static function setcomment(string $path, string $comment): void
     {
         /* Steuerzeichen raus, Amiga-Limit 79 Zeichen */
-        $comment = substr(preg_replace('/[\x00-\x1f\x7f]/', '', $comment), 0, 79);
+        $comment = mb_substr(preg_replace('/[\x00-\x1f\x7f]/', '', $comment), 0, 79, 'UTF-8');
         [$code, $msg] = self::metaImpl($path, 'comment', $comment);
         if ($code !== 0) {
             Response::error($code, $msg);

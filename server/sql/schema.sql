@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS files (
     id          BIGINT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
     user_id     INT UNSIGNED     NOT NULL,
-    path        VARCHAR(1024)    NOT NULL,
+    path        VARBINARY(1024)  NOT NULL,             -- binaer wie das Dateisystem (migrate_005)
     size_bytes  BIGINT UNSIGNED  DEFAULT 0,
     mime_type   VARCHAR(128),
     created_at  DATETIME         DEFAULT CURRENT_TIMESTAMP,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS files (
     change_seq  BIGINT UNSIGNED  NOT NULL DEFAULT 0,   -- global_revision beim letzten Change (migrate_003)
     deleted_at  DATETIME         NULL DEFAULT NULL,    -- Soft-Delete-Tombstone (migrate_003)
 
-    UNIQUE KEY uq_user_path (user_id, path(768)),
+    UNIQUE KEY uq_user_path (user_id, path),
     KEY idx_user_changeseq (user_id, change_seq),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS app_passwords (
 CREATE TABLE IF NOT EXISTS shares (
     id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id    INT UNSIGNED  NOT NULL,
-    path       VARCHAR(1024) NOT NULL,          -- wie files.path (ohne fuehrenden /)
+    path       VARBINARY(1024) NOT NULL,        -- wie files.path (ohne fuehrenden /, binaer)
     token      CHAR(32)      NOT NULL UNIQUE,
     pass_hash  VARCHAR(255)  NULL DEFAULT NULL, -- optionales Link-Passwort
     expires_at DATE          NULL DEFAULT NULL,

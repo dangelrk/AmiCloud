@@ -14,6 +14,16 @@ App-Passwörter als SHA-256. Deaktivierte Benutzer erhalten 401. Nach
 15 Minuten antwortet der Server mit **429** `Too many failed logins`
 (`Retry-After: 900`), auch bei danach richtigem Passwort.
 
+Downloads (`action=download`) kommen immer als
+`application/octet-stream` mit `Content-Disposition: attachment` und
+`Content-Security-Policy: sandbox`. Ändernde Aktionen (`upload`, `delete`,
+`mkdir`, `rename`, `setcomment`, `setprotect`, `setdate`) lehnt der Server
+mit 403 ab, wenn der Browser sie von einer fremden Seite auslöst
+(`Sec-Fetch-Site` gesetzt und nicht `none`); die Clients senden diesen
+Header nie. Pfade dürfen nur gültiges UTF-8 enthalten, jedes Segment
+höchstens 255 Byte, der ganze Pfad höchstens 1000 Byte (sonst 400), und
+werden exakt verglichen (Groß/Klein zählt).
+
 Benutzer, Kontingente und öffentliche Links werden in der Weboberfläche
 bzw. mit `bin/amicloud-admin.php` verwaltet, nicht über diese API.
 

@@ -89,6 +89,7 @@ if ($share['pass_hash'] !== null && empty($_SESSION['unlocked'][$token])) {
     }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $scope = 'share:' . $token;
+        Throttle::lock($scope);
         $fails = Throttle::failures($scope);
         if (!hash_equals($_SESSION['csrf'], (string)($_POST['csrf'] ?? ''))) {
             $error = 'Die Sitzung ist abgelaufen. Bitte erneut versuchen.';
@@ -106,6 +107,7 @@ if ($share['pass_hash'] !== null && empty($_SESSION['unlocked'][$token])) {
             Throttle::fail($scope);
             $error = 'Falsches Passwort.';
         }
+        Throttle::unlock($scope);
     }
     ob_start(); ?>
     <form method="post" action="<?= h($self) ?>" class="card share-card share-login">
