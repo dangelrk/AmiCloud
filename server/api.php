@@ -20,6 +20,10 @@ if ((empty($https) || $https === 'off')
 require __DIR__ . '/includes/Version.php';
 require __DIR__ . '/includes/Response.php';
 require __DIR__ . '/includes/DB.php';
+require __DIR__ . '/includes/Throttle.php';
+require __DIR__ . '/includes/Users.php';
+require __DIR__ . '/includes/AppPasswords.php';
+require __DIR__ . '/includes/Shares.php';
 require __DIR__ . '/includes/Auth.php';
 require __DIR__ . '/includes/FileStore.php';
 
@@ -33,6 +37,11 @@ switch ($action) {
                          'version'         => AMICLOUD_VERSION,
                          'time'            => localDateStr(time()),
                          'global_revision' => FileStore::currentGlobalRevision(),
+                         'user'            => [
+                             'name'         => Auth::$username,
+                             'display_name' => Users::displayName(Auth::$user),
+                         ],
+                         'quota'           => Users::quotaInfo(Auth::$user),
                      ]); break;
     case 'changes':  FileStore::changes((int)($_GET['since'] ?? 0)); break;
     case 'search':   FileStore::search($path, trim($_GET['q'] ?? ''),

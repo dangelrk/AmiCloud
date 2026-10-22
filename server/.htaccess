@@ -5,7 +5,7 @@ DirectoryIndex index.php
 <Files "config.php">
     Require all denied
 </Files>
-<FilesMatch "^(config\.php\.example)$">
+<FilesMatch "^(config\.php\.example|\.user\.ini)$">
     Require all denied
 </FilesMatch>
 # includes/ itself is blocked by includes/.htaccess -- <DirectoryMatch> is

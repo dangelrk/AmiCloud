@@ -14,6 +14,14 @@ function h(string $s): string
 }
 
 $serverUrl = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'amicloud.example.com');
+
+/* Angemeldet? Nur nachsehen, wenn schon ein Session-Cookie existiert --
+ * ohne DB und ohne config.php (web.php prueft die Session ohnehin). */
+$loggedIn = false;
+if (isset($_COOKIE[session_name()])) {
+    session_start(['read_and_close' => true]);
+    $loggedIn = isset($_SESSION['user_id']);
+}
 ?><!DOCTYPE html>
 <html lang="de">
 <head>
@@ -33,8 +41,8 @@ $serverUrl = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'amicloud.example.com');
     <h1 class="hero-title"><span class="c-ami">Ami</span><span class="c-cloud">Cloud</span></h1>
     <p class="hero-tagline">Der eigene Cloud-Speicher für den Amiga – und den PC.</p>
     <div class="hero-actions">
-      <a href="/web.php" class="btn-primary">Zur Weboberfläche</a>
-      <a href="https://github.com/dangelrk/AmiCloud" class="btn-secondary">Projekt auf GitHub</a>
+      <a href="/web.php" class="btn-hero"><?= $loggedIn ? 'Zu meinen Dateien' : 'Anmelden' ?></a>
+      <a href="https://github.com/dangelrk/AmiCloud" class="btn-hero-alt">Projekt auf GitHub</a>
     </div>
   </header>
 

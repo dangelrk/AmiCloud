@@ -198,6 +198,19 @@ check "rsize nach recursive delete verschwunden -> 404" "$out" \
 out=$(req GET "action=list&path=..%2F..%2Fetc")
 check "Path-Traversal -> 400" "$out" "j['status']=='error' and j['code']==400"
 
+# --- Benutzerverwaltung (Server ab migrate_004) ----------------------------
+out=$(req GET "action=status")
+check "status liefert Konto und Kontingent" "$out" \
+    "j['user']['name']!='' and j['quota']['used']>=0 and j['quota']['free']>=0 and j['quota']['total']>=j['quota']['used']"
+
+out=$(req DELETE "action=delete&path=/&recursive=1")
+check "delete Stammordner -> 400" "$out" "j['status']=='error' and j['code']==400"
+
+req POST "action=mkdir&path=$TDIR/loop" >/dev/null
+out=$(req POST "action=rename&path=$TDIR/loop&to=$TDIR/loop/innen")
+check "Ordner in sich selbst verschieben -> 400" "$out" "j['status']=='error' and j['code']==400"
+req DELETE "action=delete&path=$TDIR/loop" >/dev/null
+
 code=$(curl -sS -o /dev/null -w '%{http_code}' "$API?action=list&path=/")
 check_raw "ohne Auth -> 401" "$code" "401"
 

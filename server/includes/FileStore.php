@@ -57,8 +57,8 @@ class FileStore
 {
     /* ══ Metadaten-Helfer (protection/comment liegen nur in der DB) ═════ */
 
-    /* Escape %, _ und \ fuer LIKE-Muster */
-    private static function likeEscape(string $s): string
+    /* Escape %, _ und \ fuer LIKE-Muster (auch von Shares benutzt) */
+    public static function likeEscape(string $s): string
     {
         return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $s);
     }
@@ -274,75 +274,124 @@ class FileStore
     /* ------------------------------------------------------------------ */
     public static function upload(string $path, string $data, ?string $expectedMd5 = null): void
     {
+        $r = self::uploadImpl($path, $data, null, $expectedMd5);
+        if ($r[0] !== 0) {
+            Response::error($r[0], $r[1]);
+        }
+        Response::ok($r[2]);
+    }
+
+    /* Gemeinsamer Schreibweg fuer API (Body als String, $data) und Web
+     * (hochgeladene Temp-Datei, $tmpFile): Kontingent, Revision,
+     * globale Revision, Tombstone wiederbeleben. Kontingentpruefung und
+     * Schreiben laufen in einer Transaktion mit der users-Zeile gesperrt
+     * (FOR UPDATE), damit parallele Uploads das Kontingent nicht gemeinsam
+     * ueberschreiten. Rueckgabe [0, '', Antwortdaten] oder [Code, Meldung]. */
+    private static function uploadImpl(string $path, ?string $data, ?string $tmpFile, ?string $expectedMd5): array
+    {
+        if ($path === '/') {
+            return [400, 'Cannot upload to root'];
+        }
         /* Leerer Body ist erlaubt: 0-Byte-Datei (Amiga-Handler legt bei
          * Open(MODE_NEWFILE) + Close ohne Write eine leere Datei an). */
-        if (strlen($data) > MAX_UPLOAD) {
-            Response::error(413, 'Upload exceeds maximum allowed size');
+        $size = $data !== null ? strlen($data) : (int)filesize((string)$tmpFile);
+        if ($size > MAX_UPLOAD) {
+            return [413, 'Upload exceeds maximum allowed size'];
         }
 
-        $sum = md5($data);
+        $sum = $data !== null ? md5($data) : (string)md5_file((string)$tmpFile);
         if ($expectedMd5 !== null && $expectedMd5 !== ''
             && !hash_equals(strtolower($sum), strtolower($expectedMd5))) {
-            Response::error(422, "MD5 mismatch: expected $expectedMd5, got $sum");
+            return [422, "MD5 mismatch: expected $expectedMd5, got $sum"];
         }
 
         $file = storagePath($path);
-        $dir  = dirname($file);
-
+        if (is_dir($file)) {
+            return [409, 'A directory with this name exists'];
+        }
+        $dir = dirname($file);
         if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-            Response::error(500, 'Cannot create parent directory');
+            return [500, 'Cannot create parent directory'];
         }
 
-        if (file_put_contents($file, $data, LOCK_EX) === false) {
-            Response::error(500, 'Write failed');
+        $dbP = dbPath($path);
+        $db  = DB::get();
+        $db->beginTransaction();
+        try {
+            $q = $db->prepare('SELECT quota_bytes FROM users WHERE id = ? FOR UPDATE');
+            $q->execute([Auth::$user_id]);
+            $quota = $q->fetchColumn();
+
+            /* Revision: 1 bei Neuanlage, ++ nur bei tatsaechlicher Inhalts-
+             * aenderung (auch beim Wiederbeleben eines zuvor geloeschten
+             * Pfades) — Umbenennen/Verschieben laesst sie unberuehrt (siehe
+             * renameImpl()). Vorherige Zeile wird unabhaengig von deleted_at
+             * gesucht, damit ein Re-Upload denselben Verlauf fortsetzt. */
+            $prev = $db->prepare('SELECT checksum, revision, size_bytes, deleted_at FROM files WHERE user_id = ? AND path = ?');
+            $prev->execute([Auth::$user_id, $dbP]);
+            $existing = $prev->fetch();
+
+            if ($quota !== null && $quota !== false) {
+                $oldSize = ($existing && $existing['deleted_at'] === null) ? (int)$existing['size_bytes'] : 0;
+                if (Users::usedBytes(Auth::$user_id) - $oldSize + $size > (int)$quota) {
+                    $db->rollBack();
+                    return [507, 'Quota exceeded'];
+                }
+            }
+
+            $written = $data !== null
+                ? file_put_contents($file, $data, LOCK_EX) !== false
+                : (is_uploaded_file((string)$tmpFile)
+                    ? move_uploaded_file((string)$tmpFile, $file)
+                    : rename((string)$tmpFile, $file));
+            if (!$written) {
+                $db->rollBack();
+                return [500, 'Write failed'];
+            }
+
+            $mime     = mime_content_type($file) ?: 'application/octet-stream';
+            $revision = ($existing === false)
+                ? 1
+                : (($existing['checksum'] === $sum) ? (int)$existing['revision'] : (int)$existing['revision'] + 1);
+            $changeSeq = self::bumpGlobalRevision();
+
+            $db->prepare(
+                'INSERT INTO files (user_id, path, size_bytes, mime_type, is_dir, checksum, revision, change_seq, deleted_at)
+                 VALUES (:uid, :p, :sz, :mime, 0, :sum, :rev, :cs, NULL)
+                 ON DUPLICATE KEY UPDATE
+                   size_bytes  = VALUES(size_bytes),
+                   mime_type   = VALUES(mime_type),
+                   modified_at = NOW(),
+                   is_dir      = 0,
+                   checksum    = VALUES(checksum),
+                   revision    = VALUES(revision),
+                   change_seq  = VALUES(change_seq),
+                   deleted_at  = NULL'
+            )->execute([
+                ':uid'  => Auth::$user_id,
+                ':p'    => $dbP,
+                ':sz'   => $size,
+                ':mime' => $mime,
+                ':sum'  => $sum,
+                ':rev'  => $revision,
+                ':cs'   => $changeSeq,
+            ]);
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
         }
 
-        $size = strlen($data);
-        $mime = mime_content_type($file) ?: 'application/octet-stream';
-        $dbP  = dbPath($path);
-
-        /* Revision: 1 bei Neuanlage, ++ nur bei tatsaechlicher Inhalts-
-         * aenderung (auch beim Wiederbeleben eines zuvor geloeschten
-         * Pfades) — Umbenennen/Verschieben laesst sie unberuehrt (siehe
-         * renameImpl()). Vorherige Zeile wird unabhaengig von deleted_at
-         * gesucht, damit ein Re-Upload denselben Verlauf fortsetzt. */
-        $prev = DB::get()->prepare('SELECT checksum, revision FROM files WHERE user_id = ? AND path = ?');
-        $prev->execute([Auth::$user_id, $dbP]);
-        $existing = $prev->fetch();
-        $revision = ($existing === false)
-            ? 1
-            : (($existing['checksum'] === $sum) ? (int)$existing['revision'] : (int)$existing['revision'] + 1);
-        $changeSeq = self::bumpGlobalRevision();
-
-        DB::get()->prepare(
-            'INSERT INTO files (user_id, path, size_bytes, mime_type, is_dir, checksum, revision, change_seq, deleted_at)
-             VALUES (:uid, :p, :sz, :mime, 0, :sum, :rev, :cs, NULL)
-             ON DUPLICATE KEY UPDATE
-               size_bytes  = VALUES(size_bytes),
-               mime_type   = VALUES(mime_type),
-               modified_at = NOW(),
-               checksum    = VALUES(checksum),
-               revision    = VALUES(revision),
-               change_seq  = VALUES(change_seq),
-               deleted_at  = NULL'
-        )->execute([
-            ':uid'  => Auth::$user_id,
-            ':p'    => $dbP,
-            ':sz'   => $size,
-            ':mime' => $mime,
-            ':sum'  => $sum,
-            ':rev'  => $revision,
-            ':cs'   => $changeSeq,
-        ]);
-
-        Response::ok([
+        return [0, '', [
             'path'       => $path,
             'size'       => $size,
             'md5'        => $sum,
             'mtime'      => filemtime($file),
             'revision'   => $revision,
             'change_seq' => $changeSeq,
-        ]);
+        ]];
     }
 
     /* ------------------------------------------------------------------ */
@@ -378,6 +427,9 @@ class FileStore
      * Aufrufer entscheiden, wie sie das nach aussen zeigen. */
     private static function deleteImpl(string $path, bool $recursive)
     {
+        if ($path === '/') {
+            return [400, 'Cannot delete root'];
+        }
         $target = storagePath($path);
 
         if (is_dir($target)) {
@@ -404,6 +456,7 @@ class FileStore
             $db->prepare('UPDATE files SET deleted_at = NOW(), change_seq = ? WHERE user_id = ? AND path LIKE ?')
                ->execute([$changeSeq, Auth::$user_id, self::likeEscape($dbPath) . '/%']);
         }
+        Shares::onDelete(Auth::$user_id, $dbPath);
 
         return true;
     }
@@ -570,7 +623,16 @@ class FileStore
             Response::error(400, 'search requires q');
             return;
         }
+        $entries = self::searchRaw($path, $glob, $dirsToo);
+        Response::ok([
+            'entries'   => $entries,
+            'truncated' => count($entries) === 2000,
+        ]);
+    }
 
+    /* Wie search(), aber als Array fuer die Weboberflaeche */
+    public static function searchRaw(string $path, string $glob, bool $dirsToo): array
+    {
         $scope = dbPath($path);
         $like  = self::globToLike($glob);
 
@@ -606,11 +668,78 @@ class FileStore
                 'id'         => (int)$row['id'],
             ];
         }
+        return $entries;
+    }
 
-        Response::ok([
-            'entries'   => $entries,
-            'truncated' => count($entries) === 2000,
-        ]);
+    /* Die zuletzt geaenderten Dateien (Web: "Zuletzt geaendert") */
+    public static function recentRaw(int $limit = 50): array
+    {
+        $stmt = DB::get()->prepare(
+            'SELECT path, size_bytes, checksum, UNIX_TIMESTAMP(modified_at) AS mtime_ts
+               FROM files WHERE user_id = ? AND deleted_at IS NULL AND is_dir = 0
+              ORDER BY modified_at DESC, id DESC LIMIT ' . max(1, min(500, $limit))
+        );
+        $stmt->execute([Auth::$user_id]);
+        $out = [];
+        foreach ($stmt->fetchAll() as $row) {
+            if (!is_file(storagePath('/' . $row['path']))) {
+                continue;
+            }
+            $out[] = [
+                'path'  => '/' . $row['path'],
+                'type'  => 'file',
+                'size'  => (int)$row['size_bytes'],
+                'md5'   => (string)($row['checksum'] ?? ''),
+                'mtime' => (int)$row['mtime_ts'],
+            ];
+        }
+        return $out;
+    }
+
+    /* Unterordner von $path aus dem Dateisystem (nicht aus der DB: implizit
+     * angelegte Elternordner haben keine files-Zeile) -- fuer den
+     * Zielordner-Dialog "Verschieben". */
+    public static function subdirs(string $path): array
+    {
+        $dir = storagePath($path);
+        if (!is_dir($dir)) {
+            return [];
+        }
+        $out = [];
+        foreach (scandir($dir) as $item) {
+            if ($item !== '.' && $item !== '..' && is_dir($dir . '/' . $item)) {
+                $out[] = $item;
+            }
+        }
+        natcasesort($out);
+        return array_values($out);
+    }
+
+    /* Metadaten einer Datei/eines Ordners fuer die Details-Seitenleiste */
+    public static function infoRaw(string $path): ?array
+    {
+        $target = storagePath($path);
+        if ($path === '/' || !file_exists($target)) {
+            return null;
+        }
+        $isDir = is_dir($target);
+        $dbP   = dbPath($path);
+        $map   = self::metaMap([$dbP]);
+        $mtime = (int)filemtime($target);
+        return self::withMeta([
+            'name'     => basename($target),
+            'type'     => $isDir ? 'dir' : 'file',
+            'size'     => $isDir ? self::dirSize($target) : (int)filesize($target),
+            'modified' => localDateStr($mtime),
+            'mtime'    => $mtime,
+            'md5'      => $isDir ? '' : self::md5For($target, $dbP, $map),
+        ], $map, $dbP);
+    }
+
+    public static function setcommentRaw(string $path, string $comment): bool
+    {
+        $comment = substr(preg_replace('/[\x00-\x1f\x7f]/', '', $comment), 0, 79);
+        return self::metaImpl($path, 'comment', $comment)[0] === 0;
     }
 
     /* ------------------------------------------------------------------ */
@@ -659,6 +788,9 @@ class FileStore
         if (file_exists($dst)) {
             return [409, 'Target already exists'];
         }
+        if (strpos($to . '/', rtrim($from, '/') . '/') === 0) {
+            return [400, 'Cannot move a directory into itself'];
+        }
         if (!is_dir(dirname($dst))) {
             return [404, 'Target parent directory not found'];
         }
@@ -670,26 +802,42 @@ class FileStore
 
         /* Umbenennen/Verschieben aendert nur den Pfad, nie die Revision
          * (Sync-Metadaten, docs/api/API.md "changes") — change_seq wird trotzdem einmal pro
-         * Aufruf gebumpt, damit action=changes den neuen Pfad meldet. */
-        $changeSeq = self::bumpGlobalRevision();
+         * Aufruf gebumpt, damit action=changes den neuen Pfad meldet.
+         * Tombstones am Ziel (und darunter) muessen vorher weg: uq_user_path
+         * umfasst auch geloeschte Zeilen, das UPDATE liefe sonst nach dem
+         * schon erfolgten rename() im Dateisystem auf einen Duplicate Key. */
+        $fromDb = dbPath($from);
+        $toDb   = dbPath($to);
         $db = DB::get();
-        $db->prepare('UPDATE files SET path = ?, change_seq = ? WHERE user_id = ? AND path = ?')
-           ->execute([dbPath($to), $changeSeq, Auth::$user_id, dbPath($from)]);
+        $db->beginTransaction();
+        try {
+            $db->prepare('DELETE FROM files WHERE user_id = ? AND deleted_at IS NOT NULL AND (path = ? OR path LIKE ?)')
+               ->execute([Auth::$user_id, $toDb, self::likeEscape($toDb) . '/%']);
 
-        if ($isDir) {
-            /* Alle Kind-Pfade umschreiben: alter Praefix -> neuer Praefix */
-            $oldPrefix = dbPath($from) . '/';
-            $newPrefix = dbPath($to) . '/';
-            $db->prepare(
-                'UPDATE files SET path = CONCAT(?, SUBSTRING(path, ?)), change_seq = ?
-                 WHERE user_id = ? AND path LIKE ?'
-            )->execute([
-                $newPrefix,
-                strlen($oldPrefix) + 1,
-                $changeSeq,
-                Auth::$user_id,
-                self::likeEscape($oldPrefix) . '%',
-            ]);
+            $changeSeq = self::bumpGlobalRevision();
+            $db->prepare('UPDATE files SET path = ?, change_seq = ? WHERE user_id = ? AND path = ?')
+               ->execute([$toDb, $changeSeq, Auth::$user_id, $fromDb]);
+
+            if ($isDir) {
+                /* Alle Kind-Pfade umschreiben: alter Praefix -> neuer Praefix */
+                $oldPrefix = $fromDb . '/';
+                $newPrefix = $toDb . '/';
+                $db->prepare(
+                    'UPDATE files SET path = CONCAT(?, SUBSTRING(path, ?)), change_seq = ?
+                     WHERE user_id = ? AND path LIKE ?'
+                )->execute([
+                    $newPrefix,
+                    strlen($oldPrefix) + 1,
+                    $changeSeq,
+                    Auth::$user_id,
+                    self::likeEscape($oldPrefix) . '%',
+                ]);
+            }
+            Shares::onRename(Auth::$user_id, $fromDb, $toDb);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
         }
         return [0, ''];
     }
@@ -780,39 +928,15 @@ class FileStore
         return self::scanEntries($dir, $path);
     }
 
-    public static function uploadRaw(string $path, string $tmpFile): bool
+    /* Web-Upload: derselbe Schreibweg wie die API. Rueckgabe null bei
+     * Erfolg, sonst die Fehlermeldung (507 -> Kontingent). */
+    public static function uploadRaw(string $path, string $tmpFile): ?string
     {
-        $file = storagePath($path);
-        $dir  = dirname($file);
-
-        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-            return false;
+        $r = self::uploadImpl($path, null, $tmpFile, null);
+        if ($r[0] === 0) {
+            return null;
         }
-        if (!move_uploaded_file($tmpFile, $file)) {
-            return false;
-        }
-
-        $size = (int)filesize($file);
-        $mime = mime_content_type($file) ?: 'application/octet-stream';
-        $sum  = md5_file($file);
-
-        DB::get()->prepare(
-            'INSERT INTO files (user_id, path, size_bytes, mime_type, is_dir, checksum)
-             VALUES (:uid, :p, :sz, :mime, 0, :sum)
-             ON DUPLICATE KEY UPDATE
-               size_bytes  = VALUES(size_bytes),
-               mime_type   = VALUES(mime_type),
-               modified_at = NOW(),
-               checksum    = VALUES(checksum)'
-        )->execute([
-            ':uid'  => Auth::$user_id,
-            ':p'    => dbPath($path),
-            ':sz'   => $size,
-            ':mime' => $mime,
-            ':sum'  => $sum,
-        ]);
-
-        return true;
+        return $r[0] === 507 ? 'Speicherkontingent überschritten' : $r[1];
     }
 
     public static function mkdirRaw(string $path): bool
@@ -842,11 +966,20 @@ class FileStore
             http_response_code(404);
             exit;
         }
-        $mime = mime_content_type($file) ?: 'application/octet-stream';
-        $name = str_replace('"', '\\"', basename($file));
-        header('Content-Type: ' . $mime);
+        self::sendAttachment($file, basename($file));
+    }
+
+    /* Datei immer als Download ausliefern, nie inline: hochgeladenes
+     * HTML/SVG darf unter der eigenen Origin nicht ausgefuehrt werden
+     * (es kaeme an Session-Cookie und CSRF-Token heran). Auch share.php. */
+    public static function sendAttachment(string $file, string $name): void
+    {
+        $ascii = preg_replace('/[^\x20-\x7e]|["\\\\]/', '_', $name);
+        header('Content-Type: application/octet-stream');
         header('Content-Length: ' . filesize($file));
-        header('Content-Disposition: attachment; filename="' . $name . '"');
+        header('Content-Disposition: attachment; filename="' . $ascii . '"; filename*=UTF-8\'\'' . rawurlencode($name));
+        header('X-Content-Type-Options: nosniff');
+        header("Content-Security-Policy: sandbox; default-src 'none'");
         readfile($file);
         exit;
     }
