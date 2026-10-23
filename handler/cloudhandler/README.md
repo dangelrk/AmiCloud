@@ -143,10 +143,12 @@ hanging the whole machine.
   `vol_find_child()` transparently refreshes a stale directory via
   `WREQ_LIST` before searching it, so every existing path-walking
   function in `actions.c` became cache-aware for free. "Now", for TTL
-  purposes, comes from the worker's clock in every reply
-  (`WorkerMsg.server_now`, `backend_now()`), the configured TTL likewise
-  (`cache_ttl`) -- the packet loop has no clock or file access of its
-  own. If a directory that was never listed can't be listed (server
+  purposes, is the handler's own `timer.device` clock (`GetSysTime()`,
+  device opened once at startup) -- it used to be the worker's clock
+  from the last reply, which stood still while no requests went out, so
+  a listed directory stayed "fresh" forever. The configured TTL
+  (`cache_ttl`) arrives with every worker reply, the packet loop has no
+  file access of its own. If a directory that was never listed can't be listed (server
   unreachable), lookups and `Examine` fail with that error instead of
   presenting it as empty. A locked/exclusively-locked/open child always
   survives a refresh untouched, even if the server no longer lists it.

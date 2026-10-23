@@ -122,11 +122,16 @@ static CopyCtx *g_op;
 /* begin_operation()/end_operation() below.                              */
 /* ------------------------------------------------------------------ */
 static int g_busy_depth;
+static Object *g_main_window;
 
+/* Only the main window sleeps (busy pointer, no input), never the whole
+ * application: MUIA_Application_Sleep also froze the progress window, so
+ * its "Abbrechen" button could not be pressed during a transfer (found
+ * running it in Amiberry). */
 void gui_busy_begin(void)
 {
     if (g_busy_depth++ == 0) {
-        if (g_app) set(g_app, MUIA_Application_Sleep, TRUE);
+        if (g_main_window) set(g_main_window, MUIA_Window_Sleep, TRUE);
         if (g_busy_text) set(g_busy_text, MUIA_Text_Contents, "Online-Zugriff...");
     }
 }
@@ -134,7 +139,7 @@ void gui_busy_begin(void)
 void gui_busy_end(void)
 {
     if (g_busy_depth > 0 && --g_busy_depth == 0) {
-        if (g_app) set(g_app, MUIA_Application_Sleep, FALSE);
+        if (g_main_window) set(g_main_window, MUIA_Window_Sleep, FALSE);
         if (g_busy_text) set(g_busy_text, MUIA_Text_Contents, "");
     }
 }
@@ -218,7 +223,7 @@ static int mui_progress(long done, long total, const char *name)
 /* Per-file/per-folder overwrite prompt — ui_hooks.h's UiHooks.overwrite,
  * installed below into g_mui_hooks. Called synchronously from inside
  * panel_copy_file()/panel_get_dir()/panel_put_dir() while do_copy() is
- * mid-transfer, i.e. while MUIA_Application_Sleep is already TRUE (see
+ * mid-transfer, i.e. while the main window is already asleep (see
  * begin_operation()) — back it off around the nested MUI_Request just
  * like the old per-file cmd_exists() pre-check did (same untested-nesting
  * concern noted where gui_busy_begin()/_end() is declared). */
@@ -293,6 +298,10 @@ static void begin_operation(void)
 
 static void end_operation(void)
 {
+    /* A cancel ends with its operation: left set, mui_progress() would
+     * abort every later request too -- even refreshing a panel failed
+     * with "network error" after one press of "Abbrechen". */
+    g_cancel_requested = 0;
     gui_busy_end();
     set(g_progress_window, MUIA_Window_Open, FALSE);
 }
@@ -1060,6 +1069,7 @@ int gui_run(const AcConfig *cfg)
     if (!g_app) {
         return 20;
     }
+    g_main_window = window; /* see gui_busy_begin() */
 
     /* Installed once for the whole run — see the comment on
      * begin_operation() above for why this must not be scoped to
