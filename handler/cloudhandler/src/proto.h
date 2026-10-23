@@ -13,11 +13,14 @@
  * vol.h, no libcloudcore/libcloudhttp headers -- since the two sides
  * have very different available headers.
  *
- * v1 is synchronous: the handler sends one WorkerMsg and blocks
- * (WaitPort/GetMsg) until the worker replies, reusing a single static
- * request struct + a private reply port (see backend.c). That's an
- * accepted limitation for Stage 2 ("v1 ok" per the plan) -- the whole
- * CLOUD: volume is unresponsive for the duration of one HTTP round trip.
+ * One request at a time: the handler sends one WorkerMsg and waits for
+ * the reply, reusing a single static request struct + a private reply
+ * port (see backend.c). While it waits it still answers every packet
+ * that needs no network (Info, Read/Write/Seek on open files, Examine
+ * of a fresh directory, ...) and queues the rest -- see handler.c's
+ * serve_while_busy(). How long a request may take is up to the worker's
+ * HTTP layer: idle timeouts only (config timeout=), so a large file over
+ * a modem takes as long as it needs while a dead line still fails.
  */
 
 #include <exec/types.h>
@@ -99,12 +102,16 @@ typedef struct WorkerMsg {
 
     WEntry *entries;             /* out: WREQ_LIST */
     LONG    n_entries;           /* out: WREQ_LIST */
-    LONG    server_now;          /* out: WREQ_LIST -- worker's clock at the
-                                   * time of the request, UTC-ish epoch
+    LONG    server_now;          /* out: every reply -- worker's clock at
+                                   * the time of the reply, UTC-ish epoch
                                    * (see worker.c). Used as the cache_time
                                    * base by vol.c since the handler's
                                    * packet loop has no clock access of its
                                    * own (exec.library only). */
+    LONG    cache_ttl;           /* out: every reply -- directory cache
+                                   * lifetime in seconds from the config's
+                                   * cache_ttl= (the handler can't read
+                                   * files itself) */
     LONG    quota_used_kb;       /* out: WREQ_LIST, only if quota_valid --
                                    * account usage piggybacked on a
                                    * successful listing (worker.c), so

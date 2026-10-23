@@ -48,6 +48,8 @@ Kommentar ein. Parser: `core/libcloudcore/src/config.c`.
 | `debug` | leer | Nur `amicloud-worker`: Ziel für das HTTP/TLS-Protokoll des `CLOUD:`-Handlers, z. B. `T:amicloud.log` oder `CON:0/0/640/200/AmiCloud Debug/CLOSE` |
 | `gmt_offset` | `0` | Nur Amiga (`amicloud-shell`, `amicloud-worker`): Abstand der Systemuhr zu UTC in Minuten (MEZ = 60) |
 | `dst` | `0` | Nur Amiga: `1` = Sommerzeit aktiv (addiert 60 Minuten) |
+| `timeout` | `120` | Netz-Timeout in Sekunden: so lange darf eine Verbindung ganz ohne Datenfluss bleiben. Nie eine Grenze für eine ganze Übertragung (Modem!) |
+| `cache_ttl` | `30` | Nur `amicloud-worker`: Lebensdauer des Verzeichnis-Caches von `CLOUD:` in Sekunden; über ein Modem lohnen 120–300 |
 
 ## AmiCloudPrefs
 

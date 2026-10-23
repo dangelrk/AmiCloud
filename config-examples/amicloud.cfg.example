@@ -44,3 +44,13 @@ pass=geheim
 #gmt_offset=60
 # Sommerzeit aktiv? 1 = ja (addiert 60 Minuten), 0 = nein:
 #dst=0
+
+# Netz-Timeout in Sekunden (Standard 120): so lange darf eine Verbindung
+# ganz ohne Datenfluss bleiben, bevor sie als abgebrochen gilt. Die Dauer
+# einer Uebertragung ist nie begrenzt -- eine grosse Datei ueber ein Modem
+# laeuft, solange Daten fliessen. Bei sehr wackligen Leitungen hoeher:
+#timeout=120
+
+# Nur CLOUD:-Handler: wie viele Sekunden ein Verzeichnisinhalt
+# zwischengespeichert wird (Standard 30). Ueber ein Modem lohnen 120-300:
+#cache_ttl=30

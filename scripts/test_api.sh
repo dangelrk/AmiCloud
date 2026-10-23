@@ -123,6 +123,16 @@ check_raw "download komplett" "$got" "Hello AmiCloud!"
 got=$(req GET "action=download&path=$TDIR/hello.txt&offset=6&length=8")
 check_raw "download offset=6 length=8" "$got" "AmiCloud"
 
+# Range: so setzen die Clients einen abgebrochenen Download fort
+hdrs=$(curl -sS -D - -o /tmp/_amicloud_test_dl.$$ -u "$AUTH" -H "Range: bytes=6-" "$API?action=download&path=$TDIR/hello.txt")
+check_raw "download Range bytes=6- -> 206 + Content-Range" \
+    "$(printf '%s' "$hdrs" | tr -d '\r' | sed -n -e 's/^HTTP\/[0-9.]* \([0-9]*\).*/\1/p' -e 's/^[Cc]ontent-[Rr]ange: //p' | tr '\n' ' ')" \
+    "206 bytes 6-14/15 "
+check_raw "download Range (Body)" "$(cat /tmp/_amicloud_test_dl.$$)" "AmiCloud!"
+rm -f /tmp/_amicloud_test_dl.$$
+got=$(curl -sS -o /dev/null -w '%{http_code}' -u "$AUTH" -H "Range: bytes=99-" "$API?action=download&path=$TDIR/hello.txt")
+check_raw "download Range hinter Dateiende -> 416" "$got" "416"
+
 # --- setcomment / setprotect / setdate ------------------------------------
 out=$(req POST "action=setcomment&path=$TDIR/hello.txt&comment=Testkommentar")
 check "setcomment" "$out" "j['status']=='ok' and j['comment']=='Testkommentar'"

@@ -139,12 +139,16 @@ hanging the whole machine.
   file, which the worker has no use for) and `cmd_setcomment`/
   `cmd_setprotect` (Stage 3).
 - **Directory listing cache** (`vol.c`, `CNode.listed`/`cache_time`,
-  `CACHE_TTL` = 10s): `vol_find_child()` transparently refreshes a stale
-  directory via `WREQ_LIST` before searching it, so every existing
-  path-walking function in `actions.c` became cache-aware for free.
-  "Now", for TTL purposes, comes from the worker's clock in every
-  `WREQ_LIST` reply (`vol_note_now()`) -- the packet loop has no clock
-  access of its own. A locked/exclusively-locked/open child always
+  `CACHE_TTL` = 30s, overridden by `cache_ttl=` in `amicloud.cfg`):
+  `vol_find_child()` transparently refreshes a stale directory via
+  `WREQ_LIST` before searching it, so every existing path-walking
+  function in `actions.c` became cache-aware for free. "Now", for TTL
+  purposes, comes from the worker's clock in every reply
+  (`WorkerMsg.server_now`, `backend_now()`), the configured TTL likewise
+  (`cache_ttl`) -- the packet loop has no clock or file access of its
+  own. If a directory that was never listed can't be listed (server
+  unreachable), lookups and `Examine` fail with that error instead of
+  presenting it as empty. A locked/exclusively-locked/open child always
   survives a refresh untouched, even if the server no longer lists it.
   Mutations (`MKDIR`/`DEL`/`RENAME`/`PUT`-via-`ACTION_END`) apply directly
   to the tree *and* invalidate the parent's cache (`vol_invalidate()`), so
@@ -154,10 +158,12 @@ hanging the whole machine.
   data`/`size`/`alloc`, `actions.h`): `FINDINPUT`/`FINDUPDATE`/
   `FH_FROM_LOCK` on an existing file fetch the whole thing via `WREQ_GET`
   when opened; `WRITE`/`SET_FILE_SIZE` mutate that buffer and set
-  `dirty`; `ACTION_END` uploads it via `WREQ_PUT` iff `dirty`. Per RKRM DOS
-  14.1.5, a failed `ACTION_END` must leave the `FileHandle` fully usable
-  for a retry -- it does not free anything or decrement `open_count`/
-  `excl_lock` on the upload-failure path, only on success.
+  `dirty`; `ACTION_END` uploads it via `WREQ_PUT` iff `dirty`. A failed
+  upload still frees the handle and releases the file (dos.library's
+  `Close()` frees the `FileHandle` either way and hardly any program
+  retries -- keeping it only leaked the buffer and left the file locked
+  until the next mount); the worker saves the data to
+  `T:AmiCloud-unsaved/<name>` first.
 - **Buffer ownership always crosses the process boundary as `AllocVec`/
   `FreeVec`, one owner per direction** (both processes share one flat
   address space -- classic AmigaOS, no IPC copying needed, see `proto.h`):
@@ -172,19 +178,24 @@ later within this plan (see `../../docs/design/handler-plan.md` for what was
 intentionally left for a future plan, e.g. `sync`, multi-volume/disk-swap
 handling):
 
-- `backend_send()` blocks the whole handler for the duration of one HTTP
-  round trip (v1, see `proto.h`) -- every other request queues up behind
-  it. Fine for interactive use, not for heavy concurrent load. Bounded to
-  ~60s (`BACKEND_TIMEOUT_SECS`, `backend.c`) via `timer.device` -- a
-  worker that never replies within that window fails the request with
-  `ERROR_LOCK_TIMEOUT` instead of hanging the volume forever. Once that
-  happens the backend is permanently dead for the rest of this mount
-  (every further request fails the same way immediately) -- same "needs a
-  fresh `Mount`" recovery as a worker that dies mid-session, below, just
-  detected instead of hanging. If you hit this, `debug=T:worker.log` (or
-  `RAM:...`) in `ENV:amicloud.cfg` turns on `amicloud-worker`'s existing
-  verbose HTTP/TLS trace (`http_amiga.c`'s `HLOG`/`HERR`) to pin down
-  which step it actually got stuck on.
+- One request to the worker at a time (see `proto.h`). While it runs,
+  `backend_send()` keeps answering packets that need no network
+  (`handler.c` `serve_while_busy()`: Info, Read/Write/Seek on open files,
+  Examine of a fresh directory, FreeLock, ...) and queues the rest, which
+  run in arrival order afterwards. So a long transfer over a slow line no
+  longer freezes Workbench's view of the volume, but a second transfer
+  still waits for the first.
+- No handler-side timeout: the worker's HTTP layer has idle timeouts
+  (`timeout=` in `amicloud.cfg`, default 120 s -- fails only when no data
+  moves at all, never limits a whole transfer), so a reply always comes.
+  A transport failure (unreachable, timed out, broken off) is reported as
+  `ERROR_NO_DISK`, for which DOS offers "Retry"; a broken-off download is
+  resumed by the HTTP layer itself first. `Break` on `amicloud-worker`
+  cancels the running transfer. An earlier ~60 s `timer.device` bound
+  here was removed: at modem speed a legitimate 200 KB read takes longer,
+  and it killed the mount for good. If something hangs anyway,
+  `debug=T:worker.log` in `ENV:amicloud.cfg` turns on the worker's
+  verbose HTTP/TLS trace (`http_amiga.c`'s `HLOG`/`HERR`).
 - `ACTION_DIE` always fails (`ERROR_OBJECT_IN_USE`): a clean unmount needs
   `dos.library` (`AttemptLockDosList`/`RemDosEntry`), which is closed by
   the time the packet loop is servicing requests. Unmounting means
@@ -320,9 +331,9 @@ then add:
 
 1. `Dir CLOUD:` -- shows the server's actual root contents (first access
    after mount always triggers a real `WREQ_LIST`, cache starts empty).
-2. `List CLOUD:` twice within 10 seconds -- second one should be
-   noticeably instant (served from cache, no `WREQ_LIST` round trip);
-   wait 10+ seconds and repeat -- should trigger a fresh fetch again.
+2. `List CLOUD:` twice within 30 seconds (`cache_ttl`) -- second one
+   should be noticeably instant (served from cache, no `WREQ_LIST` round
+   trip); wait 30+ seconds and repeat -- should trigger a fresh fetch.
 3. Copy a real file in (`Copy S:Startup-Sequence CLOUD:test1`), verify via
    `web.php` or the CLI (`amicloud get /test1 -`) that it actually landed
    on the server with matching content.

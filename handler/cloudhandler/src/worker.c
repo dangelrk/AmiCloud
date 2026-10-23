@@ -53,13 +53,14 @@ static AcConfig g_cfg;
 static int      g_net_ready = 0;
 
 /* Quota for ACTION_INFO (docs/design/user-management-plan.md §12.9): the
- * backend has no timeout (backend.c AC_BACKEND_TIMER_ENABLED 0), so the
  * handler must never block Workbench on a status request of its own.
  * Instead the worker fetches action=status right after a successful
  * WREQ_LIST -- at most every QUOTA_INTERVAL seconds, or sooner after a
  * PUT/DEL changed the usage -- and hands the numbers back with the
- * listing. A failed or old-server status just leaves quota_valid at 0. */
-#define QUOTA_INTERVAL 30
+ * listing. A failed or old-server status just leaves quota_valid at 0.
+ * Every status is one more round trip inside a listing, so not too
+ * often: over a modem that is noticeable. */
+#define QUOTA_INTERVAL 120
 static long g_quota_time  = 0;
 static int  g_quota_dirty = 1;
 
@@ -111,7 +112,9 @@ static int      w_confirm(const char *msg)              { (void)msg; return 1; }
 static int      w_progress(long done, long total, const char *name)
 {
     (void)done; (void)total; (void)name;
-    return 1; /* never cancel */
+    /* "Break <worker>" (Ctrl-C) cancels the running transfer -- the
+     * only way to stop a long one, the handler itself never can. */
+    return !ui_break_pending();
 }
 static UiOverwrite w_overwrite(int is_dir, const char *name,
                                long src_size, const char *src_date, const char *src_md5,
@@ -120,6 +123,28 @@ static UiOverwrite w_overwrite(int is_dir, const char *name,
     (void)is_dir; (void)name; (void)src_size; (void)src_date; (void)src_md5;
     (void)dst_size; (void)dst_date; (void)dst_md5;
     return UI_OW_OVERWRITE; /* never actually consulted by the cmd_*() calls below */
+}
+
+/* A WREQ_PUT that failed would lose the data for good: Close() frees the
+ * handle either way (actions.c act_end()). Keep a copy in
+ * T:AmiCloud-unsaved/<name> instead, overwriting an older one of the
+ * same name. Best effort -- nothing else to do if even that fails. */
+static void save_unsaved(const char *path, const UBYTE *buf, ULONG len)
+{
+    const char *name = strrchr(path, '/');
+    char target[300];
+    BPTR lock, fh;
+
+    name = name ? name + 1 : path;
+    if (!*name) return;
+    lock = CreateDir((CONST_STRPTR)"T:AmiCloud-unsaved");
+    if (lock) UnLock(lock);
+    snprintf(target, sizeof(target), "T:AmiCloud-unsaved/%s", name);
+    fh = Open((CONST_STRPTR)target, MODE_NEWFILE);
+    if (!fh) return;
+    if (len) Write(fh, (APTR)buf, (LONG)len);
+    Close(fh);
+    ac_log_printf("worker: upload of %s failed, data kept in %s\n", path, target);
 }
 
 /* ---- HTTP status -> DOS error mapping (docs/design/handler-plan.md Stufe 2) -- */
@@ -138,7 +163,9 @@ static LONG map_get_status(int status)
     case 401: return ERROR_DISK_NOT_VALIDATED;
     case 429: return ERROR_DISK_NOT_VALIDATED; /* login throttled, like 401 */
     case 403: return ERROR_WRITE_PROTECTED;
-    case 0:   return ERROR_SEEK_ERROR;    /* transport failure, READ direction */
+    case 0:   return ERROR_NO_DISK;       /* transport failure: server unreachable,
+                                           * timed out or cancelled -- DOS offers
+                                           * "Retry" for this one */
     default:  return ERROR_INVALID_LOCK;
     }
 }
@@ -153,7 +180,7 @@ static LONG map_put_status(int status)
     case 413: return ERROR_DISK_FULL;
     case 507: return ERROR_DISK_FULL;          /* quota exceeded */
     case 422: return ERROR_DISK_FULL;
-    case 0:   return ERROR_DISK_FULL;     /* transport failure, WRITE/END direction */
+    case 0:   return ERROR_NO_DISK;       /* transport failure, see map_get_status() */
     default:  return ERROR_INVALID_LOCK;
     }
 }
@@ -248,11 +275,16 @@ static void dispatch(WorkerMsg *m)
     case WREQ_PUT: {
         int status = 0;
 
-        if (!ensure_net_ready()) { m->result = map_put_status(0); break; }
+        if (!ensure_net_ready()) {
+            m->result = map_put_status(0);
+            save_unsaved(m->path, m->buf, m->buflen);
+            break;
+        }
         /* Same inverted-check bug as WREQ_GET above -- cmd_put_buf() also
          * returns 0 on success, 1 on failure. */
         if (cmd_put_buf(&g_cfg, m->path, (const char *)m->buf, (long)m->buflen, &status) != 0) {
             m->result = map_put_status(status);
+            save_unsaved(m->path, m->buf, m->buflen);
             break;
         }
         m->result = 0;
@@ -363,6 +395,12 @@ int main(int argc, char **argv)
             ac_log_printf("main: dispatching cmd=%d m=%p mn_ReplyPort=%p\n",
                           (int)m->cmd, (void *)m, (void *)m->msg.mn_ReplyPort);
             dispatch(m);
+            /* Every reply carries the clock and the cache lifetime, the
+             * handler has neither (see proto.h). */
+            m->server_now = (LONG)time(NULL);
+            m->cache_ttl  = g_cfg.cache_ttl;
+            /* A Break only cancels the request it hit, not every later one. */
+            ui_break_clear();
             ac_log_printf("main: dispatch returned, mn_ReplyPort=%p, calling ReplyMsg...\n",
                           (void *)m->msg.mn_ReplyPort);
             ReplyMsg((struct Message *)m);

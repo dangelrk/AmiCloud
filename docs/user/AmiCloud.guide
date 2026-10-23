@@ -1,5 +1,5 @@
 @database "AmiCloud.guide"
-@$VER: AmiCloud.guide 1.1 (22.10.2026)
+@$VER: AmiCloud.guide 1.2 (23.10.2026)
 @author "Ronny Krueger"
 @(c) "2026 Ronny Krueger, GPL-3.0-or-later"
 @wordwrap
@@ -309,6 +309,8 @@ schluessel=wert, Zeilen mit # am Anfang sind Kommentare.
   #debug=T:amicloud.log
   #gmt_offset=60
   #dst=0
+  #timeout=120
+  #cache_ttl=30
 
 Die Schlüssel:
 
@@ -329,6 +331,14 @@ Die Schlüssel:
               (MEZ = 60). Standard 0.
   dst         Nur Amiga: 1 = Sommerzeit, addiert 60 Minuten.
               Standard 0.
+  timeout     Netz-Timeout in Sekunden, Standard 120: so lange
+              darf eine Verbindung ganz ohne Datenfluss bleiben,
+              bevor sie als abgebrochen gilt. Die Dauer einer
+              Übertragung ist nicht begrenzt - eine große Datei
+              über ein Modem läuft, solange Daten fließen.
+  cache_ttl   Nur CLOUD:-Handler: wie viele Sekunden ein
+              Verzeichnisinhalt zwischengespeichert wird,
+              Standard 30. Über ein Modem lohnen 120 bis 300.
 
 gmt_offset und dst werden von amicloud-shell und vom CLOUD:-Handler
 ausgewertet. Die Amiga-Uhr kennt keine Zeitzone; ohne passende Werte
@@ -700,7 +710,8 @@ amicloud-worker, den der Handler beim Mounten aus L: startet. Der
 Worker liest ENV:amicloud.cfg einmal beim Start und baut die
 Netzverbindung erst bei der ersten Anfrage auf; das Mounten beim Booten
 klappt deshalb auch, wenn der TCP/IP-Stack später startet.
-Verzeichnisinhalte werden 10 Sekunden zwischengespeichert. Eine
+Verzeichnisinhalte werden 30 Sekunden zwischengespeichert (cache_ttl
+in amicloud.cfg). Eine
 geöffnete Datei wird ganz in den Speicher geladen und beim Schließen
 hochgeladen, wenn sie geändert wurde.
 
@@ -708,11 +719,20 @@ Grenzen:
 
   - Kein Abmelden: CLOUD: bleibt bis zum Neustart gemountet. Neue
     Programmversionen und geänderte Einstellungen wirken erst danach.
-  - Anfragen laufen nacheinander; eine langsame Übertragung hält
-    andere Zugriffe auf CLOUD: so lange auf.
-  - Antwortet der Worker 60 Sekunden lang nicht, schlägt die Anfrage
-    fehl, und alle weiteren Zugriffe scheitern sofort bis zum
-    Neustart - das Laufwerk friert aber nicht ein.
+  - Anfragen an den Server laufen nacheinander. Während einer
+    langsamen Übertragung beantwortet CLOUD: trotzdem alles, was
+    ohne Server geht: Info, Lesen und Schreiben bereits geöffneter
+    Dateien, Inhalte frisch gelesener Verzeichnisse. Alles andere
+    wartet, bis die Übertragung fertig ist.
+  - Fließen timeout Sekunden lang (Standard 120) keine Daten oder
+    bricht die Verbindung ab, scheitert die Anfrage mit "No disk
+    present"; DOS bietet dann Wiederholen an. Abgebrochene Downloads
+    setzt der Worker selbst an der Abbruchstelle fort. Eine laufende
+    Übertragung lässt sich mit Break abbrechen (Status zeigt die
+    Nummer von amicloud-worker).
+  - Scheitert beim Schließen einer geänderten Datei das Hochladen,
+    meldet Close() einen Fehler, und der Inhalt liegt in
+    T:AmiCloud-unsaved/ - so geht nichts verloren.
   - Ein nicht leeres Verzeichnis lässt sich nicht direkt löschen;
     Delete ... ALL funktioniert (DOS löscht Eintrag für Eintrag).
   - Info CLOUD: zeigt die Belegung des eigenen Kontos: bei einem
@@ -786,6 +806,14 @@ CLOUD: reagiert nicht wie erwartet
 Commander startet nicht
   MUI 3.8 installiert? Ist die Konfiguration vollständig? Zur
   Fehlersuche mit -v aus der Shell starten.
+
+Langsame Verbindung (Modem), Übertragungen brechen ab
+  Alle Timeouts greifen nur, wenn gar keine Daten fließen. Bricht es
+  trotzdem ab, timeout=300 in amicloud.cfg setzen. Abgebrochene
+  Downloads werden an der Abbruchstelle fortgesetzt, nicht neu
+  begonnen. Ctrl-C bricht eine laufende Übertragung in amicloud,
+  amicloud-shell und cloudsync ab. Für CLOUD: lohnt cache_ttl=300.
+  Serverseitig: docs/INSTALL.md, Abschnitt "Langsame Clients".
 
 Pfeiltasten in amicloud-shell wirken nicht
   Die Shell braucht ein interaktives Konsolenfenster. Kommen die
@@ -923,6 +951,13 @@ Programme 0.1 (2026)
     öffentliche Links; Weboberfläche im Stil von ownCloud.
   - amicloud quota, quota in der Shell, Belegung in den
     Commander-Statuszeilen und bei Info CLOUD:.
+  - Für langsame Verbindungen: Timeouts nur bei Stillstand
+    (timeout=), Fortsetzen abgebrochener Downloads, Ctrl-C bricht
+    ab, CLOUD: bleibt während einer Übertragung bedienbar.
+
+Handbuch 1.2 (23.10.2026)
+  - Langsame Verbindungen: timeout, cache_ttl, Ctrl-C, Fortsetzen
+    von Downloads, T:AmiCloud-unsaved.
 
 Handbuch 1.1 (22.10.2026)
   - Benutzerverwaltung, App-Passwörter, Weboberfläche, quota.

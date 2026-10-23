@@ -31,12 +31,20 @@ class Response
         exit;
     }
 
-    public static function stream(string $filepath, string $mime, int $offset, int $length): void
+    /* $partial: Antwort auf einen Range-Header -- 206 mit Content-Range
+     * statt 200 (offset/length per Query-Parameter bleiben 200). */
+    public static function stream(string $filepath, string $mime, int $offset, int $length,
+                                  bool $partial = false): void
     {
         $size = filesize($filepath);
         $end  = ($length >= 0) ? min($offset + $length, $size) : $size;
-        $send = $end - $offset;
+        $send = max(0, $end - $offset);
 
+        if ($partial) {
+            http_response_code(206);
+            header('Content-Range: bytes ' . $offset . '-' . ($offset + $send - 1) . '/' . $size);
+        }
+        header('Accept-Ranges: bytes');
         header('Content-Type: ' . $mime);
         header('Content-Length: ' . $send);
 

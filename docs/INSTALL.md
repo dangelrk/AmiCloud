@@ -229,6 +229,32 @@ Fehlersuche:
   IP) sperrt der Server 15 Minuten lang. Oft ein Gerät mit altem Passwort
   in der Konfiguration.
 
+### Langsame Clients (Modem, 68k)
+
+Ein Amiga hängt oft an einer langsamen Leitung (wenige KB/s), und der
+TLS-Handshake braucht auf einer 68k-CPU 10–60 Sekunden. Die
+Apache-Vorgaben sind dafür knapp: `Timeout 60` begrenzt den Handshake,
+`mod_reqtimeout` verlangt die Anfrage-Header innerhalb von 20–40 Sekunden,
+und nach 5 Sekunden Pause (`KeepAliveTimeout`) schließt Apache die
+Verbindung, sodass der nächste Zugriff wieder einen Handshake kostet.
+Empfohlen (global, z. B. `/etc/httpd/conf.d/01-slow-clients.conf`; die
+Werte für Handshake und Header wirken bei namensbasierten vHosts nur auf
+Server-Ebene):
+
+```apache
+Timeout 120
+RequestReadTimeout handshake=120 header=60-120,MinRate=200 body=60,MinRate=200
+KeepAliveTimeout 30
+MaxKeepAliveRequests 1000
+```
+
+Die Clients lesen `Keep-Alive: timeout=…` aus der Antwort und nutzen eine
+Verbindung nur so lange wieder, wie der Server sie offen hält. Unter
+PHP-FPM `request_terminate_timeout` auf `0` lassen (Vorgabe);
+`max_execution_time` aus `.user.ini` zählt unter Linux nur CPU-Zeit, nicht
+das Warten auf einen langsamen Client. Abgebrochene Downloads setzen die
+Clients per `Range`-Header fort (`206 Partial Content`).
+
 ### Lokaler Test ohne Apache
 
 Für Entwicklung genügt der eingebaute PHP-Server und eine lokale MariaDB.
@@ -345,7 +371,8 @@ pass=geheim
 ```
 
 Weitere Schlüssel (`basepath`, `verify_ssl`, `debug`, `gmt_offset`,
-`dst`) erklärt [config-examples/README.md](../config-examples/README.md).
+`dst`, `timeout`, `cache_ttl`) erklärt
+[config-examples/README.md](../config-examples/README.md).
 Auf dem Amiga sollten `gmt_offset` (Minuten zu UTC, MEZ = 60) und `dst`
 zur eingestellten Uhrzeit passen, sonst stimmen Datumsangaben auf
 `CLOUD:` und in `amicloud-shell` nicht.

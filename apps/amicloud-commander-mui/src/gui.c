@@ -170,14 +170,18 @@ static int mui_progress(long done, long total, const char *name)
     ULONG sigs = 0;
 
     if (done == 0) { ui_rate_reset(&g_rate); g_bps_text[0] = '\0'; }
-    if (ui_rate_sample(&g_rate, done))
-        snprintf(g_bps_text, sizeof(g_bps_text), "  %ld KB/s", g_rate.bps / 1024);
+    if (ui_rate_sample(&g_rate, done)) {
+        char rate[24];
+        ui_format_rate(rate, sizeof(rate), g_rate.bps);
+        snprintf(g_bps_text, sizeof(g_bps_text), "  %s", rate);
+    }
 
     /* name is a full path (up to AC_MAX_PATH bytes) — snprintf, not sprintf,
      * since it routinely exceeds this display buffer (was a stack overflow
      * that crashed on any long download/upload path). */
     if (total > 0)
-        snprintf(buf, sizeof(buf), "%s (%ld%%)%s", name ? name : "", (done * 100) / total, g_bps_text);
+        snprintf(buf, sizeof(buf), "%s (%ld%%)%s", name ? name : "",
+                 total > 2000000L ? done / (total / 100) : (done * 100) / total, g_bps_text);
     else
         snprintf(buf, sizeof(buf), "%s%s", name ? name : "...", g_bps_text);
     if (g_progress_text) set(g_progress_text, MUIA_Text_Contents, buf);
@@ -1181,6 +1185,9 @@ int gui_run(const AcConfig *cfg)
 
         default: break;
         }
+        /* A Ctrl-C (only possible when started from a Shell) cancels the
+         * transfer it hit, see ui_hooks.h -- never every later one. */
+        ui_break_clear();
         if (running && sigs) Wait(sigs);
     }
 

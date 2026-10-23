@@ -127,7 +127,7 @@
 <div class="wrap">
 
 <h1>AmiCloud</h1>
-<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Version 1.1 (22.10.2026)</p>
+<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Version 1.2 (23.10.2026)</p>
 
 <p>AmiCloud verbindet den Amiga über HTTPS mit einem eigenen AmiCloud-Server.
 Die Dateien darauf lassen sich per Kommandozeile, in einer interaktiven
@@ -392,7 +392,9 @@ pass=geheim
 #verify_ssl=1
 #debug=T:amicloud.log
 #gmt_offset=60
-#dst=0</pre>
+#dst=0
+#timeout=120
+#cache_ttl=30</pre>
 
 <table>
 <tr><th>Schlüssel</th><th>Standard</th><th>Bedeutung</th></tr>
@@ -404,6 +406,8 @@ pass=geheim
 <tr><td><code>debug</code></td><td>leer</td><td>nur <code>CLOUD:</code>-Handler (<code>amicloud-worker</code>): Ziel für ein ausführliches HTTP/TLS-Protokoll, z.&nbsp;B. <code>T:amicloud.log</code> oder <code>CON:0/0/640/200/AmiCloud Debug/CLOSE</code></td></tr>
 <tr><td><code>gmt_offset</code></td><td><code>0</code></td><td>nur Amiga: Abstand der Systemuhr zu UTC in Minuten (MEZ = 60)</td></tr>
 <tr><td><code>dst</code></td><td><code>0</code></td><td>nur Amiga: <code>1</code> = Sommerzeit, addiert 60 Minuten</td></tr>
+<tr><td><code>timeout</code></td><td><code>120</code></td><td>Netz-Timeout in Sekunden: so lange darf eine Verbindung ganz ohne Datenfluss bleiben, bevor sie als abgebrochen gilt. Die Dauer einer Übertragung ist nicht begrenzt – eine große Datei über ein Modem läuft, solange Daten fließen.</td></tr>
+<tr><td><code>cache_ttl</code></td><td><code>30</code></td><td>nur <code>CLOUD:</code>-Handler: wie viele Sekunden ein Verzeichnisinhalt zwischengespeichert wird; über ein Modem lohnen 120 bis 300</td></tr>
 </table>
 
 <p><code>gmt_offset</code> und <code>dst</code> werden von
@@ -697,19 +701,28 @@ den der Handler beim Mounten aus <code>L:</code> startet (er wartet bis zu
 30&nbsp;Sekunden darauf). Der Worker liest <code>ENV:amicloud.cfg</code>
 einmal beim Start und baut die Netzverbindung erst bei der ersten Anfrage
 auf – das Mounten beim Booten klappt deshalb auch, wenn der TCP/IP-Stack
-später startet. Verzeichnisinhalte werden 10&nbsp;Sekunden
-zwischengespeichert. Eine geöffnete Datei wird ganz in den Speicher geladen
+später startet. Verzeichnisinhalte werden 30&nbsp;Sekunden
+zwischengespeichert (<code>cache_ttl</code>). Eine geöffnete Datei wird ganz in den Speicher geladen
 und beim Schließen hochgeladen, wenn sie geändert wurde.</p>
 
 <h4>Grenzen</h4>
 <ul>
 <li>Kein Abmelden: <code>CLOUD:</code> bleibt bis zum Neustart gemountet.
 Neue Programmversionen und geänderte Einstellungen wirken erst danach.</li>
-<li>Anfragen laufen nacheinander; eine langsame Übertragung hält andere
-Zugriffe auf <code>CLOUD:</code> so lange auf.</li>
-<li>Antwortet der Worker 60&nbsp;Sekunden lang nicht, schlägt die Anfrage
-fehl, und alle weiteren Zugriffe scheitern sofort bis zum Neustart – das
-Laufwerk friert aber nicht ein.</li>
+<li>Anfragen an den Server laufen nacheinander. Während einer langsamen
+Übertragung beantwortet <code>CLOUD:</code> trotzdem alles, was ohne Server
+geht: <code>Info</code>, Lesen und Schreiben bereits geöffneter Dateien,
+Inhalte frisch gelesener Verzeichnisse. Alles andere wartet, bis die
+Übertragung fertig ist.</li>
+<li>Fließen <code>timeout</code> Sekunden lang (Standard 120) keine Daten
+oder bricht die Verbindung ab, scheitert die Anfrage mit „No disk
+present“; DOS bietet dann <em>Wiederholen</em> an. Abgebrochene Downloads
+setzt der Worker selbst an der Abbruchstelle fort. Eine laufende
+Übertragung lässt sich mit <code>Break</code> abbrechen (<code>Status</code>
+zeigt die Nummer von <code>amicloud-worker</code>).</li>
+<li>Scheitert beim Schließen einer geänderten Datei das Hochladen, meldet
+<code>Close()</code> einen Fehler, und der Inhalt liegt in
+<code>T:AmiCloud-unsaved/</code> – so geht nichts verloren.</li>
 <li>Ein nicht leeres Verzeichnis lässt sich nicht direkt löschen;
 <code>Delete … ALL</code> funktioniert (DOS löscht Eintrag für
 Eintrag).</li>
@@ -742,6 +755,7 @@ reserviert, siehe <a href="#fehlersuche">Fehlersuche</a>).</li>
 <tr><td><code>Mount CLOUD:</code> schlägt fehl</td><td>Liegt <code>amicloud-worker</code> in <code>L:</code>? Der Handler wartet bis zu 30&nbsp;Sekunden auf den Worker.</td></tr>
 <tr><td><code>CLOUD:</code> reagiert nicht wie erwartet</td><td>In <code>ENV:amicloud.cfg</code> z.&nbsp;B. <code>debug=T:amicloud.log</code> eintragen, neu starten, Fehler auslösen und das Protokoll ansehen – der Worker protokolliert jeden Schritt vom Öffnen der Bibliotheken bis zur HTTP-Anfrage. Zusätzlich zeigt <code>Type CLOUD:debuglog</code> das Protokoll der Handler-Seite.</td></tr>
 <tr><td>Commander startet nicht</td><td>MUI&nbsp;3.8 installiert? Konfiguration vollständig? Zur Fehlersuche mit <code>-v</code> aus der Shell starten.</td></tr>
+<tr><td>Langsame Verbindung (Modem), Übertragungen brechen ab</td><td>Alle Timeouts greifen nur, wenn gar keine Daten fließen. Bricht es trotzdem ab, <code>timeout=300</code> in <code>amicloud.cfg</code> setzen. Abgebrochene Downloads werden an der Abbruchstelle fortgesetzt, nicht neu begonnen. <kbd>Ctrl-C</kbd> bricht eine laufende Übertragung in <code>amicloud</code>, <code>amicloud-shell</code> und <code>cloudsync</code> ab. Für <code>CLOUD:</code> lohnt <code>cache_ttl=300</code>. Serverseitig: <code>docs/INSTALL.md</code>, Abschnitt „Langsame Clients“.</td></tr>
 <tr><td>Pfeiltasten in <code>amicloud-shell</code> wirken nicht</td><td>Die Shell braucht ein interaktives Konsolenfenster; bei Eingabe aus Datei oder Pipe gibt es keine Zeilenbearbeitung.</td></tr>
 </table>
 
@@ -869,7 +883,14 @@ AmiCloudPrefs und der <code>CLOUD:</code>-Handler; Suche in allen Programmen;
 Keep-Alive-Verbindungen auf dem Amiga. Benutzerverwaltung,
 App-Passwörter, Speicherkontingente und öffentliche Links; Weboberfläche im
 Stil von ownCloud; <code>quota</code> in CLI und Shell, Belegung in den
-Commander-Statuszeilen und bei <code>Info CLOUD:</code>.</dd>
+Commander-Statuszeilen und bei <code>Info CLOUD:</code>. Für langsame
+Verbindungen: Timeouts nur bei Stillstand (<code>timeout</code>), Fortsetzen
+abgebrochener Downloads, <kbd>Ctrl-C</kbd> bricht ab, <code>CLOUD:</code>
+bleibt während einer Übertragung bedienbar.</dd>
+<dt><strong>Handbuch 1.2 (23.10.2026)</strong></dt>
+<dd>Langsame Verbindungen: <code>timeout</code>, <code>cache_ttl</code>,
+<kbd>Ctrl-C</kbd>, Fortsetzen von Downloads,
+<code>T:AmiCloud-unsaved</code>.</dd>
 <dt><strong>Handbuch 1.1 (22.10.2026)</strong></dt>
 <dd>Weboberfläche, App-Passwörter, Benutzerverwaltung, <code>quota</code>.</dd>
 <dt><strong>Handbuch 1.0 (27.09.2026)</strong></dt>
@@ -878,7 +899,7 @@ Installationsschublade, Install-AmiCloud und Uninstall-AmiCloud.</dd>
 </dl>
 
 <footer>
-AmiCloud-Handbuch 1.1 · Amiga-Fassung: <code>docs/user/AmiCloud.guide</code>
+AmiCloud-Handbuch 1.2 · Amiga-Fassung: <code>docs/user/AmiCloud.guide</code>
 (AmigaGuide) · Installation: <code>docs/INSTALL.md</code> · Bauen:
 <code>docs/BUILD.md</code>
 </footer>

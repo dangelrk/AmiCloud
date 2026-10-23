@@ -1002,7 +1002,14 @@ int shell_run(const AcConfig *cfg)
         ntok = tokenize(line, tokens, MAX_TOKENS);
         if (ntok == 0) continue;
 
+        /* Ctrl-C cancels the command it hits (and the rest of a get -r
+         * etc., see ui_hooks.h) -- the next command starts fresh. */
+        ui_break_clear();
         running = dispatch(&sess, tokens, ntok);
+        if (ui_break_pending()) {
+            printf("*** Abgebrochen\n");
+            ui_break_clear();
+        }
     }
 
     ui_set_line_reader(NULL);

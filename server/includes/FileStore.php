@@ -283,8 +283,26 @@ class FileStore
         header('Content-Disposition: attachment; filename="'
                . preg_replace('/[^\x20-\x7e]|["\\\\]/', '_', basename($file)) . '"');
 
+        /* Range: bytes=a- / bytes=a-b (RFC 9110 14.2): damit setzt der
+         * Client einen abgebrochenen Download fort, statt bei einer
+         * Modemverbindung wieder bei null anzufangen. Nur ein einzelner
+         * Bereich; alles andere wird ignoriert (volle Antwort, 200). */
+        $partial = false;
+        if ($offset === 0 && $length === -1
+            && preg_match('/^bytes=(\d+)-(\d*)$/', trim($_SERVER['HTTP_RANGE'] ?? ''), $m)) {
+            $size  = (int)filesize($file);
+            $start = (int)$m[1];
+            if ($start >= $size) {
+                header('Content-Range: bytes */' . $size);
+                Response::error(416, 'Range not satisfiable');
+            }
+            $offset  = $start;
+            $length  = $m[2] !== '' ? max(0, (int)$m[2] - $start + 1) : -1;
+            $partial = true;
+        }
+
         /* X-AmiCloud-MD5 gilt immer fuer die Gesamtdatei — bei Teil-
-         * Downloads (offset/length gesetzt) wird der Header weggelassen
+         * Downloads (offset/length bzw. Range) wird der Header weggelassen
          * statt eine irrefuehrende Teil-Pruefsumme zu senden (Abschnitt
          * 18.2). offset===0 && length===-1 ist der von api.php verwendete
          * Sentinel fuer "kein offset/length angegeben". */
@@ -296,7 +314,7 @@ class FileStore
             }
         }
 
-        Response::stream($file, $mime, $offset, $length);
+        Response::stream($file, $mime, $offset, $length, $partial);
     }
 
     /* ------------------------------------------------------------------ */

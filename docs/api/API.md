@@ -222,7 +222,15 @@ vollständigen Download (kein `offset`/`length`) liefert der Server
 zusätzlich den Header `X-AmiCloud-MD5: <32 Hex-Zeichen>` — bei
 Teil-Downloads bewusst weggelassen, da die Prüfsumme immer für die
 Gesamtdatei gilt.
-Fehler: 404.
+
+Ohne `offset`/`length` versteht der Server auch einen einzelnen
+`Range: bytes=N-` bzw. `Range: bytes=N-M` und antwortet mit
+`206 Partial Content` und `Content-Range`. Damit setzen die Clients
+einen abgebrochenen Download an der Abbruchstelle fort (die Prüfsumme
+aus dem ersten, vollständigen Abruf gilt weiter). Ein Bereich hinter dem
+Dateiende ergibt 416; andere Range-Formen werden ignoriert (volle
+Antwort, 200).
+Fehler: 404, 416.
 
 ### upload — Datei hochladen
 
