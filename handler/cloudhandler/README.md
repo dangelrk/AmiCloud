@@ -157,10 +157,16 @@ hanging the whole machine.
   the next listing re-verifies against the server rather than trusting the
   optimistic local update forever.
 - **File content lives per open handle, not on the `CNode`** (`OpenFile.
-  data`/`size`/`alloc`, `actions.h`): `FINDINPUT`/`FINDUPDATE`/
-  `FH_FROM_LOCK` on an existing file fetch the whole thing via `WREQ_GET`
-  when opened; `WRITE`/`SET_FILE_SIZE` mutate that buffer and set
-  `dirty`; `ACTION_END` uploads it via `WREQ_PUT` iff `dirty`. A failed
+  data`/`size`/`alloc`, `actions.h`): opening an existing file transfers
+  nothing. `READ` fetches only what it needs: `.info` files and files up
+  to 4 KB whole (`WREQ_GET`, MD5-checked), everything else by byte range
+  (`WREQ_READ` -> `cmd_get_range()`, `offset`/`length`), 4 KB on the first
+  access, doubling up to 1 MB while a program reads on sequentially.
+  Workbench's "show all files" -- it opens every file without an icon to
+  guess a type -- therefore costs 4 KB per file instead of the whole file
+  (a 40 MB archive used to freeze the drawer for minutes).
+  `WRITE`/`SET_FILE_SIZE` load the whole file first and mutate that
+  buffer, set `dirty`; `ACTION_END` uploads it via `WREQ_PUT` iff `dirty`. A failed
   upload still frees the handle and releases the file (dos.library's
   `Close()` frees the `FileHandle` either way and hardly any program
   retries -- keeping it only leaked the buffer and left the file locked

@@ -702,8 +702,11 @@ den der Handler beim Mounten aus <code>L:</code> startet (er wartet bis zu
 einmal beim Start und baut die Netzverbindung erst bei der ersten Anfrage
 auf – das Mounten beim Booten klappt deshalb auch, wenn der TCP/IP-Stack
 später startet. Verzeichnisinhalte werden 30&nbsp;Sekunden
-zwischengespeichert (<code>cache_ttl</code>). Eine geöffnete Datei wird ganz in den Speicher geladen
-und beim Schließen hochgeladen, wenn sie geändert wurde.</p>
+zwischengespeichert (<code>cache_ttl</code>). Beim Lesen holt der Handler nur
+die Teile einer Datei, die ein Programm tatsächlich liest – zeigt die Workbench
+„Alle Dateien“ an, kostet eine Datei ohne Icon nur 4&nbsp;KB, nicht ihre ganze
+Größe. Wird eine Datei geändert, lädt er sie ganz in den Speicher und lädt sie
+beim Schließen wieder hoch.</p>
 
 <h4>Grenzen</h4>
 <ul>
@@ -735,7 +738,8 @@ zeigen über 4&nbsp;GB falsch an.</li>
 <li>Ist das Kontingent voll, scheitert das Schreiben mit „Disk full“.</li>
 <li>Ein Laufwerk, kein Diskwechsel, kein Formatieren, kein Umbenennen des
 Datenträgers.</li>
-<li>Große Dateien brauchen entsprechend viel freien Speicher.</li>
+<li>Eine Datei zu ändern braucht so viel freien Speicher, wie sie groß ist
+(nur lesen nicht).</li>
 <li>Eine Datei namens <code>debuglog</code> im Wurzelverzeichnis der Cloud
 ist über <code>CLOUD:</code> nicht erreichbar (der Name ist für die Diagnose
 reserviert, siehe <a href="#fehlersuche">Fehlersuche</a>).</li>

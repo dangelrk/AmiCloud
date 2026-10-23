@@ -711,9 +711,10 @@ Worker liest ENV:amicloud.cfg einmal beim Start und baut die
 Netzverbindung erst bei der ersten Anfrage auf; das Mounten beim Booten
 klappt deshalb auch, wenn der TCP/IP-Stack später startet.
 Verzeichnisinhalte werden 30 Sekunden zwischengespeichert (cache_ttl
-in amicloud.cfg). Eine
-geöffnete Datei wird ganz in den Speicher geladen und beim Schließen
-hochgeladen, wenn sie geändert wurde.
+in amicloud.cfg). Beim Lesen holt der Handler nur die Teile einer Datei,
+die ein Programm tatsächlich liest - zeigt die Workbench "Alle Dateien"
+an, kostet eine Datei ohne Icon nur 4 KB. Wird eine Datei geändert,
+lädt er sie ganz in den Speicher und beim Schließen wieder hoch.
 
 Grenzen:
 
@@ -745,7 +746,8 @@ Grenzen:
   - Ist das Kontingent voll, scheitert das Schreiben mit "Disk full".
   - Ein Laufwerk, kein Diskwechsel, kein Formatieren, kein Umbenennen
     des Datenträgers.
-  - Große Dateien brauchen entsprechend viel freien Speicher.
+  - Eine Datei zu ändern braucht so viel freien Speicher, wie sie
+    groß ist (nur lesen nicht).
   - Eine Datei namens debuglog im Wurzelverzeichnis der Cloud ist über
     CLOUD: nicht erreichbar (der Name ist für die Diagnose reserviert,
     siehe @{" Fehlersuche " link Fehlersuche}).
