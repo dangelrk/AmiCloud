@@ -1,4 +1,4 @@
-# CLOUD: -- AmiCloud DOS Handler
+# AMICLOUD: -- AmiCloud DOS Handler
 
 > Part of **AmiCloud** (AmigaOS only). End-user documentation: the
 > manual (`docs/user/AmiCloud.guide`, `docs/user/AmiCloud-Handbuch.html`),
@@ -9,7 +9,7 @@
 > planning document, paths there refer to the old monorepo).
 
 An AmigaOS 3.x DOS handler that makes AmiCloud storage available as a
-regular device, `CLOUD:` (plus a `AmiCloud:` volume/Workbench icon
+regular device, `AMICLOUD:` (plus a `AmiCloud:` volume/Workbench icon
 alongside it). Companion to the `amicloud` CLI, `amicloud-shell` and the
 Commander in `../../apps/` -- see `../../docs/design/handler-plan.md` for
 the full three-stage design this code follows.
@@ -211,11 +211,11 @@ handling):
   is also never told to quit (`WREQ_QUIT` exists in the protocol but
   nothing sends it yet) -- kill it manually (`Break <pid>` /
   `run >NIL: L:amicloud-worker` lets you see its CLI process) if needed.
-- Diagnostics: `Type CLOUD:debuglog` shows the handler-side trace of its
+- Diagnostics: `Type AMICLOUD:debuglog` shows the handler-side trace of its
   requests to the worker (`diag_log()` ring buffer in `backend.c`, 4 KB,
   stops recording when full). This synthetic file is intercepted before
   any server lookup, so a real file named `debuglog` in the cloud's root
-  directory is not reachable through `CLOUD:` (use the CLI instead).
+  directory is not reachable through `AMICLOUD:` (use the CLI instead).
 - `ACTION_EXAMINE_ALL` is intentionally unimplemented; DOS transparently
   falls back to `ACTION_EXAMINE_OBJECT`/`ACTION_EXAMINE_NEXT`.
 - `DISK_INFO`/`INFO` report a fixed, plausible-but-not-real capacity
@@ -257,13 +257,13 @@ see `docs/BUILD.md`; not yet tested on real hardware).
 ## Install
 
 `make dist-amiga` puts both binaries into the installation drawer's `C/`
-and this directory's `mount/CLOUD` into `Storage/DOSDrivers/`;
+and this directory's `mount/AMICLOUD` into `Storage/DOSDrivers/`;
 `Install-AmiCloud` copies them to their final places. By hand:
 
 ```
 Copy amicloud-handler L:
 Copy amicloud-worker  L:
-Copy mount/CLOUD DEVS:DOSDrivers/
+Copy mount/AMICLOUD DEVS:DOSDrivers/
 ```
 
 `amicloud-worker` must be `L:amicloud-worker` (`backend_init()` spawns it
@@ -278,7 +278,7 @@ so later changes only take effect after a reboot.
 Then either reboot, or mount it immediately from a Shell:
 
 ```
-Mount CLOUD:
+Mount AMICLOUD:
 ```
 
 `backend_init()` first checks for an already-running worker
@@ -299,16 +299,16 @@ unavailable) or the worker never became reachable in time
 
 Run the Stage 1 and Stage 2 batteries below first, then:
 
-1. `Protect CLOUD:test1 +p`, then check via `web.php`/the CLI
+1. `Protect AMICLOUD:test1 +p`, then check via `web.php`/the CLI
    (`amicloud info /test1`) that the bits actually landed on the server,
-   not just the local cache -- `List CLOUD:test1` alone isn't enough
+   not just the local cache -- `List AMICLOUD:test1` alone isn't enough
    proof, it might just be echoing what the handler wrote locally.
-2. `FileNote CLOUD:test1 "hello"`, same server-side check. Also try a
+2. `FileNote AMICLOUD:test1 "hello"`, same server-side check. Also try a
    comment with a space and a special character (`&`, `%`) in it -- the
    client now URL-encodes it (`cmd_setcomment()`), confirm it round-trips
    intact rather than getting truncated at the first space.
-3. `SetDate CLOUD:test1 today` (or any AmigaDOS date-setting tool), then
-   remount `CLOUD:` (or wait past the TTL and `Dir` again) and confirm the
+3. `SetDate AMICLOUD:test1 today` (or any AmigaDOS date-setting tool), then
+   remount `AMICLOUD:` (or wait past the TTL and `Dir` again) and confirm the
    date read back matches -- this exercises the full round trip:
    `DateStamp` -> worker's `datestamp_to_epoch()` -> server -> next
    `WREQ_LIST`'s epoch -> worker's `epoch_to_datestamp()` -> `DateStamp`
@@ -318,7 +318,7 @@ Run the Stage 1 and Stage 2 batteries below first, then:
 4. Comment >79 characters: `FileNote` with a long string should fail
    locally with `ERROR_COMMENT_TOO_BIG` *before* any network request (the
    hard cap is enforced in `act_set_comment()`, not the server).
-5. `Rename CLOUD:Test CLOUD:test` (case-only, same object) -- confirm
+5. `Rename AMICLOUD:Test AMICLOUD:test` (case-only, same object) -- confirm
    whether the server actually renames it or treats it as a no-op; either
    is acceptable, but if it's a no-op, that's worth remembering as a
    platform quirk rather than re-litigating as a bug later.
@@ -326,7 +326,7 @@ Run the Stage 1 and Stage 2 batteries below first, then:
    open for update, truncate shorter via whatever truncates on your
    testing tool, close) -- confirm the *shorter* content is what actually
    lands on the server, not the original longer one.
-7. `Info CLOUD:` / the Workbench window's title bar -- capacity/"% full"
+7. `Info AMICLOUD:` / the Workbench window's title bar -- capacity/"% full"
    numbers should be plausible (not garbage/negative from 32-bit overflow)
    even though they're not derived from real usage (see "Known
    limitations").
@@ -337,30 +337,30 @@ First repeat the full Stage 1 battery below against the real server (same
 steps, now actually persisted) to catch anything the cache layer broke,
 then add:
 
-1. `Dir CLOUD:` -- shows the server's actual root contents (first access
+1. `Dir AMICLOUD:` -- shows the server's actual root contents (first access
    after mount always triggers a real `WREQ_LIST`, cache starts empty).
-2. `List CLOUD:` twice within 30 seconds (`cache_ttl`) -- second one
+2. `List AMICLOUD:` twice within 30 seconds (`cache_ttl`) -- second one
    should be noticeably instant (served from cache, no `WREQ_LIST` round
    trip); wait 30+ seconds and repeat -- should trigger a fresh fetch.
-3. Copy a real file in (`Copy S:Startup-Sequence CLOUD:test1`), verify via
+3. Copy a real file in (`Copy S:Startup-Sequence AMICLOUD:test1`), verify via
    `web.php` or the CLI (`amicloud get /test1 -`) that it actually landed
    on the server with matching content.
 4. From a second machine/session, upload or delete something in the same
    directory the Amiga has open, then `Dir` again after the TTL -- the
    change should show up (cache re-validates against the server, doesn't
    just trust its own view forever).
-5. Open a file for read (`Type CLOUD:test1`) while it's also open for
+5. Open a file for read (`Type AMICLOUD:test1`) while it's also open for
    write elsewhere (or vice versa) -- confirm the locked/open node is
    never silently replaced or dropped out from under you mid-scan.
 6. Unplug the network (or point `server` at something unreachable) mid-
    `Copy` -- the copy should fail with a clear DOS error, the handler
-   process must **not** crash, and a `Dir CLOUD:` afterwards (network
+   process must **not** crash, and a `Dir AMICLOUD:` afterwards (network
    restored) should recover normally.
-7. Mount without `amicloud-worker` present in `L:` -- `Mount CLOUD:`
+7. Mount without `amicloud-worker` present in `L:` -- `Mount AMICLOUD:`
    should fail cleanly (error requester, no hang, no crash) rather than
    wait forever.
 8. Restart just the worker (kill it, `run >NIL: L:amicloud-worker` again)
-   without unmounting `CLOUD:` -- `backend_init()`'s `FindPort()` retry
+   without unmounting `AMICLOUD:` -- `backend_init()`'s `FindPort()` retry
    only runs at mount time, so a request made *after* an unexpected worker
    death is expected to fail (documented limitation, see above); confirm
    it fails cleanly rather than hanging, and that a fresh `Mount` (or a
@@ -368,20 +368,20 @@ then add:
 
 ### Test (Stage 1 battery, still required first, no network needed)
 
-1. `Dir CLOUD:` -- lists an empty root.
-2. `MakeDir CLOUD:Test`
-3. `Copy S:Startup-Sequence CLOUD:Test/` then `Type CLOUD:Test/Startup-Sequence`
+1. `Dir AMICLOUD:` -- lists an empty root.
+2. `MakeDir AMICLOUD:Test`
+3. `Copy S:Startup-Sequence AMICLOUD:Test/` then `Type AMICLOUD:Test/Startup-Sequence`
    -- content matches the original.
-4. Copy it back out to `RAM:` and compare (`Copy CLOUD:Test/Startup-Sequence RAM:` then diff/compare against the original).
-5. `Rename CLOUD:Test/Startup-Sequence CLOUD:Test/SS`
-6. `Protect CLOUD:Test/SS +p` then `List CLOUD:Test` -- protection bits show.
-7. `FileNote CLOUD:Test/SS "a comment"` then `List CLOUD:Test` -- comment shows.
-8. `Delete CLOUD:Test/SS`, then `Delete CLOUD:Test` (now empty) -- both succeed;
-   `Delete CLOUD:Test` while non-empty should instead fail with "directory not empty".
+4. Copy it back out to `RAM:` and compare (`Copy AMICLOUD:Test/Startup-Sequence RAM:` then diff/compare against the original).
+5. `Rename AMICLOUD:Test/Startup-Sequence AMICLOUD:Test/SS`
+6. `Protect AMICLOUD:Test/SS +p` then `List AMICLOUD:Test` -- protection bits show.
+7. `FileNote AMICLOUD:Test/SS "a comment"` then `List AMICLOUD:Test` -- comment shows.
+8. `Delete AMICLOUD:Test/SS`, then `Delete AMICLOUD:Test` (now empty) -- both succeed;
+   `Delete AMICLOUD:Test` while non-empty should instead fail with "directory not empty".
 9. Open a Workbench window on `AmiCloud:` -- icon appears, drag&drop works,
    "New Drawer" works.
-10. Stress: `Copy SYS:Utilities CLOUD: ALL` (many files/dirs at once).
-11. While that copy is running, open a second Shell and run `Dir CLOUD:`
+10. Stress: `Copy SYS:Utilities AMICLOUD: ALL` (many files/dirs at once).
+11. While that copy is running, open a second Shell and run `Dir AMICLOUD:`
     repeatedly -- directory scanning must stay stable (no duplicate/missing
     entries, no crash) while the tree is being modified concurrently
     (`ACTION_EXAMINE_NEXT`'s cursor is a monotonic per-node sequence
@@ -400,5 +400,5 @@ then add:
   send/reply).
 - `worker.c` -- the `amicloud-worker` process (normal vbcc startup, links
   libcloudhttp/libcloudcore).
-- `Makefile.amiga-cross`, `mount/CLOUD` -- build and DOSDriver
-  (same values as a classic mountlist entry: `../../config-examples/CLOUD.mountlist`).
+- `Makefile.amiga-cross`, `mount/AMICLOUD` -- build and DOSDriver
+  (same values as a classic mountlist entry: `../../config-examples/AMICLOUD.mountlist`).

@@ -101,7 +101,7 @@ ob sich seit dem letzten Sync überhaupt etwas geändert hat, ohne `list`/`chang
 die Felder. `quota` in Bytes: `used` = Summe aller Dateien des Benutzers, `free` nie negativ. Bei
 unbegrenztem Kontingent (`unlimited: true`) ist `free` der freie Plattenplatz des Servers und
 `total = used + free` – wie bei ownCloud, damit Clients immer eine sinnvolle Gesamtgröße anzeigen
-können (der `CLOUD:`-Handler meldet daraus die Laufwerksbelegung).
+können (der `AMICLOUD:`-Handler meldet daraus die Laufwerksbelegung).
 
 ### list — Verzeichnis auflisten
 

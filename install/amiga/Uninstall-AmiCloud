@@ -5,7 +5,7 @@
 ;
 ; Aufruf in einer Shell:  Execute Uninstall-AmiCloud
 ; Die Konfiguration wird nur nach Rückfrage gelöscht. Ein gemountetes
-; CLOUD: bleibt bis zum nächsten Neustart aktiv (es lässt sich nicht
+; AMICLOUD: bleibt bis zum nächsten Neustart aktiv (es lässt sich nicht
 ; abmelden).
 
 FailAt 21
@@ -13,7 +13,7 @@ FailAt 21
 Echo ""
 Echo "AmiCloud deinstallieren"
 Echo "======================="
-Echo "Entfernt alle AmiCloud-Programme, den DOSDriver CLOUD und das Handbuch."
+Echo "Entfernt AmiCloud-Programme, DOSDriver AMICLOUD und das Handbuch."
 Ask "Fortfahren? (y/n)"
 If NOT WARN
   Echo "Abgebrochen, nichts gelöscht."
@@ -26,8 +26,8 @@ EndIf
 If EXISTS C:amicloud-shell
   Delete C:amicloud-shell QUIET
 EndIf
-If EXISTS C:cloudsync
-  Delete C:cloudsync QUIET
+If EXISTS C:amicloud-sync
+  Delete C:amicloud-sync QUIET
 EndIf
 If EXISTS SYS:Tools/amicloud-commander
   Delete SYS:Tools/amicloud-commander QUIET
@@ -47,11 +47,11 @@ EndIf
 If EXISTS L:amicloud-worker
   Delete L:amicloud-worker QUIET
 EndIf
-If EXISTS DEVS:DOSDrivers/CLOUD
-  Delete DEVS:DOSDrivers/CLOUD QUIET
+If EXISTS DEVS:DOSDrivers/AMICLOUD
+  Delete DEVS:DOSDrivers/AMICLOUD QUIET
 EndIf
-If EXISTS DEVS:DOSDrivers/CLOUD.info
-  Delete DEVS:DOSDrivers/CLOUD.info QUIET
+If EXISTS DEVS:DOSDrivers/AMICLOUD.info
+  Delete DEVS:DOSDrivers/AMICLOUD.info QUIET
 EndIf
 
 Assign >NIL: EXISTS HELP:
@@ -76,5 +76,5 @@ Else
 EndIf
 
 Echo ""
-Echo "Fertig. Ein gemountetes CLOUD: verschwindet mit dem nächsten Neustart."
+Echo "Fertig. Ein gemountetes AMICLOUD: verschwindet beim nächsten Neustart."
 Echo ""

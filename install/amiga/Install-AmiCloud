@@ -8,7 +8,7 @@
 ;
 ; Fragt nach jedem Teil, bevor er kopiert wird. Eine vorhandene
 ; Konfiguration (ENVARC:amicloud.cfg, ENV:amicloud.cfg) und ein
-; vorhandener DOSDriver DEVS:DOSDrivers/CLOUD werden nie überschrieben.
+; vorhandener DOSDriver DEVS:DOSDrivers/AMICLOUD werden nie überschrieben.
 ; Ausführliche Anleitung: Docs/AmiCloud.guide, Kapitel Installation.
 
 FailAt 21
@@ -33,18 +33,18 @@ Echo "Antworten mit y (ja) oder n (nein)."
 Echo ""
 
 ; ---- Kommandozeilenprogramme ---------------------------------------------
-Echo "Kommandozeilenprogramme: amicloud, amicloud-shell, cloudsync"
+Echo "Kommandozeilenprogramme: amicloud, amicloud-shell, amicloud-sync"
 Ask "Nach C: kopieren? (y/n)"
 If WARN
-  Copy C/amicloud C/amicloud-shell C/cloudsync TO C: QUIET
+  Copy C/amicloud C/amicloud-shell C/amicloud-sync TO C: QUIET
   If ERROR
     Echo "FEHLER: Kopieren nach C: fehlgeschlagen."
     Set AC_FEHLER 1
   Else
     Protect >NIL: C:amicloud +rwed
     Protect >NIL: C:amicloud-shell +rwed
-    Protect >NIL: C:cloudsync +rwed
-    Echo "  C:amicloud, C:amicloud-shell, C:cloudsync installiert."
+    Protect >NIL: C:amicloud-sync +rwed
+    Echo "  C:amicloud, C:amicloud-shell, C:amicloud-sync installiert."
   EndIf
 EndIf
 
@@ -76,8 +76,8 @@ If WARN
   EndIf
 EndIf
 
-; ---- CLOUD:-Handler ------------------------------------------------------
-Echo "Laufwerk CLOUD: (L:amicloud-handler, L:amicloud-worker, DOSDriver)"
+; ---- AMICLOUD:-Handler ------------------------------------------------------
+Echo "Laufwerk AMICLOUD: (L:amicloud-handler, L:amicloud-worker, DOSDriver)"
 Ask "Installieren? (y/n)"
 If WARN
   Copy C/amicloud-handler C/amicloud-worker TO L: QUIET
@@ -89,15 +89,15 @@ If WARN
     Protect >NIL: L:amicloud-worker +rwed
     Set AC_HANDLER 1
     Echo "  L:amicloud-handler und L:amicloud-worker installiert."
-    If EXISTS DEVS:DOSDrivers/CLOUD
-      Echo "  DEVS:DOSDrivers/CLOUD ist schon vorhanden, bleibt unverändert."
+    If EXISTS DEVS:DOSDrivers/AMICLOUD
+      Echo "  DEVS:DOSDrivers/AMICLOUD gibt es schon, bleibt unverändert."
     Else
-      Copy Storage/DOSDrivers/CLOUD TO DEVS:DOSDrivers/ QUIET
+      Copy Storage/DOSDrivers/AMICLOUD TO DEVS:DOSDrivers/ QUIET
       If ERROR
         Echo "FEHLER: Kopieren nach DEVS:DOSDrivers fehlgeschlagen."
         Set AC_FEHLER 1
       Else
-        Echo "  DEVS:DOSDrivers/CLOUD installiert (Mount ab jetzt beim Start)."
+        Echo "  DEVS:DOSDrivers/AMICLOUD installiert (Mount beim Start)."
       EndIf
     EndIf
   EndIf
@@ -133,20 +133,20 @@ EndIf
 
 ; ---- Mounten -------------------------------------------------------------
 If $AC_HANDLER EQ 1
-  Assign >NIL: EXISTS CLOUD:
+  Assign >NIL: EXISTS AMICLOUD:
   If WARN
-    Ask "CLOUD: jetzt mounten? (Konfiguration muss fertig sein) (y/n)"
+    Ask "AMICLOUD: jetzt mounten? (Konfiguration muss fertig sein) (y/n)"
     If WARN
-      Mount CLOUD:
+      Mount AMICLOUD:
       If ERROR
-        Echo "FEHLER: Mount CLOUD: fehlgeschlagen (Handbuch, Fehlersuche)."
+        Echo "FEHLER: Mount AMICLOUD: fehlgeschlagen (Handbuch, Fehlersuche)."
         Set AC_FEHLER 1
       Else
-        Echo "CLOUD: ist gemountet. Test: Dir CLOUD:"
+        Echo "AMICLOUD: ist gemountet. Test: Dir AMICLOUD:"
       EndIf
     EndIf
   Else
-    Echo "CLOUD: ist bereits gemountet. Neue Programmversionen und"
+    Echo "AMICLOUD: ist bereits gemountet. Neue Programmversionen und"
     Echo "Konfigurationsänderungen wirken dort erst nach einem Neustart."
   EndIf
 EndIf
@@ -176,7 +176,7 @@ Echo "Nächste Schritte:"
 Echo "  1. Zugangsdaten eintragen: SYS:Prefs/AmiCloudPrefs (Speichern)"
 Echo "     oder ENVARC:amicloud.cfg mit einem Editor bearbeiten."
 Echo "  2. Verbindung testen:      amicloud list /"
-Echo "  3. Laufwerk:  Dir CLOUD:  (nach Neustart oder Mount CLOUD:)"
+Echo "  3. Laufwerk:  Dir AMICLOUD:  (nach Neustart oder Mount AMICLOUD:)"
 Echo "  4. Handbuch:               MultiView Docs/AmiCloud.guide"
 Echo ""
 

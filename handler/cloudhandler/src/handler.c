@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Ronny Krueger
  */
 /*
- * handler.c -- CLOUD: DOS handler entry point, ACTION_STARTUP and the
+ * handler.c -- AMICLOUD: DOS handler entry point, ACTION_STARTUP and the
  * packet dispatch loop. Stage 2 (see vol.c/actions.c/backend.c): vol.c's
  * tree is a cache of server state now, reached through amicloud-worker
  * (worker.c, a separate process -- backend_init() below locates or spawns
@@ -123,7 +123,7 @@ void __saveds _start(void)
         return;
     }
 
-    /* Routes packets sent to "CLOUD:" (the device we were mounted as) to
+    /* Routes packets sent to "AMICLOUD:" (the device we were mounted as) to
      * this process from now on. */
     dn->dn_Task = &proc->pr_MsgPort;
     g_my_port = &proc->pr_MsgPort;
@@ -227,12 +227,12 @@ static void reply_pkt(struct DosPacket *pkt, LONG res1, LONG res2)
 }
 
 /* Registers the "AmiCloud" volume (Workbench disk icon) alongside the
- * "CLOUD" device we were mounted as -- both dol_Task point at our port, so
+ * "AMICLOUD" device we were mounted as -- both dol_Task point at our port, so
  * either name reaches us. Must run AFTER the startup packet has been
  * replied: GetDeviceProc() holds the device list locked for the whole
  * startup handshake (RKRM DOS 13.1.2), so calling AddDosEntry() -- which
  * itself locks the list (RKRM DOS 8.4.1) -- any earlier would deadlock
- * against ourselves. Non-fatal on failure: CLOUD: still works, just
+ * against ourselves. Non-fatal on failure: AMICLOUD: still works, just
  * without a Workbench icon. */
 static void register_volume(struct Process *proc)
 {

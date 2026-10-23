@@ -101,7 +101,7 @@ static int resolve_walk(CNode *base, const char *cpath, CNode **out_dir, char *o
      * "reset to that device's root, continue from here" (paths can
      * legitimately contain e.g. "SYS:foo/bar" mid-string). Confirmed by
      * testing (crash-hunt diagnostic): dos.library's Lock() for a bare
-     * "CLOUD:"/"AmiCloud:" request passes the matched device-name-plus-
+     * "AMICLOUD:"/"AmiCloud:" request passes the matched device-name-plus-
      * colon straight through as the object path in dp_Arg2 -- NOT an
      * empty string as RKRM DOS Table 14.12's summary of the general case
      * suggested. We're only ever reached for paths that already resolved
@@ -147,7 +147,7 @@ static LONG resolve(CNode *base, const char *cpath, ResolvedPath *rp)
     if (rp->leaf[0] == '\0') { rp->node = rp->dir; return 0; }
     rp->node = vol_find_child(rp->dir, rp->leaf);
     /* Directory not listable (server unreachable): say so instead of
-     * "not found" -- a Copy to CLOUD: must not think it may create it. */
+     * "not found" -- a Copy to AMICLOUD: must not think it may create it. */
     if (!rp->node && vol_lookup_error()) return vol_lookup_error();
     return 0;
 }

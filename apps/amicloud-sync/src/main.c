@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Ronny Krueger
  */
 /*
- * cloudsync — one-shot CLI front-end for libcloudsync's cloudsync_run()
+ * amicloud-sync — one-shot CLI front-end for libcloudsync's cloudsync_run()
  * (docs/design/05_Refactoring_Client_Handler.md, M5). Placeholder for the
  * roadmap's Phase 5 "Sync Commodity" (docs/design/01_Roadmap_Refactoring.md):
  * this is a plain one-shot invocation, not a background daemon watching
@@ -24,13 +24,13 @@
 
 #ifdef PLATFORM_AMIGA
 long __stack = 65536;
-const char amiga_ver[] = "$VER: cloudsync " AC_VERSION " (27.09.2026)";
+const char amiga_ver[] = "$VER: amicloud-sync " AC_VERSION " (27.09.2026)";
 #endif
 
 static void usage(const char *prog)
 {
     fprintf(stderr,
-        "cloudsync v" AC_VERSION " — one-shot local<->cloud folder sync\n"
+        "amicloud-sync v" AC_VERSION " — one-shot local<->cloud folder sync\n"
         "Usage: %s [options] <local-dir> <remote-dir>\n"
         "\n"
         "Options:\n"
@@ -83,13 +83,13 @@ int main(int argc, char **argv)
     config_merge(&cfg, opt_server, opt_user, opt_pass, NULL);
     if (opt_noverify) cfg.verify_ssl = 0;
 
-    if (i + 1 >= argc) { fprintf(stderr, "cloudsync: <local-dir> and <remote-dir> required\n"); usage(argv[0]); }
+    if (i + 1 >= argc) { fprintf(stderr, "amicloud-sync: <local-dir> and <remote-dir> required\n"); usage(argv[0]); }
     local_root  = argv[i++];
     remote_root = argv[i];
 
-    if (!cfg.server[0])   { fprintf(stderr, "cloudsync: server URL required (-s or config file)\n"); usage(argv[0]); }
-    if (!cfg.username[0]) { fprintf(stderr, "cloudsync: username required (-u or config file)\n");   usage(argv[0]); }
-    if (!cfg.password[0]) { fprintf(stderr, "cloudsync: password required (-p or config file)\n");   usage(argv[0]); }
+    if (!cfg.server[0])   { fprintf(stderr, "amicloud-sync: server URL required (-s or config file)\n"); usage(argv[0]); }
+    if (!cfg.username[0]) { fprintf(stderr, "amicloud-sync: username required (-u or config file)\n");   usage(argv[0]); }
+    if (!cfg.password[0]) { fprintf(stderr, "amicloud-sync: password required (-p or config file)\n");   usage(argv[0]); }
 
     {
         size_t len = strlen(cfg.server);
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     }
 
     if (!http_init()) {
-        fprintf(stderr, "cloudsync: network initialisation failed\n");
+        fprintf(stderr, "amicloud-sync: network initialisation failed\n");
         return 1;
     }
 

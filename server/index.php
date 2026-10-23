@@ -48,7 +48,7 @@ if (isset($_COOKIE[session_name()])) {
 
   <main class="features">
     <section class="feature">
-      <h2><code>CLOUD:</code></h2>
+      <h2><code>AMICLOUD:</code></h2>
       <p>Der DOS-Handler bindet die Cloud als ganz normales Laufwerk ein –
          mit Protection-Bits, Dateikommentaren und Datumsangaben.</p>
     </section>
@@ -63,7 +63,7 @@ if (isset($_COOKIE[session_name()])) {
          Amiga, Qt auf macOS, Linux und Windows.</p>
     </section>
     <section class="feature">
-      <h2>cloudsync</h2>
+      <h2>amicloud-sync</h2>
       <p>Zwei-Wege-Abgleich eines lokalen Ordners mit einem Cloud-Ordner,
          mit MD5-Prüfung.</p>
     </section>

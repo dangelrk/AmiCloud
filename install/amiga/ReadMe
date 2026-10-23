@@ -4,7 +4,7 @@ AmiCloud 0.1 - eigener Cloud-Speicher für AmigaOS 3.x
 AmiCloud verbindet den Amiga über HTTPS mit einem eigenen
 AmiCloud-Server (PHP + MariaDB). Dateien lassen sich per Kommandozeile,
 in einer interaktiven Shell, mit einem Dateimanager (MUI) oder als
-ganz normales Laufwerk CLOUD: benutzen. Kommandozeilenprogramme und
+ganz normales Laufwerk AMICLOUD: benutzen. Kommandozeilenprogramme und
 Dateimanager gibt es auch für macOS, Linux und Windows.
 
 Inhalt dieser Schublade
@@ -16,12 +16,12 @@ Inhalt dieser Schublade
   THIRD-PARTY-NOTICES   Lizenz der Fremdkomponente Parson (MIT)
   C/amicloud            Kommandozeilen-Client (ein Befehl je Aufruf)
   C/amicloud-shell      interaktive Shell (cd, ls, get, put, ...)
-  C/cloudsync           einmaliger Abgleich lokaler Ordner <-> Cloud
+  C/amicloud-sync           einmaliger Abgleich lokaler Ordner <-> Cloud
   C/amicloud-commander  Dateimanager mit zwei Fenstern (MUI)
   C/AmiCloudPrefs       Einstellungs-Editor für amicloud.cfg
-  C/amicloud-handler    Handler für das Laufwerk CLOUD:
+  C/amicloud-handler    Handler für das Laufwerk AMICLOUD:
   C/amicloud-worker     Netzwerk-Prozess des Handlers
-  Storage/DOSDrivers/CLOUD   DOSDriver für CLOUD:
+  Storage/DOSDrivers/AMICLOUD   DOSDriver für AMICLOUD:
   Docs/AmiCloud.guide   Handbuch (AmigaGuide)
   Examples/             Beispielkonfiguration und Mountlist
 
@@ -32,7 +32,7 @@ Installation
   3. In AmiCloudPrefs Server, Benutzer und Passwort eintragen,
      Speichern wählen.
   4. Testen:  amicloud list /
-  5. Laufwerk:  Mount CLOUD:  (oder neu starten), dann  Dir CLOUD:
+  5. Laufwerk:  Mount AMICLOUD:  (oder neu starten), dann  Dir AMICLOUD:
 
 Voraussetzungen
 ---------------

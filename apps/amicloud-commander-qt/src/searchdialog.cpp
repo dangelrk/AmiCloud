@@ -20,7 +20,7 @@ SearchDialog::SearchDialog(bool cloudSource, QWidget *parent)
 
     m_currentFolder = new QRadioButton(tr("Aktueller Ordner"), this);
     m_wholeScope    = new QRadioButton(
-        cloudSource ? tr("Ganze Cloud (ab /)") : tr("Gesamtes Laufwerk"), this);
+        cloudSource ? tr("Ganze AmiCloud (ab /)") : tr("Gesamtes Laufwerk"), this);
     m_currentFolder->setChecked(true);
 
     m_dirsToo = new QCheckBox(tr("Auch Ordner"), this);

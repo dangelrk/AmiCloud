@@ -1,17 +1,17 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright (C) 2026 Ronny Krueger */
-/* CLOUD: -- AmiCloud DOS handler (DOSDriver). Installation (automatisch
+/* AMICLOUD: -- AmiCloud DOS handler (DOSDriver). Installation (automatisch
  * per Install-AmiCloud, Details in docs/INSTALL.md und
  * handler/cloudhandler/README.md):
  *   Copy amicloud-handler L:
  *   Copy amicloud-worker  L:        <- backend_init() startet ihn beim
  *                                      Mount aus L: (SystemTags)
- *   Copy CLOUD DEVS:DOSDrivers/     <- diese Datei
+ *   Copy AMICLOUD DEVS:DOSDrivers/     <- diese Datei
  * amicloud-worker liest ENV:amicloud.cfg (server/user/pass, Vorlage
  * config-examples/amicloud.cfg.example, Editor AmiCloudPrefs) -- ohne
  * sie startet er zwar, aber jede echte Anfrage schlaegt fehl.
- * Danach neu starten oder in der Shell "Mount CLOUD:" eingeben.
- * Dieselben Werte als Mountlist-Eintrag: config-examples/CLOUD.mountlist */
+ * Danach neu starten oder in der Shell "Mount AMICLOUD:" eingeben.
+ * Dieselben Werte als Mountlist-Eintrag: config-examples/AMICLOUD.mountlist */
 Handler   = L:amicloud-handler
 StackSize = 16384
 Priority  = 5

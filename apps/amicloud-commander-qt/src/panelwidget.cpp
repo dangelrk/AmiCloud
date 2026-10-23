@@ -27,7 +27,7 @@ PanelWidget::PanelWidget(QWidget *parent)
 {
     m_sourceCombo = new QComboBox(this);
     m_sourceCombo->addItem(tr("Local"));
-    m_sourceCombo->addItem(tr("Cloud"));
+    m_sourceCombo->addItem(tr("AmiCloud"));
 
     m_pathEdit = new QLineEdit(this);
 

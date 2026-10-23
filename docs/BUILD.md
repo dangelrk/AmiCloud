@@ -39,7 +39,7 @@ die Liste):
 
 | Ziel | Wirkung |
 |---|---|
-| `make pc` (= `make`) | Kommandozeilenprogramme für den Host: `amicloud`, `amicloud-shell`, `cloudsync` → `bin/pc/` |
+| `make pc` (= `make`) | Kommandozeilenprogramme für den Host: `amicloud`, `amicloud-shell`, `amicloud-sync` → `bin/pc/` |
 | `make qt` | Qt-6-Programm `amicloud-commander` per CMake (Build-Ordner `build/amicloud-commander-qt/`) → `bin/pc/` |
 | `make amiga` | Alle AmigaOS-Programme per vbcc-Cross-Compiler → `bin/amiga/` |
 | `make dist-amiga` | Amiga-Installationsschublade `build/dist/AmiCloud/`, zusätzlich `build/AmiCloud.lha`, falls `lha` installiert ist |
@@ -69,7 +69,7 @@ cmake --build build/amicloud-commander-qt           # Qt
 |---|---|---|---|---|
 | `apps/amicloud` | `amicloud` | ja | – | ja |
 | `apps/amicloud-shell` | `amicloud-shell` | ja | – | ja |
-| `apps/cloudsync` | `cloudsync` | ja | – | ja |
+| `apps/amicloud-sync` | `amicloud-sync` | ja | – | ja |
 | `apps/amicloud-commander-qt` | `amicloud-commander` (Qt 6) | – | ja | – |
 | `apps/amicloud-commander-mui` | `amicloud-commander` (MUI) | – | – | ja |
 | `apps/amicloud-prefs` | `AmiCloudPrefs` | – | – | ja |
@@ -96,7 +96,7 @@ Pakete installieren:
 Bauen:
 
 ```sh
-make pc          # amicloud, amicloud-shell, cloudsync  -> bin/pc/
+make pc          # amicloud, amicloud-shell, amicloud-sync  -> bin/pc/
 make qt          # amicloud-commander (Qt 6)            -> bin/pc/
 sudo make install                 # optional: nach /usr/local/bin
 ```
@@ -164,10 +164,10 @@ in `bin/amiga/`:
 |---|---|
 | `amicloud` | Kommandozeilen-Client |
 | `amicloud-shell` | interaktive Shell |
-| `cloudsync` | einmaliger Ordnerabgleich |
+| `amicloud-sync` | einmaliger Ordnerabgleich |
 | `amicloud-commander` | Dateimanager (MUI) |
 | `AmiCloudPrefs` | Einstellungs-Editor für `amicloud.cfg` |
-| `amicloud-handler`, `amicloud-worker` | `CLOUD:`-Handler (zwei Prozesse) |
+| `amicloud-handler`, `amicloud-worker` | `AMICLOUD:`-Handler (zwei Prozesse) |
 
 Auf dem Host gibt es kein `oml`; darum erzeugt der Cross-Build keine
 `.lib`-Archive, sondern jedes Programm übersetzt die benötigten
@@ -264,7 +264,7 @@ baut zuerst alles für den Amiga und legt dann unter
 | `C/` | alle Programme aus `bin/amiga/` |
 | `Docs/AmiCloud.guide` | `docs/user/AmiCloud.guide` |
 | `Examples/` | `config-examples/*` |
-| `Storage/DOSDrivers/CLOUD` | `handler/cloudhandler/mount/CLOUD` (über `DIST_EXTRA` im Makefile) |
+| `Storage/DOSDrivers/AMICLOUD` | `handler/cloudhandler/mount/AMICLOUD` (über `DIST_EXTRA` im Makefile) |
 | `Install-AmiCloud`, `Uninstall-AmiCloud`, `ReadMe` | `install/amiga/` |
 | `LICENSE` | GPLv3-Text |
 

@@ -60,7 +60,7 @@ const char amiga_ver[] = "$VER: amicloud-commander " AC_VERSION " (27.09.2026)";
  *
  * The actual WBStartup/icon.library dance lives in wbstartup.h/.c
  * (libcloudcore) -- factored out from here and amivcs-gui-mui/
- * amicloud-sync-cx, which each had their own copy of exactly this. */
+ * amiowncloud-sync-cx, which each had their own copy of exactly this. */
 static void configure_debug(int argc, char *argv[])
 {
     int debug;

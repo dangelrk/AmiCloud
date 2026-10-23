@@ -13,7 +13,7 @@
 
 AmiCloud verbindet den Amiga über HTTPS mit einem eigenen AmiCloud-Server.
 Die Dateien darauf lassen sich per Kommandozeile, in einer interaktiven
-Shell, mit einem Dateimanager oder als ganz normales Laufwerk CLOUD:
+Shell, mit einem Dateimanager oder als ganz normales Laufwerk AMICLOUD:
 benutzen.
 
   @{" Einführung           " link Einfuehrung}  Was ist AmiCloud?
@@ -28,9 +28,9 @@ benutzen.
 
   @{" amicloud             " link Amicloud}  Kommandozeilen-Client
   @{" amicloud-shell       " link Shell}  Interaktive Shell
-  @{" cloudsync            " link Cloudsync}  Ordner abgleichen
+  @{" amicloud-sync            " link Cloudsync}  Ordner abgleichen
   @{" amicloud-commander   " link Commander}  Dateimanager (MUI)
-  @{" CLOUD:-Handler       " link Handler}  Die Cloud als Laufwerk
+  @{" AMICLOUD:-Handler       " link Handler}  Die Cloud als Laufwerk
 
   @{" Fehlersuche          " link Fehlersuche}  Wenn etwas nicht geht
   @{" Deinstallation       " link Deinstallation}  AmiCloud entfernen
@@ -57,18 +57,18 @@ Bestandteile auf dem Amiga:
 
   amicloud            Kommandozeilen-Client, ein Befehl je Aufruf
   amicloud-shell      interaktive Sitzung mit cd, ls, get, put ...
-  cloudsync           einmaliger Abgleich lokaler Ordner <-> Cloud
+  amicloud-sync           einmaliger Abgleich lokaler Ordner <-> Cloud
   amicloud-commander  Dateimanager mit zwei Panels (MUI)
   AmiCloudPrefs       Einstellungs-Editor für amicloud.cfg
-  amicloud-handler    Handler für das Laufwerk CLOUD:
+  amicloud-handler    Handler für das Laufwerk AMICLOUD:
   amicloud-worker     Netzwerk-Prozess des Handlers
 
-amicloud, amicloud-shell, cloudsync und der Commander (dort mit Qt 6
+amicloud, amicloud-shell, amicloud-sync und der Commander (dort mit Qt 6
 statt MUI) gibt es auch für macOS, Linux und Windows, siehe
 @{" PC " link PC}. Handler und AmiCloudPrefs sind reine Amiga-Programme.
 
 Der Server merkt sich neben dem Dateiinhalt auch Amiga-Eigenschaften:
-Protection-Bits, Dateikommentare und das Änderungsdatum. Über CLOUD:
+Protection-Bits, Dateikommentare und das Änderungsdatum. Über AMICLOUD:
 funktionieren deshalb auch Protect, FileNote und SetDate.
 
 @endnode
@@ -95,7 +95,7 @@ Stack: muss nicht eingestellt werden. Die Programme fordern beim Start
 selbst 64 KB an, der Handler erhält 16 KB über seinen DOSDriver, der
 Worker 64 KB beim Start durch den Handler.
 
-Speicher: Der CLOUD:-Handler hält eine geöffnete Datei vollständig im
+Speicher: Der AMICLOUD:-Handler hält eine geöffnete Datei vollständig im
 Arbeitsspeicher. Für sehr große Dateien lieber amicloud get/put
 benutzen, die direkt von und auf die Platte übertragen.
 
@@ -120,8 +120,8 @@ enthält:
   THIRD-PARTY-NOTICES     Lizenz der Fremdkomponente Parson (MIT)
   C/                      alle Programme
   Docs/AmiCloud.guide     dieses Handbuch
-  Examples/               amicloud.cfg.example, CLOUD.mountlist
-  Storage/DOSDrivers/CLOUD   DOSDriver für CLOUD:
+  Examples/               amicloud.cfg.example, AMICLOUD.mountlist
+  Storage/DOSDrivers/AMICLOUD   DOSDriver für AMICLOUD:
 
 In einer Shell:
 
@@ -133,22 +133,22 @@ Das Skript fragt nacheinander (Antwort y oder n):
   1. Kommandozeilenprogramme nach C:
   2. amicloud-commander nach SYS:Tools
   3. AmiCloudPrefs nach SYS:Prefs
-  4. CLOUD:-Handler nach L: und DEVS:DOSDrivers
+  4. AMICLOUD:-Handler nach L: und DEVS:DOSDrivers
 
 Danach legt es ENVARC:amicloud.cfg und ENV:amicloud.cfg aus der
 Beispieldatei an - aber nur, wenn es sie noch nicht gibt. Eine
 vorhandene Konfiguration und ein vorhandener DOSDriver
-DEVS:DOSDrivers/CLOUD werden nie überschrieben.
+DEVS:DOSDrivers/AMICLOUD werden nie überschrieben.
 
 Anschließend bietet das Skript an, AmiCloudPrefs zu starten (dort
 Server, Benutzer und Passwort eintragen und Speichern wählen) und
-CLOUD: sofort zu mounten. Ist HELP: zugewiesen, kopiert es dieses
+AMICLOUD: sofort zu mounten. Ist HELP: zugewiesen, kopiert es dieses
 Handbuch nach HELP:AmiCloud.guide.
 
 Test:
 
   amicloud list /
-  Dir CLOUD:
+  Dir AMICLOUD:
 
 Für die Programme werden keine Icons mitgeliefert. Wer AmiCloudPrefs
 oder den Commander von der Workbench starten möchte, legt sich ein
@@ -167,23 +167,23 @@ MANUELLE INSTALLATION
   -----------------------     ----------------------------------
   C/amicloud                  C:
   C/amicloud-shell            C:
-  C/cloudsync                 C:
+  C/amicloud-sync                 C:
   C/amicloud-commander        SYS:Tools/ (oder beliebig)
   C/AmiCloudPrefs             SYS:Prefs/
   C/amicloud-handler          L:
   C/amicloud-worker           L:  (Name und Ort sind fest)
-  Storage/DOSDrivers/CLOUD    DEVS:DOSDrivers/
+  Storage/DOSDrivers/AMICLOUD    DEVS:DOSDrivers/
   Examples/amicloud.cfg.example
                               ENVARC:amicloud.cfg und ENV:amicloud.cfg
   Docs/AmiCloud.guide         HELP: (oder beliebig)
 
 Als Shell-Befehle, in der Schublade:
 
-  Copy C/amicloud C/amicloud-shell C/cloudsync C:
+  Copy C/amicloud C/amicloud-shell C/amicloud-sync C:
   Copy C/amicloud-commander SYS:Tools/
   Copy C/AmiCloudPrefs SYS:Prefs/
   Copy C/amicloud-handler C/amicloud-worker L:
-  Copy Storage/DOSDrivers/CLOUD DEVS:DOSDrivers/
+  Copy Storage/DOSDrivers/AMICLOUD DEVS:DOSDrivers/
   Copy Examples/amicloud.cfg.example ENVARC:amicloud.cfg
   Copy ENVARC:amicloud.cfg ENV:amicloud.cfg
 
@@ -205,7 +205,7 @@ steht im DOSDriver als "Handler = L:amicloud-handler".
 AMICLOUD AUF DEM PC
 
 Für macOS, Linux und Windows gibt es amicloud, amicloud-shell,
-cloudsync und den Dateimanager amicloud-commander (Qt 6). Sie werden aus
+amicloud-sync und den Dateimanager amicloud-commander (Qt 6). Sie werden aus
 den Quellen gebaut (siehe @{" Bauen " link Bauen}) und mit
 
   make install                  (nach /usr/local/bin)
@@ -323,7 +323,7 @@ Die Schlüssel:
               Pfade ohne führenden / beziehen sich darauf.
   verify_ssl  1 = Serverzertifikat prüfen (Standard),
               0 = nicht prüfen. Nur zum Testen!
-  debug       Nur für den CLOUD:-Handler (amicloud-worker): Ziel
+  debug       Nur für den AMICLOUD:-Handler (amicloud-worker): Ziel
               für ein ausführliches HTTP/TLS-Protokoll, z.B.
               T:amicloud.log oder
               CON:0/0/640/200/AmiCloud Debug/CLOSE. Leer = aus.
@@ -336,22 +336,22 @@ Die Schlüssel:
               bevor sie als abgebrochen gilt. Die Dauer einer
               Übertragung ist nicht begrenzt - eine große Datei
               über ein Modem läuft, solange Daten fließen.
-  cache_ttl   Nur CLOUD:-Handler: wie viele Sekunden ein
+  cache_ttl   Nur AMICLOUD:-Handler: wie viele Sekunden ein
               Verzeichnisinhalt zwischengespeichert wird,
               Standard 30. Über ein Modem lohnen 120 bis 300.
 
-gmt_offset und dst werden von amicloud-shell und vom CLOUD:-Handler
+gmt_offset und dst werden von amicloud-shell und vom AMICLOUD:-Handler
 ausgewertet. Die Amiga-Uhr kennt keine Zeitzone; ohne passende Werte
 stimmen die Datumsangaben von Dateien nicht mit dem Server überein.
 
 Wo die Datei gesucht wird:
 
-  amicloud, amicloud-shell, cloudsync:
+  amicloud, amicloud-shell, amicloud-sync:
       -c <datei>, sonst ENV:amicloud.cfg, sonst amicloud.cfg im
       aktuellen Verzeichnis
   amicloud-commander:
       ENV:amicloud.cfg, sonst amicloud.cfg im aktuellen Verzeichnis
-  amicloud-worker (CLOUD:):
+  amicloud-worker (AMICLOUD:):
       nur ENV:amicloud.cfg, einmal beim Start
   AmiCloudPrefs:
       ENV:amicloud.cfg, sonst ENVARC:amicloud.cfg
@@ -387,8 +387,8 @@ Die drei Knöpfe wirken wie bei den Workbench-Voreinstellungen:
 Unterscheiden sich ENV: und ENVARC:, zeigt die Statuszeile einen
 Hinweis; angezeigt werden dann die Werte aus ENV:.
 
-Der CLOUD:-Handler liest die Datei nur einmal beim Start. Geänderte
-Einstellungen wirken für CLOUD: deshalb erst nach einem Neustart.
+Der AMICLOUD:-Handler liest die Datei nur einmal beim Start. Geänderte
+Einstellungen wirken für AMICLOUD: deshalb erst nach einem Neustart.
 
 @endnode
 
@@ -558,7 +558,7 @@ Beispiel:
 
 @endnode
 
-@node Cloudsync "cloudsync - Ordner abgleichen"
+@node Cloudsync "amicloud-sync - Ordner abgleichen"
 @toc Main
 @prev Shell
 @next Commander
@@ -567,7 +567,7 @@ CLOUDSYNC - ORDNER ABGLEICHEN
 
 Aufruf:
 
-  cloudsync [Optionen] <lokaler-ordner> <remote-ordner>
+  amicloud-sync [Optionen] <lokaler-ordner> <remote-ordner>
 
 Optionen:
 
@@ -579,7 +579,7 @@ Optionen:
   -n           Probelauf: zeigt, was passieren würde, ändert nichts
   --help       Kurzhilfe
 
-cloudsync gleicht einen lokalen Ordner einmalig in beide Richtungen mit
+amicloud-sync gleicht einen lokalen Ordner einmalig in beide Richtungen mit
 einem Ordner auf dem Server ab und beendet sich dann. Es ist kein
 Hintergrunddienst; für regelmäßigen Abgleich den Aufruf wiederholen.
 
@@ -592,14 +592,14 @@ So wird entschieden:
   - Auf einer Seite gelöscht und auf der anderen unverändert: die
     Löschung wird übertragen.
 
-Dafür merkt sich cloudsync den Stand des letzten Abgleichs in der Datei
+Dafür merkt sich amicloud-sync den Stand des letzten Abgleichs in der Datei
 .amicloudsync im lokalen Ordner. Fehlende Ordner werden auf beiden
 Seiten angelegt (nicht beim Probelauf).
 
 Beispiel:
 
-  cloudsync -n Work:Texte /texte      (erst schauen)
-  cloudsync Work:Texte /texte         (dann abgleichen)
+  amicloud-sync -n Work:Texte /texte      (erst schauen)
+  amicloud-sync Work:Texte /texte         (dann abgleichen)
 
 Rückgabewert: 1, wenn beim Abgleich Fehler auftraten, sonst 0.
 
@@ -668,37 +668,37 @@ Hinweis: Die MUI-Fassung ist auf echter Hardware noch wenig erprobt.
 
 @endnode
 
-@node Handler "CLOUD:-Handler - die Cloud als Laufwerk"
+@node Handler "AMICLOUD:-Handler - die Cloud als Laufwerk"
 @toc Main
 @prev Commander
 @next Fehlersuche
 
-CLOUD:-HANDLER - DIE CLOUD ALS LAUFWERK
+AMICLOUD:-HANDLER - DIE AMICLOUD ALS LAUFWERK
 
 Der Handler macht den eigenen Cloud-Bereich zu einem AmigaDOS-Laufwerk
-CLOUD:. Auf der Workbench erscheint es als Datenträger AmiCloud.
+AMICLOUD:. Auf der Workbench erscheint es als Datenträger AmiCloud.
 
 Installation: amicloud-handler und amicloud-worker nach L:, der
-DOSDriver CLOUD nach DEVS:DOSDrivers/, dazu eine vollständige
+DOSDriver AMICLOUD nach DEVS:DOSDrivers/, dazu eine vollständige
 ENV:amicloud.cfg (siehe @{" Installation " link Installation}).
 
 Mounten:
 
-  Mount CLOUD:              sofort
+  Mount AMICLOUD:              sofort
                             (oder beim nächsten Systemstart
                             automatisch aus DEVS:DOSDrivers)
 
 Danach wie jedes andere Laufwerk:
 
-  Dir CLOUD:
-  MakeDir CLOUD:Texte
-  Copy DH0:bericht.txt CLOUD:Texte/
-  Copy CLOUD:Texte/bericht.txt RAM:
-  Rename CLOUD:Texte/bericht.txt CLOUD:Texte/alt.txt
-  Protect CLOUD:Texte/alt.txt +p
-  FileNote CLOUD:Texte/alt.txt "Mein Kommentar"
-  SetDate CLOUD:Texte/alt.txt today
-  Delete CLOUD:Texte ALL
+  Dir AMICLOUD:
+  MakeDir AMICLOUD:Texte
+  Copy DH0:bericht.txt AMICLOUD:Texte/
+  Copy AMICLOUD:Texte/bericht.txt RAM:
+  Rename AMICLOUD:Texte/bericht.txt AMICLOUD:Texte/alt.txt
+  Protect AMICLOUD:Texte/alt.txt +p
+  FileNote AMICLOUD:Texte/alt.txt "Mein Kommentar"
+  SetDate AMICLOUD:Texte/alt.txt today
+  Delete AMICLOUD:Texte ALL
 
 Was funktioniert: Lesen, Schreiben, Anlegen, Löschen und Umbenennen von
 Dateien und Verzeichnissen, Protection-Bits, Dateikommentare (bis 79
@@ -718,10 +718,10 @@ lädt er sie ganz in den Speicher und beim Schließen wieder hoch.
 
 Grenzen:
 
-  - Kein Abmelden: CLOUD: bleibt bis zum Neustart gemountet. Neue
+  - Kein Abmelden: AMICLOUD: bleibt bis zum Neustart gemountet. Neue
     Programmversionen und geänderte Einstellungen wirken erst danach.
   - Anfragen an den Server laufen nacheinander. Während einer
-    langsamen Übertragung beantwortet CLOUD: trotzdem alles, was
+    langsamen Übertragung beantwortet AMICLOUD: trotzdem alles, was
     ohne Server geht: Info, Lesen und Schreiben bereits geöffneter
     Dateien, Inhalte frisch gelesener Verzeichnisse. Alles andere
     wartet, bis die Übertragung fertig ist.
@@ -736,7 +736,7 @@ Grenzen:
     T:AmiCloud-unsaved/ - so geht nichts verloren.
   - Ein nicht leeres Verzeichnis lässt sich nicht direkt löschen;
     Delete ... ALL funktioniert (DOS löscht Eintrag für Eintrag).
-  - Info CLOUD: zeigt die Belegung des eigenen Kontos: bei einem
+  - Info AMICLOUD: zeigt die Belegung des eigenen Kontos: bei einem
     Speicherkontingent dessen Größe, sonst belegt plus freier Platz
     auf dem Server. Die Zahlen kommen mit dem nächsten
     Verzeichnislesen und sind bis zu 30 Sekunden alt; vorher (und bei
@@ -749,7 +749,7 @@ Grenzen:
   - Eine Datei zu ändern braucht so viel freien Speicher, wie sie
     groß ist (nur lesen nicht).
   - Eine Datei namens debuglog im Wurzelverzeichnis der Cloud ist über
-    CLOUD: nicht erreichbar (der Name ist für die Diagnose reserviert,
+    AMICLOUD: nicht erreichbar (der Name ist für die Diagnose reserviert,
     siehe @{" Fehlersuche " link Fehlersuche}).
 
 @endnode
@@ -778,7 +778,7 @@ Zertifikatsfehler / keine Verbindung über HTTPS
 Anmeldung wird abgelehnt (401)
   Benutzername/Passwort prüfen. Wurde das App-Passwort widerrufen
   oder das Konto gesperrt? Serverseitig: siehe docs/INSTALL.md,
-  Abschnitt Fehlersuche (z.B. CGIPassAuth bei PHP-FPM). CLOUD:
+  Abschnitt Fehlersuche (z.B. CGIPassAuth bei PHP-FPM). AMICLOUD:
   meldet in diesem Fall "Disk not validated".
 
 "Zu viele Fehlversuche" (429)
@@ -793,16 +793,16 @@ Datum von Dateien stimmt nicht
   gmt_offset und dst passend zur Uhrzeit des Amiga setzen und mit der
   Zeitzone des Servers (AMICLOUD_TIMEZONE) vergleichen.
 
-Mount CLOUD: schlägt fehl
+Mount AMICLOUD: schlägt fehl
   Liegt amicloud-worker in L:? Der Handler wartet bis zu 30 Sekunden
   darauf, dass der Worker startet.
 
-CLOUD: reagiert nicht wie erwartet
+AMICLOUD: reagiert nicht wie erwartet
   In ENV:amicloud.cfg zum Beispiel debug=T:amicloud.log eintragen,
   neu starten, den Fehler auslösen und die Datei ansehen: der Worker
   protokolliert jeden Schritt vom Öffnen der Bibliotheken bis zur
   HTTP-Anfrage. Zusätzlich zeigt
-    Type CLOUD:debuglog
+    Type AMICLOUD:debuglog
   das Protokoll der Handler-Seite (Anfragen an den Worker).
 
 Commander startet nicht
@@ -814,7 +814,7 @@ Langsame Verbindung (Modem), Übertragungen brechen ab
   trotzdem ab, timeout=300 in amicloud.cfg setzen. Abgebrochene
   Downloads werden an der Abbruchstelle fortgesetzt, nicht neu
   begonnen. Ctrl-C bricht eine laufende Übertragung in amicloud,
-  amicloud-shell und cloudsync ab. Für CLOUD: lohnt cache_ttl=300.
+  amicloud-shell und amicloud-sync ab. Für AMICLOUD: lohnt cache_ttl=300.
   Serverseitig: docs/INSTALL.md, Abschnitt "Langsame Clients".
 
 Pfeiltasten in amicloud-shell wirken nicht
@@ -835,17 +835,17 @@ In der Installationsschublade:
   Execute Uninstall-AmiCloud
 
 Das Skript löscht die Programme aus C:, SYS:Tools, SYS:Prefs und L:,
-den DOSDriver DEVS:DOSDrivers/CLOUD und HELP:AmiCloud.guide. Die
+den DOSDriver DEVS:DOSDrivers/AMICLOUD und HELP:AmiCloud.guide. Die
 Konfiguration (ENV:amicloud.cfg, ENVARC:amicloud.cfg) löscht es nur
-nach Rückfrage. Ein gemountetes CLOUD: verschwindet erst mit dem
+nach Rückfrage. Ein gemountetes AMICLOUD: verschwindet erst mit dem
 nächsten Neustart.
 
 Von Hand:
 
-  Delete C:amicloud C:amicloud-shell C:cloudsync
+  Delete C:amicloud C:amicloud-shell C:amicloud-sync
   Delete SYS:Tools/amicloud-commander SYS:Prefs/AmiCloudPrefs
   Delete L:amicloud-handler L:amicloud-worker
-  Delete DEVS:DOSDrivers/CLOUD HELP:AmiCloud.guide
+  Delete DEVS:DOSDrivers/AMICLOUD HELP:AmiCloud.guide
   Delete ENV:amicloud.cfg ENVARC:amicloud.cfg
 
 @endnode
@@ -945,17 +945,17 @@ VERSIONSGESCHICHTE
 
 Programme 0.1 (2026)
   - Erste Fassung: Server mit REST-API und Weboberfläche, amicloud,
-    amicloud-shell, amicloud-commander (MUI und Qt), cloudsync,
-    AmiCloudPrefs und der CLOUD:-Handler.
+    amicloud-shell, amicloud-commander (MUI und Qt), amicloud-sync,
+    AmiCloudPrefs und der AMICLOUD:-Handler.
   - Suche über alle Programme (search/find, F4 im Commander).
   - Keep-Alive-Verbindungen auf dem Amiga.
   - Benutzerverwaltung, App-Passwörter, Speicherkontingente und
     öffentliche Links; Weboberfläche im Stil von ownCloud.
   - amicloud quota, quota in der Shell, Belegung in den
-    Commander-Statuszeilen und bei Info CLOUD:.
+    Commander-Statuszeilen und bei Info AMICLOUD:.
   - Für langsame Verbindungen: Timeouts nur bei Stillstand
     (timeout=), Fortsetzen abgebrochener Downloads, Ctrl-C bricht
-    ab, CLOUD: bleibt während einer Übertragung bedienbar.
+    ab, AMICLOUD: bleibt während einer Übertragung bedienbar.
 
 Handbuch 1.2 (23.10.2026)
   - Langsame Verbindungen: timeout, cache_ttl, Ctrl-C, Fortsetzen

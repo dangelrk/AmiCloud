@@ -70,7 +70,7 @@ static struct Hook panel_display_hook = { { NULL, NULL }, (APTR)panel_display_fu
 /* ------------------------------------------------------------------ */
 /* Panel construction                                                    */
 /* ------------------------------------------------------------------ */
-static const char *source_labels[] = { "Local", "Cloud", NULL };
+static const char *source_labels[] = { "Local", "AmiCloud", NULL };
 
 void panel_mui_build(AmigaPanel *p, const AcConfig *cfg, Object *app)
 {

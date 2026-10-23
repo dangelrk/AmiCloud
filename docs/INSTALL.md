@@ -10,7 +10,7 @@ eingerichtet, danach die Clients.
   - [Installation mit dem Install-Skript](#installation-mit-dem-install-skript)
   - [Manuelle Installation](#manuelle-installation)
   - [Konfiguration](#konfiguration-amiga)
-  - [CLOUD: mounten](#cloud-mounten)
+  - [AMICLOUD: mounten](#cloud-mounten)
   - [Deinstallation](#deinstallation-amiga)
 - [PC: macOS, Linux, Windows](#pc)
 
@@ -285,11 +285,11 @@ lokal verwenden).
 | erreichbarer AmiCloud-Server | alle Programme außer AmiCloudPrefs |
 
 Stack muss nicht eingestellt werden: `amicloud`, `amicloud-shell`,
-`cloudsync`, `amicloud-commander` und AmiCloudPrefs fordern beim Start
+`amicloud-sync`, `amicloud-commander` und AmiCloudPrefs fordern beim Start
 selbst 64 KB an, der Handler bekommt 16 KB über seinen DOSDriver, der
 Worker 64 KB beim Start durch den Handler.
 
-Arbeitsspeicher: der `CLOUD:`-Handler hält eine geöffnete Datei
+Arbeitsspeicher: der `AMICLOUD:`-Handler hält eine geöffnete Datei
 vollständig im Speicher (siehe Handbuch, Kapitel Handler). Für große
 Dateien entsprechend freien Speicher einplanen oder `amicloud get`/`put`
 benutzen, die direkt von/auf Platte übertragen.
@@ -309,8 +309,8 @@ AmiCloud/
   THIRD-PARTY-NOTICES     Lizenz der Fremdkomponente Parson (MIT)
   C/                      alle Programme
   Docs/AmiCloud.guide     Handbuch (AmigaGuide)
-  Examples/               amicloud.cfg.example, CLOUD.mountlist
-  Storage/DOSDrivers/CLOUD   DOSDriver fuer CLOUD:
+  Examples/               amicloud.cfg.example, AMICLOUD.mountlist
+  Storage/DOSDrivers/AMICLOUD   DOSDriver fuer AMICLOUD:
 ```
 
 In einer Shell:
@@ -321,11 +321,11 @@ Execute Install-AmiCloud
 ```
 
 Das Skript fragt nacheinander, welche Teile installiert werden sollen
-(Kommandozeilenprogramme, Commander, AmiCloudPrefs, `CLOUD:`-Handler),
+(Kommandozeilenprogramme, Commander, AmiCloudPrefs, `AMICLOUD:`-Handler),
 kopiert sie an die Orte aus der Tabelle unten, legt eine
 Beispielkonfiguration an, **ohne eine vorhandene Konfiguration zu
 überschreiben**, bietet an, AmiCloudPrefs zum Eintragen der Zugangsdaten
-zu starten und `CLOUD:` sofort zu mounten, und kopiert das Handbuch nach
+zu starten und `AMICLOUD:` sofort zu mounten, und kopiert das Handbuch nach
 `HELP:`, falls diese Zuweisung existiert.
 
 ### Manuelle Installation
@@ -334,23 +334,23 @@ zu starten und `CLOUD:` sofort zu mounten, und kopiert das Handbuch nach
 |---|---|---|
 | `C/amicloud` | `C:` | Kommandozeilen-Client |
 | `C/amicloud-shell` | `C:` | interaktive Shell |
-| `C/cloudsync` | `C:` | einmaliger Ordnerabgleich |
+| `C/amicloud-sync` | `C:` | einmaliger Ordnerabgleich |
 | `C/amicloud-commander` | `SYS:Tools/` (oder beliebig) | braucht MUI; ein Icon wird nicht mitgeliefert |
 | `C/AmiCloudPrefs` | `SYS:Prefs/` | Einstellungs-Editor |
 | `C/amicloud-handler` | `L:` | Pfad steht im DOSDriver (`Handler = L:amicloud-handler`) |
 | `C/amicloud-worker` | `L:` | **muss** `L:amicloud-worker` heißen, der Handler startet ihn von dort |
-| `Storage/DOSDrivers/CLOUD` | `DEVS:DOSDrivers/` | wird beim Booten automatisch gemountet |
+| `Storage/DOSDrivers/AMICLOUD` | `DEVS:DOSDrivers/` | wird beim Booten automatisch gemountet |
 | `Examples/amicloud.cfg.example` | `ENVARC:amicloud.cfg` und `ENV:amicloud.cfg` | nur, wenn noch keine Konfiguration existiert |
 | `Docs/AmiCloud.guide` | `HELP:` oder beliebig | Handbuch |
 
 Als Shell-Befehle:
 
 ```
-Copy C/amicloud C/amicloud-shell C/cloudsync C:
+Copy C/amicloud C/amicloud-shell C/amicloud-sync C:
 Copy C/amicloud-commander SYS:Tools/
 Copy C/AmiCloudPrefs SYS:Prefs/
 Copy C/amicloud-handler C/amicloud-worker L:
-Copy Storage/DOSDrivers/CLOUD DEVS:DOSDrivers/
+Copy Storage/DOSDrivers/AMICLOUD DEVS:DOSDrivers/
 If NOT EXISTS ENVARC:amicloud.cfg
   Copy Examples/amicloud.cfg.example ENVARC:amicloud.cfg
 EndIf
@@ -375,9 +375,9 @@ Weitere Schlüssel (`basepath`, `verify_ssl`, `debug`, `gmt_offset`,
 [config-examples/README.md](../config-examples/README.md).
 Auf dem Amiga sollten `gmt_offset` (Minuten zu UTC, MEZ = 60) und `dst`
 zur eingestellten Uhrzeit passen, sonst stimmen Datumsangaben auf
-`CLOUD:` und in `amicloud-shell` nicht.
+`AMICLOUD:` und in `amicloud-shell` nicht.
 
-Suchreihenfolge: `amicloud`, `amicloud-shell` und `cloudsync` nehmen
+Suchreihenfolge: `amicloud`, `amicloud-shell` und `amicloud-sync` nehmen
 `-c <datei>`, sonst `ENV:amicloud.cfg`, sonst `amicloud.cfg` im aktuellen
 Verzeichnis; der Commander `ENV:amicloud.cfg`, sonst `amicloud.cfg` im
 aktuellen Verzeichnis; der Handler nur `ENV:amicloud.cfg`.
@@ -389,19 +389,19 @@ amicloud version
 amicloud list /
 ```
 
-### CLOUD: mounten
+### AMICLOUD: mounten
 
-Liegt `CLOUD` in `DEVS:DOSDrivers/`, wird das Laufwerk bei jedem
+Liegt `AMICLOUD` in `DEVS:DOSDrivers/`, wird das Laufwerk bei jedem
 Systemstart gemountet. Sofort, ohne Neustart:
 
 ```
-Mount CLOUD:
-Dir CLOUD:
+Mount AMICLOUD:
+Dir AMICLOUD:
 ```
 
 Beim Mounten startet der Handler `L:amicloud-worker`, der
 `ENV:amicloud.cfg` liest. Die Konfiguration muss deshalb vorher
-vollständig sein; spätere Änderungen wirken für `CLOUD:` erst nach einem
+vollständig sein; spätere Änderungen wirken für `AMICLOUD:` erst nach einem
 Neustart (ein sauberes Abmelden des Laufwerks gibt es nicht). Das Mounten
 beim Booten funktioniert auch, wenn der TCP/IP-Stack erst später startet:
 der Worker baut die Netzverbindung erst bei der ersten Anfrage auf.
@@ -414,22 +414,22 @@ das Skript löscht die installierten Programme, den DOSDriver und das
 Handbuch und fragt vor dem Löschen der Konfiguration nach. Von Hand:
 
 ```
-Delete C:amicloud C:amicloud-shell C:cloudsync
+Delete C:amicloud C:amicloud-shell C:amicloud-sync
 Delete SYS:Tools/amicloud-commander SYS:Prefs/AmiCloudPrefs
 Delete L:amicloud-handler L:amicloud-worker
-Delete DEVS:DOSDrivers/CLOUD
+Delete DEVS:DOSDrivers/AMICLOUD
 Delete HELP:AmiCloud.guide
 Delete ENV:amicloud.cfg ENVARC:amicloud.cfg    ; nur wenn gewuenscht
 ```
 
-Ein bereits gemountetes `CLOUD:` bleibt bis zum nächsten Neustart aktiv.
+Ein bereits gemountetes `AMICLOUD:` bleibt bis zum nächsten Neustart aktiv.
 
 ---
 
 ## PC
 
-Auf dem PC gibt es `amicloud`, `amicloud-shell`, `cloudsync` und den
-Qt-Commander `amicloud-commander`. Der `CLOUD:`-Handler und AmiCloudPrefs
+Auf dem PC gibt es `amicloud`, `amicloud-shell`, `amicloud-sync` und den
+Qt-Commander `amicloud-commander`. Der `AMICLOUD:`-Handler und AmiCloudPrefs
 sind Amiga-Programme.
 
 ### Installieren
@@ -444,7 +444,7 @@ make install DESTDIR=/tmp/paket          # für Paketbau
 
 `make install` kopiert alles aus `bin/pc/`. Alternativ die Programme von
 Hand aus `bin/pc/` an einen Ort im `PATH` kopieren. Deinstallieren: die
-Dateien `amicloud`, `amicloud-shell`, `cloudsync`, `amicloud-commander`
+Dateien `amicloud`, `amicloud-shell`, `amicloud-sync`, `amicloud-commander`
 dort wieder löschen.
 
 ### Konfiguration (PC)

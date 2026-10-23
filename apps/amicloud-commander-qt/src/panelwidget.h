@@ -50,7 +50,7 @@ public:
      * on "the file under the cursor" when nothing is explicitly marked). */
     QVector<PanelEntry> targetEntries() const;
 
-    /* Full path (native separator for LOCAL, canonical '/' for CLOUD) to
+    /* Full path (native separator for LOCAL, canonical '/' for AMICLOUD) to
      * a child of the panel's current directory. */
     QString childPath(const PanelEntry &e) const;
 

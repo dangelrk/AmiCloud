@@ -63,7 +63,7 @@ function renderSettings(?array $newToken): string
 
     <form method="post" action="/web.php" class="inline-form">
       <?= csrfField() ?><input type="hidden" name="do" value="apppw_create">
-      <input type="text" name="name" maxlength="64" placeholder="Gerätename, z. B. A1200 CLOUD:" required aria-label="Gerätename">
+      <input type="text" name="name" maxlength="64" placeholder="Gerätename, z. B. A1200 AMICLOUD:" required aria-label="Gerätename">
       <input type="password" name="current" placeholder="Ihr Kontopasswort" required autocomplete="current-password" aria-label="Kontopasswort zur Bestätigung">
       <button type="submit" class="btn btn-primary"><?= icon('key') ?>App-Passwort erstellen</button>
     </form>

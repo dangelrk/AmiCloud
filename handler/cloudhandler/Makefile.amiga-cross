@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Ronny Krueger
-# CLOUD: DOS handler + amicloud-worker -- AmigaOS 3.x (VBCC), CROSS-
+# AMICLOUD: DOS handler + amicloud-worker -- AmigaOS 3.x (VBCC), CROSS-
 # compiled from a host (macOS/Linux/Windows) using the toolchain
 # described in docs/BUILD.md. For a *native* build on a
 # real/emulated Amiga, use Build-Amiga (project root) instead -- it is

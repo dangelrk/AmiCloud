@@ -4,13 +4,13 @@
 PHP/MariaDB server plus clients – a command-line tool, an interactive shell,
 a one-shot folder sync, a two-pane file manager (MUI on the Amiga, Qt 6 on
 macOS/Linux/Windows) and an AmigaOS DOS handler that mounts the cloud as the
-drive `CLOUD:`. The documentation is in German.*
+drive `AMICLOUD:`. The documentation is in German.*
 
 AmiCloud ist ein eigener Cloud-Speicher für den Amiga. Ein schlanker
 PHP-Server hält die Dateien, die Programme greifen über HTTPS darauf zu –
 auf dem Amiga (AmigaOS 3.x, bsdsocket + AmiSSL 5) ebenso wie auf dem PC
 (macOS, Linux, Windows). Auf dem Amiga erscheint die Cloud auf Wunsch als
-ganz normales Laufwerk `CLOUD:`, mit Protection-Bits, Dateikommentaren und
+ganz normales Laufwerk `AMICLOUD:`, mit Protection-Bits, Dateikommentaren und
 Datumsangaben.
 
 ## Komponenten
@@ -19,10 +19,10 @@ Datumsangaben.
 |---|---|---|
 | `amicloud` | Amiga + PC | Kommandozeilen-Client: ein Befehl je Aufruf (`list`, `get`, `put`, `del`, `info`, `mkdir`, `rename`, `search`, `quota`, `version`) |
 | `amicloud-shell` | Amiga + PC | interaktive Sitzung mit `cd`, `ls`, `get`/`put` (auch rekursiv und mit Mustern), `md5`, `search` … |
-| `cloudsync` | Amiga + PC | einmaliger Zwei-Wege-Abgleich eines lokalen Ordners mit einem Cloud-Ordner |
+| `amicloud-sync` | Amiga + PC | einmaliger Zwei-Wege-Abgleich eines lokalen Ordners mit einem Cloud-Ordner |
 | `amicloud-commander` | Amiga (MUI) + PC (Qt 6) | Dateimanager mit zwei Panels, jedes wahlweise lokal oder Cloud |
 | `AmiCloudPrefs` | Amiga | Einstellungs-Editor für `amicloud.cfg` |
-| `CLOUD:`-Handler (`amicloud-handler` + `amicloud-worker`) | Amiga | bindet die Cloud als AmigaDOS-Laufwerk ein |
+| `AMICLOUD:`-Handler (`amicloud-handler` + `amicloud-worker`) | Amiga | bindet die Cloud als AmigaDOS-Laufwerk ein |
 | Server (`server/`) | Linux, Apache, PHP ≥ 7.4, MariaDB | REST-API (`api.php`) und Weboberfläche (`web.php`) im Stil von ownCloud: Benutzerverwaltung, App-Passwörter, Speicherkontingente, öffentliche Links |
 
 ## Schnellstart
@@ -30,7 +30,7 @@ Datumsangaben.
 ```sh
 git clone --recurse-submodules https://github.com/dangelrk/AmiCloud.git
 cd AmiCloud
-make pc                          # amicloud, amicloud-shell, cloudsync -> bin/pc/
+make pc                          # amicloud, amicloud-shell, amicloud-sync -> bin/pc/
 make qt                          # Qt-Commander -> bin/pc/ (Qt 6 + CMake)
 export VBCC=/pfad/zu/vbcc
 make amiga                       # alle Amiga-Programme -> bin/amiga/
@@ -42,8 +42,8 @@ AmiCloudPrefs Server und Zugangsdaten eintragen und loslegen:
 
 ```
 amicloud list /
-Mount CLOUD:
-Dir CLOUD:
+Mount AMICLOUD:
+Dir AMICLOUD:
 ```
 
 ## Dokumentation
@@ -56,7 +56,7 @@ Dir CLOUD:
 | [docs/user/AmiCloud-Handbuch.html](docs/user/AmiCloud-Handbuch.html) | dasselbe Handbuch als HTML |
 | [docs/api/API.md](docs/api/API.md) | REST-API-Referenz des Servers |
 | [config-examples/README.md](config-examples/README.md) | Konfigurationsdateien, Ablageorte, Schlüssel |
-| [handler/cloudhandler/README.md](handler/cloudhandler/README.md) | Innenleben des `CLOUD:`-Handlers (englisch) |
+| [handler/cloudhandler/README.md](handler/cloudhandler/README.md) | Innenleben des `AMICLOUD:`-Handlers (englisch) |
 | [docs/adr/](docs/adr/), [docs/design/](docs/design/) | Architekturentscheidungen und historische Planungsdokumente |
 | [TODO.md](TODO.md) | bekannte offene Punkte |
 
@@ -65,7 +65,7 @@ Dir CLOUD:
 | Verzeichnis | Inhalt |
 |---|---|
 | `apps/` | ein Unterverzeichnis je Programm |
-| `handler/cloudhandler/` | `CLOUD:`-Handler (nur Amiga) mit DOSDriver `mount/CLOUD` |
+| `handler/cloudhandler/` | `AMICLOUD:`-Handler (nur Amiga) mit DOSDriver `mount/AMICLOUD` |
 | `server/` | PHP-Server |
 | `core/` | [AmiCloudCore](https://github.com/dangelrk/AmiCloudCore) als Git-Submodul: gemeinsame C-Bibliotheken und Buildlogik |
 | `config-examples/` | Beispielkonfiguration und Mountlist |

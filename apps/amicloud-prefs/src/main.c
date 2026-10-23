@@ -3,11 +3,11 @@
  */
 /*
  * amicloud-prefs -- Preferences editor for amicloud.cfg (amicloud CLI,
- * amicloud-shell, amicloud-commander-mui/-qt, cloudsync, amicloud-worker
+ * amicloud-shell, amicloud-commander-mui/-qt, amicloud-sync, amicloud-worker
  * -- see config-examples/README.md's table). GadTools window built on
  * core/common's prefsgui.h toolbox (see repo plan "Drei getrennte
  * Prefs-Programme"); own program, no dependency on amivcs-prefs or
- * amicloudsync-prefs.
+ * amiowncloud-sync-prefs.
  *
  * Classic Workbench-Prefs USE/SAVE/CANCEL semantics (bindend, see the
  * plan): Benutzen writes only ENV:amicloud.cfg (live now, gone after a

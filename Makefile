@@ -6,13 +6,13 @@
 # Makefile.pc / Makefile.amiga-cross / CMakeLists.txt.
 
 PROJECT    = AmiCloud
-PC_DIRS    = apps/amicloud apps/amicloud-shell apps/cloudsync
+PC_DIRS    = apps/amicloud apps/amicloud-shell apps/amicloud-sync
 QT_DIRS    = apps/amicloud-commander-qt
-AMIGA_DIRS = apps/amicloud apps/amicloud-shell apps/cloudsync apps/amicloud-commander-mui apps/amicloud-prefs handler/cloudhandler
+AMIGA_DIRS = apps/amicloud apps/amicloud-shell apps/amicloud-sync apps/amicloud-commander-mui apps/amicloud-prefs handler/cloudhandler
 # Zusaetzlich in die Amiga-Installationsschublade (make dist-amiga):
-# DOSDriver fuer CLOUD: nach Storage/DOSDrivers/ (Install-AmiCloud kopiert
+# DOSDriver fuer AMICLOUD: nach Storage/DOSDrivers/ (Install-AmiCloud kopiert
 # ihn von dort nach DEVS:DOSDrivers/).
-DIST_EXTRA = handler/cloudhandler/mount/CLOUD:Storage/DOSDrivers
+DIST_EXTRA = handler/cloudhandler/mount/AMICLOUD:Storage/DOSDrivers
 
 # Without the AmiCloudCore submodule there is no core/mk/project.mk --
 # say so instead of make's bare "No such file or directory".

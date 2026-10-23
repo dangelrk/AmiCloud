@@ -6,28 +6,28 @@ Amiga-Installationsschublade.
 
 | Datei | Ablage im Betrieb | Gelesen von | Bearbeitet mit |
 |---|---|---|---|
-| [amicloud.cfg.example](amicloud.cfg.example) | Amiga: `ENV:amicloud.cfg` (dauerhaft `ENVARC:amicloud.cfg`); PC: `~/.amicloudrc` | `amicloud`, `amicloud-shell`, `cloudsync`, `amicloud-commander` (MUI und Qt), `amicloud-worker` (Backend des `CLOUD:`-Handlers) | von Hand oder mit **AmiCloudPrefs** (Amiga, `SYS:Prefs`) |
-| [CLOUD.mountlist](CLOUD.mountlist) | beliebig, z. B. an `DEVS:MountList` anhängen | AmigaDOS `Mount CLOUD: FROM …` → `L:amicloud-handler` | von Hand (normalerweise keine Änderung nötig) |
+| [amicloud.cfg.example](amicloud.cfg.example) | Amiga: `ENV:amicloud.cfg` (dauerhaft `ENVARC:amicloud.cfg`); PC: `~/.amicloudrc` | `amicloud`, `amicloud-shell`, `amicloud-sync`, `amicloud-commander` (MUI und Qt), `amicloud-worker` (Backend des `AMICLOUD:`-Handlers) | von Hand oder mit **AmiCloudPrefs** (Amiga, `SYS:Prefs`) |
+| [AMICLOUD.mountlist](AMICLOUD.mountlist) | beliebig, z. B. an `DEVS:MountList` anhängen | AmigaDOS `Mount AMICLOUD: FROM …` → `L:amicloud-handler` | von Hand (normalerweise keine Änderung nötig) |
 | `../server/config.php.example` | `config.php` im Web-Verzeichnis des Servers | AmiCloud-Server (`api.php`, `web.php`) | von Hand, siehe [docs/INSTALL.md](../docs/INSTALL.md#server) |
 
-`CLOUD.mountlist` ist ein klassischer Mountlist-Eintrag (`CLOUD:` … `#`)
-mit denselben Werten wie der DOSDriver `handler/cloudhandler/mount/CLOUD`.
-Den DOSDriver legt `make dist-amiga` als `Storage/DOSDrivers/CLOUD` in die
+`AMICLOUD.mountlist` ist ein klassischer Mountlist-Eintrag (`AMICLOUD:` … `#`)
+mit denselben Werten wie der DOSDriver `handler/cloudhandler/mount/AMICLOUD`.
+Den DOSDriver legt `make dist-amiga` als `Storage/DOSDrivers/AMICLOUD` in die
 Installationsschublade; das Install-Skript kopiert ihn nach
 `DEVS:DOSDrivers/`. Die Mountlist ist die Alternative ohne DOSDriver:
-`Mount CLOUD: FROM Examples/CLOUD.mountlist`. Änderungen an den Werten
+`Mount AMICLOUD: FROM Examples/AMICLOUD.mountlist`. Änderungen an den Werten
 bitte an beiden Stellen nachziehen.
 
 ## Suchreihenfolge der Konfigurationsdatei
 
 | Programm | Plattform | Gesucht wird |
 |---|---|---|
-| `amicloud`, `amicloud-shell`, `cloudsync` | Amiga | `-c <datei>`, sonst `ENV:amicloud.cfg`, sonst `amicloud.cfg` im aktuellen Verzeichnis |
-| `amicloud`, `amicloud-shell`, `cloudsync` | macOS/Linux (und MSYS2-Umgebung "MSYS") | `-c <datei>`, sonst `~/.amicloudrc` |
-| `amicloud`, `amicloud-shell`, `cloudsync` | Windows (native MinGW-Builds) | `-c <datei>`, sonst `amicloud.cfg` im aktuellen Verzeichnis |
+| `amicloud`, `amicloud-shell`, `amicloud-sync` | Amiga | `-c <datei>`, sonst `ENV:amicloud.cfg`, sonst `amicloud.cfg` im aktuellen Verzeichnis |
+| `amicloud`, `amicloud-shell`, `amicloud-sync` | macOS/Linux (und MSYS2-Umgebung "MSYS") | `-c <datei>`, sonst `~/.amicloudrc` |
+| `amicloud`, `amicloud-shell`, `amicloud-sync` | Windows (native MinGW-Builds) | `-c <datei>`, sonst `amicloud.cfg` im aktuellen Verzeichnis |
 | `amicloud-commander` (MUI) | Amiga | `ENV:amicloud.cfg`, sonst `amicloud.cfg` im aktuellen Verzeichnis |
 | `amicloud-commander` (Qt) | PC | `$HOME/.amicloudrc` (Windows ohne `HOME`: `%USERPROFILE%\.amicloudrc`); fehlen Server/Benutzer/Passwort, fragt ein Verbindungsdialog danach (ohne zu speichern) |
-| `amicloud-worker` (`CLOUD:`) | Amiga | nur `ENV:amicloud.cfg`, einmal beim Start des Workers |
+| `amicloud-worker` (`AMICLOUD:`) | Amiga | nur `ENV:amicloud.cfg`, einmal beim Start des Workers |
 | AmiCloudPrefs | Amiga | liest `ENV:amicloud.cfg`, sonst `ENVARC:amicloud.cfg` |
 
 Kommandozeilenoptionen (`-s`, `-u`, `-p`, `-d`, `-k`) überschreiben die
@@ -45,11 +45,11 @@ Kommentar ein. Parser: `core/libcloudcore/src/config.c`.
 | `pass` / `password` | – (Pflicht) | Passwort (steht im Klartext in der Datei); am besten ein App-Passwort aus der Weboberfläche, das sich je Gerät widerrufen lässt |
 | `basepath` | `/` | Startverzeichnis auf dem Server |
 | `verify_ssl` | `1` | `1` = TLS-Zertifikat prüfen, `0` = nicht prüfen (nur zum Testen) |
-| `debug` | leer | Nur `amicloud-worker`: Ziel für das HTTP/TLS-Protokoll des `CLOUD:`-Handlers, z. B. `T:amicloud.log` oder `CON:0/0/640/200/AmiCloud Debug/CLOSE` |
+| `debug` | leer | Nur `amicloud-worker`: Ziel für das HTTP/TLS-Protokoll des `AMICLOUD:`-Handlers, z. B. `T:amicloud.log` oder `CON:0/0/640/200/AmiCloud Debug/CLOSE` |
 | `gmt_offset` | `0` | Nur Amiga (`amicloud-shell`, `amicloud-worker`): Abstand der Systemuhr zu UTC in Minuten (MEZ = 60) |
 | `dst` | `0` | Nur Amiga: `1` = Sommerzeit aktiv (addiert 60 Minuten) |
 | `timeout` | `120` | Netz-Timeout in Sekunden: so lange darf eine Verbindung ganz ohne Datenfluss bleiben. Nie eine Grenze für eine ganze Übertragung (Modem!) |
-| `cache_ttl` | `30` | Nur `amicloud-worker`: Lebensdauer des Verzeichnis-Caches von `CLOUD:` in Sekunden; über ein Modem lohnen 120–300 |
+| `cache_ttl` | `30` | Nur `amicloud-worker`: Lebensdauer des Verzeichnis-Caches von `AMICLOUD:` in Sekunden; über ein Modem lohnen 120–300 |
 
 ## AmiCloudPrefs
 
@@ -60,6 +60,6 @@ alle Schlüssel oben und folgt der üblichen Workbench-Prefs-Semantik:
 **Abbrechen** schreibt nichts. Unterscheiden sich `ENV:` und `ENVARC:`,
 zeigt die Statuszeile einen Hinweis.
 
-Der `CLOUD:`-Handler liest die Datei nur beim Start von
+Der `AMICLOUD:`-Handler liest die Datei nur beim Start von
 `amicloud-worker` – Änderungen wirken dort erst nach einem Neustart des
 Amiga.

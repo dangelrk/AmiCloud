@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Ronny Krueger
-# cloudsync — AmigaOS 3.x (VBCC), CROSS-compiled from a host (macOS/
+# amicloud-sync — AmigaOS 3.x (VBCC), CROSS-compiled from a host (macOS/
 # Linux/Windows) using the toolchain described in
 # docs/BUILD.md. Mirrors amicloud-shell/Makefile.amiga-cross
 # (see there for why: no oml on the host, so this links directly against
@@ -44,7 +44,7 @@ LDFLAGS = $(TARGET) -L$(RUNTIME_LIB) -lmieee
 
 OBJDIR = obj/amiga
 BINDIR = ../../bin/amiga
-TARGET_BIN = $(BINDIR)/cloudsync
+TARGET_BIN = $(BINDIR)/amicloud-sync
 
 CORE_SRCS = config base64 parson md5 ui_hooks cloudtime progress
 CORE_OBJS = $(CORE_SRCS:%=$(OBJDIR)/core_%.o)

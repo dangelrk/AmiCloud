@@ -5,7 +5,7 @@
 #define CLOUDHANDLER_UTIL_H
 
 /*
- * util.h -- mini libc replacement + BCPL/path helpers for the CLOUD: handler.
+ * util.h -- mini libc replacement + BCPL/path helpers for the AMICLOUD: handler.
  *
  * The handler is linked -nostdlib (see handler.c and ../README.md): no
  * vc.lib, no malloc, no string.h. Every str-family and mem-family routine

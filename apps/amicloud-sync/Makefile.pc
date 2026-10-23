@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Ronny Krueger
-# cloudsync — one-shot local<->cloud folder sync CLI, linked against
+# amicloud-sync — one-shot local<->cloud folder sync CLI, linked against
 # libcloudsync + libcloudhttp + libcloudfs + libcloudcore. Placeholder
 # consumer for the sync engine (roadmap phase 5 "Sync Commodity" would
 # wrap this in a background daemon) — see src/main.c.
@@ -34,7 +34,7 @@ BINDIR = ../../bin/pc
 LIBDIR = ../../lib/pc
 LDFLAGS = -L$(LIBDIR) $(PKG_LF)
 
-TARGET = $(BINDIR)/cloudsync
+TARGET = $(BINDIR)/amicloud-sync
 OBJS   = $(OBJDIR)/main.o
 
 all: libs $(TARGET)

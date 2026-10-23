@@ -5,9 +5,9 @@
 #          PC:    ~/.amicloudrc     (oder jeweils -c <datei>)
 # Bearbeiten: von Hand oder auf dem Amiga mit AmiCloudPrefs (SYS:Prefs).
 #
-# Gelesen von: amicloud (CLI), amicloud-shell, cloudsync,
+# Gelesen von: amicloud (CLI), amicloud-shell, amicloud-sync,
 # amicloud-commander (MUI und Qt) sowie amicloud-worker (Backend des
-# CLOUD:-Handlers, siehe config-examples/CLOUD.mountlist).
+# AMICLOUD:-Handlers, siehe config-examples/AMICLOUD.mountlist).
 # Zeilen "schluessel=wert", '#' am Zeilenanfang = Kommentar.
 #
 # Basis-URL des Servers (ohne /api.php):
@@ -26,17 +26,17 @@ pass=geheim
 # TLS-Zertifikat pruefen (1 = ja, Standard; 0 = nur fuer Entwicklung):
 #verify_ssl=1
 
-# Debug-Log des CLOUD:-Handlers (leer = aus). Beispiele:
+# Debug-Log des AMICLOUD:-Handlers (leer = aus). Beispiele:
 #debug=T:amicloud.log
 #debug=CON:0/0/640/200/AmiCloud Debug/CLOSE
-# Hinweis: dieser Schluessel wird nur von amicloud-worker (CLOUD:-Handler)
+# Hinweis: dieser Schluessel wird nur von amicloud-worker (AMICLOUD:-Handler)
 # ausgewertet, nicht von den uebrigen Programmen. Debug-Ausgabe fuer
 # amicloud/amicloud-shell auf dem Amiga: Option -v (nach stderr). Fuer
 # amicloud-commander (MUI): -v beim Start aus der Shell oder ein
 # "DEBUG"-Tooltype am Workbench-Icon; Qt-Commander: -v/--verbose.
 
 # Nur auf dem Amiga relevant, ausgewertet von amicloud-shell (lokale
-# Datei-Zeitstempel) und amicloud-worker (Datumsangaben auf CLOUD:): die
+# Datei-Zeitstempel) und amicloud-worker (Datumsangaben auf AMICLOUD:): die
 # Amiga-Systemuhr kennt keine Zeitzone. PC/Mac/Linux ignorieren diese
 # beiden Werte (ihre Datei-Zeitstempel sind bereits UTC-Epoche).
 #
@@ -51,6 +51,6 @@ pass=geheim
 # laeuft, solange Daten fliessen. Bei sehr wackligen Leitungen hoeher:
 #timeout=120
 
-# Nur CLOUD:-Handler: wie viele Sekunden ein Verzeichnisinhalt
+# Nur AMICLOUD:-Handler: wie viele Sekunden ein Verzeichnisinhalt
 # zwischengespeichert wird (Standard 30). Ueber ein Modem lohnen 120-300:
 #cache_ttl=30

@@ -148,8 +148,8 @@ void MainWindow::updateQuota(bool force)
     ac_format_kb(st.quota_used_kb, used, sizeof(used));
     ac_format_kb(st.quota_total_kb, total, sizeof(total));
     m_quotaLabel->setText(st.quota_unlimited
-        ? tr("Cloud: %1 belegt").arg(QString::fromUtf8(used))
-        : tr("Cloud: %1 von %2 belegt").arg(QString::fromUtf8(used), QString::fromUtf8(total)));
+        ? tr("AmiCloud: %1 belegt").arg(QString::fromUtf8(used))
+        : tr("AmiCloud: %1 von %2 belegt").arg(QString::fromUtf8(used), QString::fromUtf8(total)));
     m_quotaLabel->setToolTip(st.quota_unlimited
         ? tr("Unbegrenztes Kontingent, %1 insgesamt auf dem Server").arg(QString::fromUtf8(total))
         : QString());
@@ -242,7 +242,7 @@ void MainWindow::doCopy()
 
     if (src->source() == PANEL_CLOUD && dst->source() == PANEL_CLOUD) {
         QMessageBox::information(this, tr("Kopieren"),
-            tr("Cloud->Cloud-Kopieren wird noch nicht unterstuetzt (siehe Plan Abschnitt 3.3)."));
+            tr("AmiCloud->AmiCloud-Kopieren wird noch nicht unterstuetzt (siehe Plan Abschnitt 3.3)."));
         return;
     }
 

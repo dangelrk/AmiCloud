@@ -1,16 +1,16 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright (C) 2026 Ronny Krueger */
-/* CLOUD: als klassischer Mountlist-Eintrag (dieselben Werte wie der
- * DOSDriver handler/cloudhandler/mount/CLOUD).
+/* AMICLOUD: als klassischer Mountlist-Eintrag (dieselben Werte wie der
+ * DOSDriver handler/cloudhandler/mount/AMICLOUD).
  * Voraussetzung: L:amicloud-handler und L:amicloud-worker installiert,
  * ENV:amicloud.cfg vorhanden (siehe docs/INSTALL.md).
  * Mounten ohne DOSDriver:
- *   Mount CLOUD: FROM <Pfad>/CLOUD.mountlist
+ *   Mount AMICLOUD: FROM <Pfad>/AMICLOUD.mountlist
  * oder diesen Eintrag an DEVS:MountList anhaengen, dann genuegt
- *   Mount CLOUD:
+ *   Mount AMICLOUD:
  * Fuer das automatische Mounten beim Systemstart stattdessen den
  * DOSDriver nach DEVS:DOSDrivers/ kopieren (macht das Install-Skript). */
-CLOUD:
+AMICLOUD:
 Handler   = L:amicloud-handler
 StackSize = 16384
 Priority  = 5

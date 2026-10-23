@@ -4,7 +4,7 @@
 /*
  * worker.c -- amicloud-worker: a normal AmigaOS process (full vbcc
  * startup, libc, bsdsocket/AmiSSL) that does all HTTP/TLS work on behalf
- * of the CLOUD: handler, which is exec.library-only and can never touch
+ * of the AMICLOUD: handler, which is exec.library-only and can never touch
  * the network stack itself (see handler.c's file header and
  * docs/design/handler-plan.md Stufe 2). Talks to the handler over proto.h's
  * WorkerMsg protocol through the well-known port AC_WORKER_PORT.

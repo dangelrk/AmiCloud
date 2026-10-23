@@ -480,7 +480,7 @@ static void do_copy(void)
 
     if (src->source == PANEL_CLOUD && dst->source == PANEL_CLOUD) {
         MUI_Request(g_app, NULL, 0, "Kopieren", "_OK",
-                   "Cloud->Cloud-Kopieren wird noch nicht unterstuetzt.");
+                   "AmiCloud->AmiCloud-Kopieren wird noch nicht unterstuetzt.");
         return;
     }
 
@@ -577,7 +577,7 @@ static void do_move(void)
     if (!panel_mui_current_entry(src, &e)) return;
 
     if (src->source == dst->source) {
-        mui_notify(UI_WARN, "Verschieben braucht zwei verschiedene Panels (lokal<->Cloud). Umbenennen: Rechte Amiga+R.");
+        mui_notify(UI_WARN, "Verschieben braucht zwei verschiedene Panels (lokal<->AmiCloud). Umbenennen: Rechte Amiga+R.");
         return;
     }
 
