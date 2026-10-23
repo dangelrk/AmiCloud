@@ -47,6 +47,10 @@ class Response
         header('Accept-Ranges: bytes');
         header('Content-Type: ' . $mime);
         header('Content-Length: ' . $send);
+        /* Dieselbe Zahl noch einmal: hinter Apache + PHP-FPM kommt die
+         * Antwort chunked an, Content-Length geht dabei verloren. Die
+         * Clients brauchen die Laenge fuer die Fortschrittsanzeige. */
+        header('X-AmiCloud-Length: ' . $send);
 
         $fp = fopen($filepath, 'rb');
         if ($offset > 0) {
