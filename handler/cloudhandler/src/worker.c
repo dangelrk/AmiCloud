@@ -37,6 +37,7 @@
 #include "proto.h"
 #include "amicloud.h"
 #include "cmd.h"
+#include "charset.h"
 #include "config.h"
 #include "http.h"
 #include "ui_hooks.h"
@@ -187,6 +188,13 @@ static LONG map_put_status(int status)
 
 static void dispatch(WorkerMsg *m)
 {
+    /* Phase 4: the handler speaks the local codeset, the server UTF-8.
+     * Paths go through the names remembered from earlier listings, so a
+     * lossy shown name ("Preis_.txt") finds its server name again. */
+    static char upath[AC_MAX_PATH], upath2[AC_MAX_PATH], ucomment[256];
+    cs_path_to_utf8(m->path, upath, sizeof(upath));
+    cs_path_to_utf8(m->path2, upath2, sizeof(upath2));
+
     switch (m->cmd) {
     case WREQ_PING:
         m->result = 0;
@@ -198,7 +206,7 @@ static void dispatch(WorkerMsg *m)
         WEntry *out;
 
         if (!ensure_net_ready()) { m->result = map_get_status(0); break; }
-        if (!cmd_list_raw(&g_cfg, m->path, &entries, &n)) {
+        if (!cmd_list_raw(&g_cfg, upath, &entries, &n)) {
             m->result = map_get_status(cmd_last_status());
             break;
         }
@@ -212,12 +220,12 @@ static void dispatch(WorkerMsg *m)
                 break;
             }
             for (i = 0; i < n; i++) {
-                strncpy(out[i].name, entries[i].name, sizeof(out[i].name) - 1);
+                cs_list_name(m->path, upath, entries[i].name, out[i].name, sizeof(out[i].name));
                 out[i].is_dir = entries[i].is_dir;
                 out[i].size = entries[i].size;
                 epoch_to_datestamp(entries[i].mtime, &out[i].mtime);
                 out[i].protection = entries[i].protection;
-                strncpy(out[i].comment, entries[i].comment, sizeof(out[i].comment) - 1);
+                cs_from_utf8(entries[i].comment, out[i].comment, sizeof(out[i].comment));
                 strncpy(out[i].md5, entries[i].md5, sizeof(out[i].md5) - 1);
             }
             m->entries = out;
@@ -256,7 +264,7 @@ static void dispatch(WorkerMsg *m)
          * m->buflen were never reached. Every WREQ_GET was silently
          * mis-reported this way. */
         {
-            int rc = cmd_get_buf(&g_cfg, m->path, &buf, &len, &status);
+            int rc = cmd_get_buf(&g_cfg, upath, &buf, &len, &status);
             ac_log_printf("dispatch: WREQ_GET cmd_get_buf returned %d (status=%d)\n", rc, status);
             if (rc != 0) {
                 m->result = map_get_status(status);
@@ -278,7 +286,7 @@ static void dispatch(WorkerMsg *m)
         int status = 0;
 
         if (!ensure_net_ready()) { m->result = map_get_status(0); break; }
-        if (cmd_get_range(&g_cfg, m->path, (long)m->offset, (long)m->buflen, &buf, &len, &status) != 0) {
+        if (cmd_get_range(&g_cfg, upath, (long)m->offset, (long)m->buflen, &buf, &len, &status) != 0) {
             m->result = map_get_status(status);
             m->buf = NULL;
             m->buflen = 0;
@@ -300,7 +308,7 @@ static void dispatch(WorkerMsg *m)
         }
         /* Same inverted-check bug as WREQ_GET above -- cmd_put_buf() also
          * returns 0 on success, 1 on failure. */
-        if (cmd_put_buf(&g_cfg, m->path, (const char *)m->buf, (long)m->buflen, &status) != 0) {
+        if (cmd_put_buf(&g_cfg, upath, (const char *)m->buf, (long)m->buflen, &status) != 0) {
             m->result = map_put_status(status);
             save_unsaved(m->path, m->buf, m->buflen);
             break;
@@ -312,48 +320,49 @@ static void dispatch(WorkerMsg *m)
 
     case WREQ_DEL:
         if (!ensure_net_ready()) { m->result = map_put_status(0); break; }
-        m->result = cmd_del(&g_cfg, m->path) ? map_put_status(cmd_last_status()) : 0;
+        m->result = cmd_del(&g_cfg, upath) ? map_put_status(cmd_last_status()) : 0;
         if (m->result == 0) g_quota_dirty = 1;
         break;
 
     case WREQ_MKDIR:
         if (!ensure_net_ready()) { m->result = map_put_status(0); break; }
-        m->result = cmd_mkdir_quiet(&g_cfg, m->path) ? map_put_status(cmd_last_status()) : 0;
+        m->result = cmd_mkdir_quiet(&g_cfg, upath) ? map_put_status(cmd_last_status()) : 0;
         break;
 
     case WREQ_RENAME:
         if (!ensure_net_ready()) { m->result = map_put_status(0); break; }
-        m->result = cmd_rename(&g_cfg, m->path, m->path2) ? map_put_status(cmd_last_status()) : 0;
+        m->result = cmd_rename(&g_cfg, upath, upath2) ? map_put_status(cmd_last_status()) : 0;
         break;
 
     case WREQ_INFO: {
         AcInfo info;
 
         if (!ensure_net_ready()) { m->result = map_get_status(0); break; }
-        if (cmd_info_raw(&g_cfg, m->path, &info) != 0) {
+        if (cmd_info_raw(&g_cfg, upath, &info) != 0) {
             m->result = map_get_status(cmd_last_status());
             break;
         }
         epoch_to_datestamp(info.mtime, &m->mtime);
         m->protection = info.protection;
-        strncpy(m->comment, info.comment, sizeof(m->comment) - 1);
+        cs_from_utf8(info.comment, m->comment, sizeof(m->comment));
         m->result = 0;
         break;
     }
 
     case WREQ_SETDATE:
         if (!ensure_net_ready()) { m->result = map_put_status(0); break; }
-        m->result = cmd_setdate_mtime(&g_cfg, m->path, datestamp_to_epoch(&m->mtime)) ? map_put_status(cmd_last_status()) : 0;
+        m->result = cmd_setdate_mtime(&g_cfg, upath, datestamp_to_epoch(&m->mtime)) ? map_put_status(cmd_last_status()) : 0;
         break;
 
     case WREQ_SETCOMMENT:
         if (!ensure_net_ready()) { m->result = map_put_status(0); break; }
-        m->result = cmd_setcomment(&g_cfg, m->path, m->comment) ? map_put_status(cmd_last_status()) : 0;
+        cs_to_utf8(m->comment, ucomment, sizeof(ucomment));
+        m->result = cmd_setcomment(&g_cfg, upath, ucomment) ? map_put_status(cmd_last_status()) : 0;
         break;
 
     case WREQ_SETPROTECT:
         if (!ensure_net_ready()) { m->result = map_put_status(0); break; }
-        m->result = cmd_setprotect(&g_cfg, m->path, m->protection) ? map_put_status(cmd_last_status()) : 0;
+        m->result = cmd_setprotect(&g_cfg, upath, m->protection) ? map_put_status(cmd_last_status()) : 0;
         break;
 
     default:
@@ -370,6 +379,7 @@ int main(int argc, char **argv)
     (void)argc; (void)argv;
 
     config_load("ENV:amicloud.cfg", &g_cfg);
+    cs_open(g_cfg.charset);   /* Phase 4: codesets.library, else ISO-8859-1 */
 
     {
         UiHooks h;
