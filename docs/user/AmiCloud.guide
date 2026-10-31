@@ -991,6 +991,16 @@ Verwandte Projekte desselben Autors:
 
 VERSIONSGESCHICHTE
 
+Programme 0.2 (31.10.2026)
+  - Abgleich (amicloud-sync) sicherer: Abbruch bei Lesefehlern, Ctrl-C
+    ohne Löschungen, kein leeres Neuanlegen eines verschwundenen
+    Server-Ordners, Upload nur auf den beim Abgleich gesehenen Stand,
+    zu lange und nur in der Schreibung verschiedene Namen werden
+    übersprungen (siehe amicloud-sync).
+  - Lokale Dateien bekommen beim Abgleich die Ortszeit.
+  - Mindestens 68020 erforderlich (AmiSSL 5 braucht ihn ohnehin).
+  - Server: Upload mit Bedingung (if_revision, create_only).
+
 Programme 0.1 (2026)
   - Erste Fassung: Server mit REST-API und Weboberfläche, amicloud,
     amicloud-shell, amicloud-commander (MUI und Qt), amicloud-sync,
