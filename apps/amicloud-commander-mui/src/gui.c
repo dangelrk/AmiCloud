@@ -26,6 +26,7 @@
 
 #include "gui.h"
 #include "cmd.h"
+#include "charset.h"
 #include "localfs.h"
 #include "ui_hooks.h"
 #include "mui_stubs.h"
@@ -411,8 +412,12 @@ static void do_info(void)
             MUI_Request(g_app, NULL, 0, "Info", "_OK", "Konnte Info nicht laden.");
             return;
         }
-        sprintf(msg, "Name: %s\nTyp: %s\nGroesse: %ld Bytes\nGeaendert: %s\nMD5: %s",
-               info.name, info.type, info.size, info.modified, info.md5);
+        {
+            char lname[256];
+            cs_from_utf8(info.name, lname, sizeof(lname));   /* Phase 4 */
+            sprintf(msg, "Name: %s\nTyp: %s\nGroesse: %ld Bytes\nGeaendert: %s\nMD5: %s",
+                   lname, info.type, info.size, info.modified, info.md5);
+        }
     } else {
         long size = 0, mtime = 0;
         char hex[33] = "";
@@ -639,6 +644,7 @@ static void do_rename(void)
     {
         PanelEntry renamed = e;
         strncpy(renamed.name, newName, sizeof(renamed.name) - 1);
+        renamed.uname[0] = '\0';   /* typed: converted for the server */
         panel_mui_child_path(src, &renamed, dstPath, sizeof(dstPath));
     }
 
@@ -780,6 +786,8 @@ static char g_search_disp_path[1024];
 static char g_search_disp_size[16];
 static char g_search_disp_date[24];
 
+static int g_search_cloud;   /* the hits are server paths (UTF-8) */
+
 static __saveds LONG search_display_func(__reg("a0") struct Hook *hook,
                                           __reg("a2") char **array,
                                           __reg("a1") SearchHit *hit)
@@ -793,11 +801,17 @@ static __saveds LONG search_display_func(__reg("a0") struct Hook *hook,
         return 0;
     }
 
-    if (hit->is_dir)
-        snprintf(g_search_disp_path, sizeof(g_search_disp_path), "%s/", hit->path);
-    else {
-        strncpy(g_search_disp_path, hit->path, sizeof(g_search_disp_path) - 1);
-        g_search_disp_path[sizeof(g_search_disp_path) - 1] = '\0';
+    {
+        /* Phase 4: cloud hits are server paths (UTF-8) */
+        char lp[AC_MAX_PATH];
+        if (g_search_cloud) cs_from_utf8(hit->path, lp, sizeof(lp));
+        else { strncpy(lp, hit->path, sizeof(lp) - 1); lp[sizeof(lp) - 1] = '\0'; }
+        if (hit->is_dir)
+            snprintf(g_search_disp_path, sizeof(g_search_disp_path), "%s/", lp);
+        else {
+            strncpy(g_search_disp_path, lp, sizeof(g_search_disp_path) - 1);
+            g_search_disp_path[sizeof(g_search_disp_path) - 1] = '\0';
+        }
     }
     array[0] = g_search_disp_path;
 
@@ -849,8 +863,11 @@ static void do_search(void)
         AcSearchHit *raw = NULL;
         int n = 0, trunc = 0, ok;
 
+        char upat[256];
+        cs_to_utf8(pattern, upat, sizeof(upat));   /* Phase 4: typed locally */
+        g_search_cloud = 1;
         gui_busy_begin();
-        ok = cmd_search(&g_active->cfg, g_active->path, pattern, 1, &raw, &n, &trunc);
+        ok = cmd_search(&g_active->cfg, g_active->path, upat, 1, &raw, &n, &trunc);
         gui_busy_end();
 
         if (ok) {
@@ -867,6 +884,7 @@ static void do_search(void)
         cmd_search_free(raw);
     } else {
         SearchCollectCtx ctx;
+        g_search_cloud = 0;
         ctx.arr = g_search_hits;
         ctx.n   = 0;
         search_local(g_active->path, pattern, search_collect_cb, &ctx);
@@ -914,8 +932,15 @@ static void do_search_goto(void)
         dir[0] = '\0';
     }
 
-    if (g_active->source == PANEL_CLOUD) panel_mui_set_cloud(g_active, dir);
-    else                                 panel_mui_set_local(g_active, dir);
+    if (g_active->source == PANEL_CLOUD) {
+        char lname[256];
+        panel_mui_set_cloud(g_active, dir);
+        cs_from_utf8(name, lname, sizeof(lname));   /* list names are local */
+        strncpy(name, lname, sizeof(name) - 1);
+        name[sizeof(name) - 1] = '\0';
+    } else {
+        panel_mui_set_local(g_active, dir);
+    }
 
     idx = -1;
     for (i = 0; i < g_active->list.n; i++) {

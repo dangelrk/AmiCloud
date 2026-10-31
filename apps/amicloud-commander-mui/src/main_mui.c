@@ -19,6 +19,7 @@
 
 #include "amicloud.h"
 #include "config.h"
+#include "charset.h"
 #include "http.h"
 #include "gui.h"
 #include "mui_stubs.h"
@@ -141,6 +142,7 @@ int main(int argc, char *argv[])
 
     if (!config_load("ENV:amicloud.cfg", &cfg))
         config_load("amicloud.cfg", &cfg);
+    cs_open(cfg.charset);   /* Phase 4: file names via codesets.library */
 
     if (!cfg.server[0] || !cfg.username[0] || !cfg.password[0]) {
         /* No MUI window yet at this point -- OpenLibrary first so

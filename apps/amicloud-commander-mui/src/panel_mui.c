@@ -27,6 +27,7 @@
 #include <time.h>
 
 #include "cmd.h"        /* cmd_status_ex() */
+#include "charset.h"
 #include "progress.h"   /* ac_format_kb() */
 
 /* ------------------------------------------------------------------ */
@@ -156,7 +157,9 @@ void panel_mui_set_cloud(AmigaPanel *p, const char *path)
     set(p->source_cycle, MUIA_Cycle_Active, 1);
     strncpy(p->cloud_path, path, sizeof(p->cloud_path) - 1);
     strncpy(p->path, path, sizeof(p->path) - 1);
-    set(p->path_string, MUIA_String_Contents, p->path);
+    /* Phase 4: p->path is the server path (UTF-8), shown locally */
+    cs_from_utf8(p->path, p->path_disp, sizeof(p->path_disp));
+    set(p->path_string, MUIA_String_Contents, p->path_disp);
     panel_mui_reload(p);
 }
 
@@ -195,8 +198,13 @@ void panel_mui_path_entered(AmigaPanel *p)
     get(p->path_string, MUIA_String_Contents, &text);
     if (!text || !text[0]) return;
 
-    if (p->source == PANEL_CLOUD) panel_mui_set_cloud(p, (char *)text);
-    else                          panel_mui_set_local(p, (char *)text);
+    if (p->source == PANEL_CLOUD) {
+        char upath[AC_MAX_PATH];
+        cs_to_utf8((const char *)text, upath, sizeof(upath));   /* typed: local codeset */
+        panel_mui_set_cloud(p, upath);
+    } else {
+        panel_mui_set_local(p, (char *)text);
+    }
 }
 
 /* Cloud-Belegung fuer die Statuszeile ("1,2 MB von 5,0 GB"). Ein
@@ -294,11 +302,20 @@ void panel_mui_go_up(AmigaPanel *p)
 void panel_mui_child_path(const AmigaPanel *p, const PanelEntry *e, char *out, size_t outsz)
 {
     if (p->source == PANEL_CLOUD) {
+        /* Phase 4: the server name -- the entry's own if it comes from a
+         * cloud listing, else (a local entry, a typed name) converted */
+        char uname[256];
         size_t len = strlen(p->path);
+        if (e->uname[0]) {
+            strncpy(uname, e->uname, sizeof(uname) - 1);
+            uname[sizeof(uname) - 1] = '\0';
+        } else {
+            cs_to_utf8(e->name, uname, sizeof(uname));
+        }
         if (len > 0 && p->path[len - 1] == '/')
-            snprintf(out, outsz, "%s%s", p->path, e->name);
+            snprintf(out, outsz, "%s%s", p->path, uname);
         else
-            snprintf(out, outsz, "%s/%s", p->path, e->name);
+            snprintf(out, outsz, "%s/%s", p->path, uname);
     } else {
         localfs_join(out, outsz, p->path, e->name);
     }

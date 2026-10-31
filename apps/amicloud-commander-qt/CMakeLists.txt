@@ -57,6 +57,7 @@ set(CORE_SRCS
     ${LIBS_DIR}/libcloudcore/src/md5.c
     ${LIBS_DIR}/libcloudcore/src/ui_hooks.c
     ${LIBS_DIR}/libcloudcore/src/progress.c
+    ${LIBS_DIR}/libcloudcore/src/charset.c
     ${COMMON_DIR}/src/panel.c
     ${COMMON_DIR}/src/search.c
     ${LIBS_DIR}/libcloudfs/src/localfs_pc.c

@@ -33,6 +33,7 @@ typedef struct {
     char        path[AC_MAX_PATH];
     char        local_path[AC_MAX_PATH];   /* remembered across source switches */
     char        cloud_path[AC_MAX_PATH];
+    char        path_disp[AC_MAX_PATH];    /* cloud: path in the local codeset, for the string gadget */
     PanelList   list;
     int         show_up;                    /* ".." synthetic row 0 in the list? */
 
