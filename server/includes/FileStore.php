@@ -318,9 +318,10 @@ class FileStore
     }
 
     /* ------------------------------------------------------------------ */
-    public static function upload(string $path, string $data, ?string $expectedMd5 = null): void
+    public static function upload(string $path, string $data, ?string $expectedMd5 = null,
+                                  ?int $ifRevision = null, bool $createOnly = false): void
     {
-        $r = self::uploadImpl($path, $data, null, $expectedMd5);
+        $r = self::uploadImpl($path, $data, null, $expectedMd5, $ifRevision, $createOnly);
         if ($r[0] !== 0) {
             Response::error($r[0], $r[1]);
         }
@@ -332,8 +333,15 @@ class FileStore
      * globale Revision, Tombstone wiederbeleben. Kontingentpruefung und
      * Schreiben laufen in einer Transaktion mit der users-Zeile gesperrt
      * (FOR UPDATE), damit parallele Uploads das Kontingent nicht gemeinsam
-     * ueberschreiten. Rueckgabe [0, '', Antwortdaten] oder [Code, Meldung]. */
-    private static function uploadImpl(string $path, ?string $data, ?string $tmpFile, ?string $expectedMd5): array
+     * ueberschreiten. Rueckgabe [0, '', Antwortdaten] oder [Code, Meldung].
+     *
+     * Bedingungen fuer den Abgleich (412 Precondition Failed, nichts wird
+     * geschrieben): $ifRevision -- die Datei muss existieren und genau
+     * diese Revision haben; $createOnly -- die Datei darf noch nicht
+     * existieren. Geprueft innerhalb der Transaktion, also atomar gegen
+     * andere Uploads desselben Benutzers. */
+    private static function uploadImpl(string $path, ?string $data, ?string $tmpFile, ?string $expectedMd5,
+                                       ?int $ifRevision = null, bool $createOnly = false): array
     {
         if ($path === '/') {
             return [400, 'Cannot upload to root'];
@@ -376,6 +384,18 @@ class FileStore
             $prev = $db->prepare('SELECT checksum, revision, size_bytes, deleted_at FROM files WHERE user_id = ? AND path = ?');
             $prev->execute([Auth::$user_id, $dbP]);
             $existing = $prev->fetch();
+
+            $live = is_file($file);
+            if ($createOnly && $live) {
+                $db->rollBack();
+                return [412, 'File exists'];
+            }
+            if ($ifRevision !== null
+                && (!$live || $existing === false || $existing['deleted_at'] !== null
+                    || (int)$existing['revision'] !== $ifRevision)) {
+                $db->rollBack();
+                return [412, 'Revision mismatch'];
+            }
 
             if ($quota !== null && $quota !== false) {
                 $oldSize = ($existing && $existing['deleted_at'] === null) ? (int)$existing['size_bytes'] : 0;
@@ -430,6 +450,9 @@ class FileStore
             if (!rename($stage, $file)) {
                 throw new RuntimeException('rename to target failed');
             }
+            $idq = $db->prepare('SELECT id FROM files WHERE user_id = ? AND path = ?');
+            $idq->execute([Auth::$user_id, $dbP]);
+            $fileId = (int)$idq->fetchColumn();
             $db->commit();
         } catch (Throwable $e) {
             if (isset($stage) && is_file($stage)) {
@@ -448,6 +471,7 @@ class FileStore
             'mtime'      => filemtime($file),
             'revision'   => $revision,
             'change_seq' => $changeSeq,
+            'id'         => $fileId,
         ]];
     }
 

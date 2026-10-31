@@ -89,7 +89,8 @@ GET api.php?action=status
 ```json
 { "status": "ok", "version": "0.1", "time": "2026-07-04 12:00:00", "global_revision": 42,
   "user":  { "name": "bob", "display_name": "Bob Beispiel" },
-  "quota": { "used": 1234567, "total": 5368709120, "free": 5367474553, "unlimited": false } }
+  "quota": { "used": 1234567, "total": 5368709120, "free": 5367474553, "unlimited": false },
+  "max_upload": 104857600 }
 ```
 
 Erfordert wie alle Actions Basic Auth; dient als leichter Verbindungs-Check (z.&nbsp;B. Start-Banner
@@ -102,6 +103,7 @@ die Felder. `quota` in Bytes: `used` = Summe aller Dateien des Benutzers, `free`
 unbegrenztem Kontingent (`unlimited: true`) ist `free` der freie Plattenplatz des Servers und
 `total = used + free` – wie bei ownCloud, damit Clients immer eine sinnvolle Gesamtgröße anzeigen
 können (der `AMICLOUD:`-Handler meldet daraus die Laufwerksbelegung).
+`max_upload` (seit 0.2) ist die größte Datei in Bytes, die `upload` annimmt.
 
 ### list — Verzeichnis auflisten
 
@@ -237,6 +239,8 @@ Fehler: 404, 416.
 ```
 POST api.php?action=upload&path=/sub/f
 POST api.php?action=upload&path=/sub/f&md5=<32 Hex-Zeichen>
+POST api.php?action=upload&path=/sub/f&if_revision=3
+POST api.php?action=upload&path=/sub/f&create_only=1
 Body: rohe Dateibytes (Content-Type: application/octet-stream)
 ```
 
@@ -247,16 +251,25 @@ des empfangenen Bodys **vor** dem Schreiben verifizieren — stimmt sie
 nicht überein, wird nichts geschrieben (422). Ohne den Parameter
 unverändertes Verhalten (abwärtskompatibel für Handler/ältere Clients).
 
+Bedingungen für den Abgleich (seit 0.2): Mit `if_revision=N` wird nur
+geschrieben, wenn die Datei existiert und genau die Revision `N` hat; mit
+`create_only=1` nur, wenn sie noch nicht existiert. Sonst antwortet der
+Server mit **412** (`Revision mismatch` bzw. `File exists`) und schreibt
+nichts. Geprüft wird in derselben Transaktion wie das Schreiben, also
+atomar gegenüber anderen Uploads desselben Benutzers. So überschreibt ein
+Client keine Änderung, die nach seinem letzten `list` dazukam.
+
 ```json
 { "status": "ok", "path": "/sub/f", "size": 4096, "md5": "d41d8cd98f00b204e9800998ecf8427e",
-  "mtime": 1719325800, "revision": 3, "change_seq": 41 }
+  "mtime": 1719325800, "revision": 3, "change_seq": 41, "id": 815 }
 ```
 
 `revision` und `change_seq` wie bei `list`/`info` (s.&nbsp;o.). Ein Re-Upload eines zuvor gelöschten
 Pfades belebt dessen Zeile wieder (inkl. Übernahme der bisherigen `revision`, sofern der Inhalt mit
 dem Stand vor der Löschung übereinstimmt).
 
-Fehler: 400 (`path=/`), 409 (an dem Pfad liegt ein Verzeichnis), 413
+Fehler: 400 (`path=/`), 409 (an dem Pfad liegt ein Verzeichnis), 412
+(Bedingung `if_revision`/`create_only` nicht erfüllt), 413
 (größer als `MAX_UPLOAD`), 422 (`md5`-Parameter stimmt nicht mit dem
 empfangenen Body überein), **507** `Quota exceeded` (die Datei würde das
 Speicherkontingent überschreiten – es wird nichts geschrieben; beim

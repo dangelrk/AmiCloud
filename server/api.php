@@ -57,6 +57,7 @@ switch ($action) {
                              'display_name' => Users::displayName(Auth::$user),
                          ],
                          'quota'           => Users::quotaInfo(Auth::$user),
+                         'max_upload'      => MAX_UPLOAD,
                      ]); break;
     case 'changes':  FileStore::changes((int)($_GET['since'] ?? 0)); break;
     case 'search':   FileStore::search($path, trim($_GET['q'] ?? ''),
@@ -70,7 +71,9 @@ switch ($action) {
     case 'upload':   FileStore::upload(
                          $path,
                          (string)file_get_contents('php://input'),
-                         isset($_GET['md5']) ? (string)$_GET['md5'] : null
+                         isset($_GET['md5']) ? (string)$_GET['md5'] : null,
+                         isset($_GET['if_revision']) ? (int)$_GET['if_revision'] : null,
+                         !empty($_GET['create_only'])
                      ); break;
     case 'delete':   FileStore::delete($path, (bool)($_GET['recursive'] ?? false)); break;
     case 'info':     FileStore::info($path); break;
