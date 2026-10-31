@@ -525,7 +525,7 @@ amicloud -s https://amicloud.example.com -u bob -p geheim list</pre>
 <div class="callout"><strong>Überschreiben</strong><br>
 Gibt es das Ziel schon (bei <code>put</code> auf dem Server, bei
 <code>get</code> lokal), fragen beide nach
-(<code>'/bericht.txt' already exists on the server. Overwrite? [y/N]</code>);
+(<code>'/bericht.txt' already exists on the server. Overwrite? [j/N]</code>);
 nur <code>y</code> überschreibt. Mit <code>-f</code> (auch
 <code>--force</code> oder <code>FORCE</code> direkt nach
 <code>get</code>/<code>put</code>) wird ohne Frage überschrieben. Ohne
@@ -610,6 +610,7 @@ und die Shell weist auf <code>-f</code> hin.</p>
 <tr><td><code>-s</code>, <code>-u</code>, <code>-p</code>, <code>-c</code></td><td>wie bei <code>amicloud</code></td></tr>
 <tr><td><code>-k</code></td><td>Zertifikat nicht prüfen (nur zum Testen)</td></tr>
 <tr><td><code>-n</code></td><td>Probelauf: zeigt, was passieren würde, ändert nichts</td></tr>
+<tr><td><code>-f</code>, <code>FORCE</code></td><td>löscht ohne Rückfrage, auch viele Dateien auf einmal (für Skripte, ab 0.3)</td></tr>
 <tr><td><code>--help</code></td><td>Kurzhilfe</td></tr>
 </table>
 
@@ -619,8 +620,15 @@ Hintergrunddienst. So wird entschieden:</p>
 <ul>
 <li>nur auf einer Seite geändert → wird zur anderen Seite übertragen</li>
 <li>auf beiden Seiten gleich geändert → nichts zu tun</li>
-<li>auf beiden Seiten verschieden geändert → <strong>Konflikt</strong>: die
-Datei wird übersprungen und gemeldet, nichts wird überschrieben</li>
+<li>auf beiden Seiten verschieden geändert → <strong>Konflikt</strong> (ab 0.3):
+beide Fassungen bleiben erhalten. Die Fassung vom Server behält den Namen, die
+lokale wird zur <em>Konfliktkopie</em> <code>Name_KJJMMTT-HHMM.ext</code>
+(z.&nbsp;B. <code>brief_K261031-2237.txt</code>) und ebenfalls hochgeladen.
+Sind beide Fassungen inhaltsgleich, passiert nichts.</li>
+<li>auf einer Seite gelöscht, auf der anderen geändert → die geänderte Fassung
+wird wieder auf die andere Seite übertragen; nichts Geändertes geht verloren</li>
+<li>Datei auf der einen, Ordner gleichen Namens auf der anderen Seite → die
+Datei wird zur Konfliktkopie, der Ordner bleibt</li>
 <li>auf einer Seite gelöscht, auf der anderen unverändert → die Löschung
 wird übertragen</li>
 </ul>
@@ -644,7 +652,8 @@ Liegt darin etwas Neues, wird er wieder angelegt.</li>
 <li>Dateien, die während des Abgleichs geändert werden, werden weder
 überschrieben noch gelöscht.</li>
 <li>Hochgeladen wird nur, wenn die Datei auf dem Server noch die beim
-Abgleich gesehene ist. Sonst wird ein Konflikt gemeldet.</li>
+Abgleich gesehene ist. Sonst bleibt die Datei bis zum nächsten Abgleich
+liegen, der beide Fassungen behält.</li>
 <li>Namen, die sich nur in Groß-/Kleinschreibung unterscheiden, und Namen,
 die für das Dateisystem zu lang sind (klassisches FFS: 30 Zeichen), werden
 übersprungen und gemeldet.</li>
@@ -652,6 +661,15 @@ die für das Dateisystem zu lang sind (klassisches FFS: 30 Zeichen), werden
 <code>Thumbs.db</code>, <code>desktop.ini</code>, <code>~$*</code>,
 <code>*.part</code> sowie Namen mit Backslash oder Steuerzeichen.</li>
 </ul>
+<p><strong>Viele Löschungen auf einmal (ab 0.3):</strong> Würde ein
+Abgleich auf einer Seite mehr als 20 Einträge <em>und</em> mehr als die Hälfte
+des letzten Stands löschen (etwa weil ein Ordner versehentlich geleert wurde),
+fragt er vorher nach. Wer verneint, behält die Dateien: der nächste Abgleich
+kopiert sie auf die geleerte Seite zurück. Im Probelauf (<code>-n</code>) gibt
+es stattdessen eine Warnung. In Skripten ohne Rückfrage: <code>-f</code> bzw.
+<code>FORCE</code> (vor oder hinter den Ordnern).</p>
+<p>Die Abschlusszeile zählt Konfliktkopien („1 Konfliktkopie(n)“) und nicht
+ausgeführte Löschungen („20 Loeschung(en) zurueckgehalten“) mit.</p>
 <p>Lokale Dateien bekommen die Ortszeit nach <code>gmt_offset</code> und
 <code>dst</code> aus <code>amicloud.cfg</code> (die Sommerzeit wird von Hand
 umgestellt).</p>

@@ -609,6 +609,7 @@ Optionen:
   -c <datei>   andere Konfigurationsdatei
   -k           Zertifikat nicht prüfen (nur zum Testen)
   -n           Probelauf: zeigt, was passieren würde, ändert nichts
+  -f, FORCE    löscht ohne Rückfrage, auch viele Dateien (für Skripte)
   --help       Kurzhilfe
 
 amicloud-sync gleicht einen lokalen Ordner einmalig in beide Richtungen mit
@@ -619,8 +620,15 @@ So wird entschieden:
 
   - Nur auf einer Seite geändert: wird zur anderen Seite übertragen.
   - Auf beiden Seiten gleich geändert: nichts zu tun.
-  - Auf beiden Seiten verschieden geändert: Konflikt. Die Datei wird
-    übersprungen und gemeldet, nichts wird überschrieben.
+  - Auf beiden Seiten verschieden geändert: Konflikt (ab 0.3). Beide
+    Fassungen bleiben erhalten: die vom Server behält den Namen, die
+    lokale wird zur Konfliktkopie Name_KJJMMTT-HHMM.ext (etwa
+    brief_K261031-2237.txt) und ebenfalls hochgeladen. Sind beide
+    Fassungen inhaltsgleich, passiert nichts.
+  - Auf einer Seite gelöscht, auf der anderen geändert: die geänderte
+    Fassung wird wieder übertragen, nichts Geändertes geht verloren.
+  - Datei auf der einen, Ordner gleichen Namens auf der anderen Seite:
+    die Datei wird zur Konfliktkopie, der Ordner bleibt.
   - Auf einer Seite gelöscht und auf der anderen unverändert: die
     Löschung wird übertragen.
 
@@ -644,12 +652,22 @@ Schutz vor Datenverlust (ab 0.2):
   - Dateien, die während des Abgleichs geändert werden, werden weder
     überschrieben noch gelöscht.
   - Hochgeladen wird nur, wenn die Datei auf dem Server noch die beim
-    Abgleich gesehene ist. Sonst wird ein Konflikt gemeldet.
+    Abgleich gesehene ist. Sonst bleibt die Datei bis zum nächsten
+    Abgleich liegen, der beide Fassungen behält.
   - Namen, die sich nur in Groß-/Kleinschreibung unterscheiden, und
     Namen, die für das Dateisystem zu lang sind (klassisches FFS:
     30 Zeichen), werden übersprungen und gemeldet.
   - Nie abgeglichen werden .DS_Store, ._*, Thumbs.db, desktop.ini,
     ~$*, *.part sowie Namen mit Backslash oder Steuerzeichen.
+
+Viele Löschungen auf einmal (ab 0.3): Würde ein Abgleich auf einer
+Seite mehr als 20 Einträge und mehr als die Hälfte des letzten Stands
+löschen (etwa weil ein Ordner versehentlich geleert wurde), fragt er
+vorher nach. Wer verneint, behält die Dateien: der nächste Abgleich
+kopiert sie auf die geleerte Seite zurück. Im Probelauf (-n) gibt es
+stattdessen eine Warnung. In Skripten ohne Rückfrage: -f bzw. FORCE
+(vor oder hinter den Ordnern). Die Abschlusszeile zählt Konfliktkopien
+und nicht ausgeführte Löschungen mit.
 
 Zeiten: Lokale Dateien bekommen die Ortszeit nach gmt_offset und dst
 aus amicloud.cfg (die Sommerzeit wird von Hand umgestellt).
