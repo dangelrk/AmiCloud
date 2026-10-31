@@ -52,7 +52,7 @@ HTTP_SRCS = cmd http_amiga
 HTTP_OBJS = $(HTTP_SRCS:%=$(OBJDIR)/http_%.o)
 FS_SRCS   = localfs_amiga localfs_util pattern_amiga
 FS_OBJS   = $(FS_SRCS:%=$(OBJDIR)/fs_%.o)
-SYNC_SRCS = sync syncstate
+SYNC_SRCS = sync syncstate amicloud_transport
 SYNC_OBJS = $(SYNC_SRCS:%=$(OBJDIR)/sync_%.o)
 
 OWN_OBJS = $(OBJDIR)/main.o

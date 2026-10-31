@@ -7,7 +7,7 @@
 # AmiCloudCore sources in core/ instead of the flat client/ .c files, and with the Sync menu/TransferJob::SyncPanels path
 # removed from the C++ sources (see mainwindow.h/.cpp, transferjob.h/.cpp
 # in this dir) — sync no longer ships wired into any interactive
-# frontend, the engine itself lives on as libcloudsync's cloudsync_run().
+# frontend, the engine itself lives on as libcloudsync's cloudsync_run_ex().
 #
 # Build:
 #   make qt        (top level, see docs/BUILD.md), or directly:

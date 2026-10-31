@@ -2,12 +2,12 @@
  * Copyright (C) 2026 Ronny Krueger
  */
 /*
- * amicloud-sync — one-shot CLI front-end for libcloudsync's cloudsync_run()
+ * amicloud-sync — one-shot CLI front-end for libcloudsync's cloudsync_run_ex()
  * (docs/design/05_Refactoring_Client_Handler.md, M5). Placeholder for the
  * roadmap's Phase 5 "Sync Commodity" (docs/design/01_Roadmap_Refactoring.md):
  * this is a plain one-shot invocation, not a background daemon watching
  * folders — that's the gap left for a future iteration to fill. It
- * exists now so cloudsync_run() has a real, runnable consumer instead of
+ * exists now so cloudsync_run_ex() has a real, runnable consumer instead of
  * sitting completely unlinked.
  *
  * Same config-loading convention as apps/amicloud's main.c
@@ -18,6 +18,7 @@
 #include "config.h"
 #include "http.h"
 #include "sync.h"
+#include "amicloud_transport.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -53,6 +54,7 @@ int main(int argc, char **argv)
     const char *local_root, *remote_root;
     Progress    pr;
     SyncSummary sum;
+    SyncTransport *t;
 
     memset(&cfg, 0, sizeof(cfg));
     cfg.basepath[0] = '/';
@@ -101,9 +103,23 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    progress_reset(&pr);
-    cloudsync_run(&cfg, local_root, remote_root, opt_dryrun, /*verbose=*/1, &pr, &sum);
+    t = amicloud_transport_open(&cfg);
+    if (!t) {
+        fprintf(stderr, "amicloud-sync: out of memory\n");
+        http_cleanup();
+        return 1;
+    }
 
+    progress_reset(&pr);
+    {
+        SyncOptions o;
+        sync_options_init(&o);
+        o.dry_run = opt_dryrun;
+        o.verbose = 1;
+        cloudsync_run_ex(t, local_root, remote_root, &o, &pr, &sum);
+    }
+
+    amicloud_transport_close(t);
     http_cleanup();
     return sum.errors ? 1 : 0;
 }

@@ -443,6 +443,21 @@ Teil-Scan je Verzeichnis ist eine spätere Optimierung.
   mit einer Meldung ab. `aminet.readme` und `INSTALL.md` aller drei
   Projekte nennen heute noch „68000 or better“ und werden korrigiert.
   Umsetzung mit dem Release von Phase 2.
+- **Virenprüfung über `xvs.library`, optional** (Vorschlag 31.10.2026):
+  - Dynamisch benutzt, nicht mitgeliefert (Freeware, nur nicht-kommerziell
+    weitergeben). Fehlt sie, wird nicht geprüft. Läuft auch auf dem 68000.
+  - Neue Funktion `localfs_virus_check()` in **libcloudfs** (lokale
+    Dateien → fs); auf dem PC ein Nichtstun.
+  - **Download:** die `.part`-Datei vor dem Ersetzen prüfen. Bei Fund nicht
+    installieren, `.part` löschen, melden; die Server-Datei bleibt.
+  - **Upload:** lokale Datei vor dem Hochladen prüfen, bei Fund nicht
+    hochladen und melden. So verbreitet ein verseuchter Amiga nichts über
+    die Cloud.
+  - `xvsCheckFile()` braucht die ganze Datei im Speicher: nur bis zu einer
+    einstellbaren Größe prüfen (Vorschlag 2 MB). Gepackte Programme
+    erkennt sie nur entpackt (`xfdmaster.library`, später optional).
+  - Zunächst Sync und Kommandozeile, nicht der Handler.
+  - Umsetzung nach Phase 2 (eigener kleiner Schritt).
 - **Oberfläche:**
   - Massenlöschung: EasyRequest-Hook in der Commodity, Schalter `FORCE` für
     die Shell-Befehle.
