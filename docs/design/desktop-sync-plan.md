@@ -1,6 +1,6 @@
 # Plan: AmiCloud Desktop – Ordnerabgleich für macOS, Windows, Linux
 
-Stand: 31.10.2026 · Status: Fassung 4. Entscheidungen in § 11, Befunde aus
+Stand: 31.10.2026 · Status: Fassung 5, Phase 2 umgesetzt (§ 13). Entscheidungen in § 11, Befunde aus
 Phase 0 und 1 in § 12 (S14–S16 neu). Der Entwurf wurde von einem
 Subagenten gegen den Code geprüft und die Befunde eingearbeitet. Phase 0
 und 1 sind erledigt, am Sync-Kern selbst ist noch nichts geändert.
@@ -630,3 +630,43 @@ Zeichen werden umgesetzt, nicht verboten (Entscheidung 13).
   Emulator steht noch `dst=1`, seit dem 25.10. gilt aber Winterzeit; der
   Handler zeigt deshalb Zeiten eine Stunde zu spät. Für später: Vorgabe
   aus `locale.library` (`loc_GMTOffset`) übernehmen.
+
+## 13. Stand der Umsetzung Phase 2 (31.10.2026)
+
+Alle Maßnahmen S1–S16 sind im Kern, alle elf RISK-Tests aus Phase 1 sind
+grün, dazu Tests für jede Maßnahme (67 Tests, `make test` im Core).
+
+| Commit (Core) | Inhalt |
+|---|---|
+| `0f14906` | S1 Scan-Fehler/Speichermangel → Abbruch, S2 Ctrl-C, S9, S14 |
+| `d57d22b` | `cloudsync_run_ex` + `SyncOptions`, `amicloud_transport.c`, Stand mit Format und Identität (S3), S4 |
+| `2257ce8` | S5 Ordner nur löschen, wenn alles darin gelöscht wird (sonst Gegenseite neu anlegen), S6, S7, S13 |
+| `3c4b970` | S8 bedingter Upload (`SyncPutCond`, 412), S10 Server-Metadaten nach Upload |
+| `3830b40` | S11 Zwischenstand alle 50 Aktionen/120 s, S12 sortierter Stand |
+| `1c717d4` | S15 Namenslänge per Probedatei, Mindest-CPU 68020 |
+| `ea567df` | WebDAV: `If-Match` braucht Anführungszeichen, `&quot;` im ETag |
+
+- **S4 ohne Flag:** Mit vorhandenem Stand wird die Server-Wurzel nie neu
+  angelegt; ein Flag `SYNC_EXPECT_EXISTING` ist nicht nötig.
+- **S16:** `localfs_set_tz()` in `amicloud-sync`, `amiowncloud-sync`,
+  `AmiOwnCloudSync` und `amiowncloud-synctest`.
+- **Server** (deployt 31.10.2026): `upload` mit `if_revision` und
+  `create_only` (412), `id` in der Antwort, `max_upload` in `status`.
+- **68020:** alle Makefiles, `Build-Amiga`, Installer brechen auf
+  68000/68010 ab, Doku korrigiert.
+- **Emulator** (OS 3.2.3, klassisches FFS auf RAD:): Namensgrenze 30
+  erkannt und übersprungen; Abbruch bei gelöschtem Server-Ordner;
+  Ortszeit; fremder Stand (S3) beim Wechsel AmiCloud → ownCloud;
+  bedingter Upload gegen ownCloud (Fehler gefunden und behoben); Ctrl-C
+  mitten im Lauf (Stand und Server stimmen überein, der nächste Lauf
+  macht den Rest).
+- **Neuer Befund:** Ist die lokale Platte voll, lässt sich der Stand nicht
+  schreiben (wird gemeldet). Bei WebDAV gelten die gerade übertragenen
+  Dateien dann im nächsten Lauf als Konflikt, bis Phase 3 (`.part`
+  vergleichen) kommt.
+- Doku: Guides und Handbücher von AmiCloud und AmiOwnCloud
+  („Schutz vor Datenverlust“).
+- Offen für das Release 0.2: Installer im Emulator gegen die neue
+  CPU-Prüfung testen, Release laut `core/docs/RELEASE.md` (Bauen und
+  Taggen am selben Tag).
+
