@@ -1,8 +1,9 @@
 # Plan: AmiCloud Desktop – Ordnerabgleich für macOS, Windows, Linux
 
-Stand: 31.10.2026 · Status: Entwurf, Fassung 3 (Entscheidungen in § 11 eingearbeitet, keine Migration nötig). Der Entwurf wurde von einem
-Subagenten gegen den Code geprüft und die Befunde eingearbeitet. Umgesetzt
-ist noch nichts.
+Stand: 31.10.2026 · Status: Fassung 4. Entscheidungen in § 11, Befunde aus
+Phase 0 und 1 in § 12 (S14–S16 neu). Der Entwurf wurde von einem
+Subagenten gegen den Code geprüft und die Befunde eingearbeitet. Phase 0
+und 1 sind erledigt, am Sync-Kern selbst ist noch nichts geändert.
 
 ## 1. Ziel
 
@@ -122,10 +123,13 @@ Desktop-Client.
 | S11 | **Stand regelmäßig zwischenspeichern** (alle N Aktionen bzw. M Sekunden). Ein Absturz nach Stunden verliert dann nicht alles. | `sync.c`, `syncstate.c` |
 | S12 | **Stand-Index sortiert**, mit `bsearch` statt linearer Suche (`syncstate.c:145-180`). Sonst wächst der Aufwand mit O(n²). | `syncstate.c` |
 | S13 | **Feste Ausschlussliste im Kern**, für alle Clients gleich: `.amicloudsync*`, `.DS_Store`, `._*`, `Thumbs.db`, `desktop.ini`, `~$*`, `*.part`, außerdem Namen mit `\` oder Steuerzeichen. Der Server würde `\` still zu `/` machen. | `sync.c` |
+| S14 | **Kein Fortschreiben von `global_revision` nach Fehlern.** Scheitert im Lauf irgendeine Aktion, bleibt der alte Wert (bzw. 0) im Stand, damit der nächste Lauf vollständig scannt. Heute wird ein gescheiterter Download nie wiederholt, und eine spätere lokale Änderung überschreibt die neuere Server-Fassung (Test belegt, § 12). | `sync.c` |
+| S15 | **Zu lange Namen erkennen statt kürzen lassen.** Klassisches FFS kürzt still auf 30 Zeichen, auch beim Öffnen, und überschreibt dabei gleich beginnende Namen (§ 12). Vor dem Lauf wird die Grenze des Datenträgers durch Anlegen einer Probedatei mit langem Namen ermittelt; längere Namen werden übersprungen und gemeldet. | `localfs_amiga`, `sync.c` |
+| S16 | **Zeitzone in allen Sync-Programmen setzen.** `amicloud-sync`, `amiowncloud-sync` und `AmiOwnCloudSync` rufen `localfs_set_tz()` nicht auf und stempeln lokale Dateien in UTC; Shell und Handler rechnen mit `gmt_offset`/`dst`. | Apps beider Projekte |
 
 Speicher auf dem 68000: `SyncAction` belegt etwa 3 KB (3 × `AC_MAX_PATH`).
 Für große Bäume sollen die Pfade dynamisch belegt werden. Das gehört in
-diese Phase, damit S1–S13 den Speicherbedarf nicht weiter erhöhen.
+diese Phase, damit S1–S16 den Speicherbedarf nicht weiter erhöhen.
 
 ## 4. Konflikte: neues Verhalten (alle Clients)
 
@@ -385,17 +389,60 @@ Teil-Scan je Verzeichnis ist eine spätere Optimierung.
   - AmiCloud: `amicloud-sync`
   - AmiOwnCloud: `amiowncloud-sync`, `AmiOwnCloudSync`,
     `amiowncloud-synctest`
-- **Zeichensatz Latin-1 ↔ UTF-8 (eigenes Teilprojekt, betrifft mehr als
-  den Sync):**
-  - Die reinen Umwandlungsfunktionen kommen nach libcloudcore.
-  - Umgewandelt wird an der Grenze zum Amiga-Dateisystem: in
-    `localfs_amiga` (Sync und Kommandozeile) und im **Handler**
-    (`AMICLOUD:`/`OWNCLOUD:`). Intern arbeiten Kern und Transporte immer
-    mit UTF-8.
-  - Namen ohne Latin-1-Entsprechung (€, Emoji, CJK) werden auf dem Amiga
-    übersprungen und gemeldet; der Handler zeigt sie gar nicht an oder mit
-    Ersatzzeichen (in Phase 0 entscheiden).
+- **Zeichensatz ↔ UTF-8 (eigenes Teilprojekt, betrifft mehr als den
+  Sync), über `codesets.library`** (entschieden 31.10.2026):
+  - Die Amiga-Programme benutzen `codesets.library` (LGPL 2.1, Aminet
+    `util/libs/codesets`, ab 6.22). `CodesetsFindA(NULL, NULL)` liefert
+    den im System eingestellten Zeichensatz. Damit funktionieren auch
+    Polnisch, Tschechisch und Kyrillisch (`ISO-8859-2`, `AmigaPL`,
+    `Amiga-1251`), nicht nur Latin-1.
+  - Die Library wird **vorausgesetzt, aber nicht mitgeliefert** (andere
+    Programme wie YAM brauchen sie auch; dynamisch benutzt, daher keine
+    Lizenzfragen). Der Installer prüft, ob sie in `LIBS:` liegt, und nennt
+    sonst die Aminet-Adresse. Fehlt sie zur Laufzeit, melden die Programme
+    das klar; die Handler öffnen sie erst beim ersten Zugriff, nicht beim
+    Mounten.
+  - In libcloudcore kommt eine dünne Schnittstelle (`cs_to_utf8()`,
+    `cs_from_utf8()`), auf dem Amiga über `codesets.library`, auf dem PC
+    ein Durchreichen. Umgewandelt wird an der Grenze zum Amiga-Dateisystem:
+    in `localfs_amiga` (Sync und Kommandozeile) und in beiden **Handlern**
+    (`AMICLOUD:`/`OWNCLOUD:`). Kern und Transporte arbeiten immer mit UTF-8.
+  - **Zerlegte Zeichen (NFD)**, etwa vom Mac „a“ + Trema, setzt
+    `codesets.library` nicht zusammen. Das übernimmt eine eigene kleine
+    Tabelle vor der Umwandlung; der Desktop-Client lädt ohnehin nur NFC hoch.
+  - **Nichts wird übersprungen** (entschieden 31.10.2026): Nicht
+    darstellbare Zeichen werden umgesetzt (`CSA_MapForeignChars`, sonst
+    Ersatzzeichen `_`). Kompromiss: Namen sehen auf dem Amiga anders aus,
+    schlimmstenfalls gibt es Dateien doppelt oder als Konflikt.
+  - **Pflicht dabei: verlustbehaftete Namen dürfen nie zu Löschungen
+    führen.** Ohne Vorkehrung sähe der nächste Lauf `Preis_.txt` als neue
+    lokale Datei (Upload) und `Preis€.txt` als lokal gelöscht (Löschen auf
+    dem Server). Deshalb speichert der Stand je Eintrag den **lokalen
+    Namen**, wenn er vom Server-Namen abweicht (Hin- und Rückweg ergeben
+    nicht denselben UTF-8-Namen). Der lokale Scan ordnet solche Namen über
+    den Stand wieder dem Server-Namen zu. Die Richtung Amiga → UTF-8 ist
+    immer verlustfrei, die Zuordnung ist nur für heruntergeladene Namen
+    nötig.
+  - Ergeben zwei Server-Namen denselben lokalen Namen, wird der zweite wie
+    bei S6 als Konfliktkopie angelegt (§ 4).
+  - Der Handler zeigt umgesetzte Namen an und übersetzt sie beim Zugriff
+    über die zuletzt gelesene Verzeichnisliste zurück.
+  - Override `charset=` in `amicloud.cfg`, weil OS 3.x keinen
+    Systemzeichensatz kennt und `codesets.library` ihn aus der
+    Locale-Sprache errät.
+  - Unit-Tests: Zuordnung, Kollision und Rückweg mit einer Fake-Umwandlung
+    auf dem Host; die echte Library nur im Emulator.
+  - Der verwendete Zeichensatz gehört zur **Identität des Stands** (S3).
+    Wechselt er, gilt der nächste Lauf als Erstabgleich und löscht nichts.
   - Kommentare (`setcomment`) werden ebenfalls umgewandelt.
+- **Mindest-CPU 68020** (entschieden 31.10.2026): AmiSSL 5 und
+  `codesets.library` laufen ohnehin erst ab dem 68020, und ein 68000 ist
+  für TLS zu langsam. Alle Amiga-Programme werden mit `-cpu=68020` gebaut
+  (`CPU` in allen `Makefile.amiga-cross`, `Build-Amiga` neu erzeugen). Die
+  Installer prüfen die CPU (`(database "cpu")`) und brechen auf einem 68000
+  mit einer Meldung ab. `aminet.readme` und `INSTALL.md` aller drei
+  Projekte nennen heute noch „68000 or better“ und werden korrigiert.
+  Umsetzung mit dem Release von Phase 2.
 - **Oberfläche:**
   - Massenlöschung: EasyRequest-Hook in der Commodity, Schalter `FORCE` für
     die Shell-Befehle.
@@ -454,9 +501,9 @@ Arbeit an Code und Tests.
 |---|---|---|
 | 0 | Prüfen im Emulator: Umlaute (Kommandozeile, Sync, Handler), FFS bei zu langen Namen, Abfrage der Namensgrenze je Datenträger; Zeitbasis von `changes` gegenüber `list` am Server | S |
 | 1 | Kern-Unit-Tests (`FakeTransport`), heutiges Verhalten festschreiben | M |
-| 2 | **Datensicherheit S1–S13** und `cloudsync_run_ex`; Server: `if_revision`/`create_only`, `max_upload` in `status`; Amiga: `FORCE`/EasyRequest. **Release für alle Amiga-Programme.** | L |
+| 2 | **Datensicherheit S1–S16** und `cloudsync_run_ex`; Mindest-CPU 68020; Server: `if_revision`/`create_only`, `max_upload` in `status`; Amiga: `FORCE`/EasyRequest. **Release für alle Amiga-Programme.** | L |
 | 3 | Konfliktkopien (§ 4) und Massenlöschungsschwelle (§ 5) im Kern, Transport `rename`; Amiga im Emulator testen; **Release** | M–L |
-| 4 | Zeichensatz Latin-1 ↔ UTF-8 (Kern, `localfs_amiga`, beide Handler, Kommentare); **Release** | M–L |
+| 4 | Zeichensatz ↔ UTF-8 über `codesets.library` (Kern, `localfs_amiga`, beide Handler, Kommentare, NFC), Installer-Prüfung, lokaler Name im Stand; **Release** | M–L |
 | 5 | macOS-Client Grundstufe: Assistent, Keychain, Startordner mit Auswahlbaum, Abgleich auf Knopfdruck und nach Intervall, Tray, Aktivität, Pause | L |
 | 6 | macOS: FSEvents, Papierkorb, Autostart, `.dmg`, SDK-curl, Signatur; Server: `changes` mit Paginierung, Grabsteine bei Umbenennungen, einheitliche Zeitbasis; `changes` im Kern. **Mac-Release** | L |
 | 7 | Windows: Kern-Port (localfs_win, 64-Bit-Größen, alle direkten Dateizugriffe), Client-Anpassungen, Installer | L |
@@ -481,3 +528,90 @@ spätestens vor dem Mac-Release nötig.
 | 8 | Konfliktkopien gegen Umlaute | beides; Reihenfolge egal, also wie geplant (Phase 3, dann 4) |
 | 9 | Server-Papierkorb | vorerst nicht; den lokalen Papierkorb auf dem Desktop gibt es trotzdem |
 | 10 | Bestand / Migration | der Abgleich ist noch nirgends im Einsatz: keine Migration, keine Kompatibilitätsschichten (§ 1) |
+| 11 | Zeichensatz auf dem Amiga | `codesets.library` voraussetzen, nicht mitliefern (Systemzeichensatz statt festem Latin-1) |
+| 13 | Nicht darstellbare Zeichen | umsetzen statt verbieten oder überspringen; doppelte Dateien oder Konflikte sind hinnehmbar, Löschungen nicht (lokaler Name im Stand) |
+| 12 | Mindest-CPU | 68020; OS 3.x mit Internet auf einem 68000 ist praktisch nicht nutzbar, AmiSSL 5 braucht ihn ohnehin |
+
+## 12. Befunde aus Phase 0 und 1 (31.10.2026)
+
+### Unit-Tests (Phase 1)
+
+`core/libcloudsync/tests/` mit `FakeTransport` (AmiCloud-Art mit MD5 und
+Revision, WebDAV-Art mit ETag und rekursivem DELETE, Fehlerinjektion und
+Hooks für Wettläufe). Aufruf: `make test` im Core, gebaut mit
+AddressSanitizer und UBSan, ohne libcurl.
+
+- **40 Tests** halten das heutige Verhalten fest: Entscheidungsmatrix für
+  beide Transporte, Ordner, Löschbäume, Zeitangleich, Probelauf,
+  Ausschlüsse, Fehler mit Rücknahme im Stand, `global_revision`-Abkürzung,
+  Stand speichern/laden, kaputter Stand.
+- **11 RISK-Tests** prüfen das sichere Verhalten und scheitern heute
+  erwartungsgemäß (XFAIL). Damit ist jedes Risiko belegt: S1 (dreimal),
+  S2, S3, S5, S6, S7, S8, S9 und S14. Wird ein Risiko behoben, meldet der
+  Test XPASS und zählt als Fehler, bis die RISK-Markierung entfernt ist.
+- **Neu gefunden (S14):** Ein gescheiterter Download wird nie wiederholt,
+  weil `global_revision` trotzdem fortgeschrieben wird. Ändert man die
+  Datei danach lokal, überschreibt der Upload die neuere Server-Fassung,
+  ohne Konflikt.
+- Keine Speicherfehler unter ASan/UBSan.
+
+### Lange Namen auf dem Amiga (Emulator, OS 3.2.3)
+
+- Klassisches FFS (`DOS\1`, auf RAD: formatiert) **kürzt stillschweigend**
+  auf 30 Zeichen, beim Anlegen und beim Öffnen. Zwei Namen mit gleichen
+  ersten 30 Zeichen landen in derselben Datei; die zweite überschreibt
+  die erste ohne Fehlermeldung.
+- Folge für den heutigen Sync: Ein langer Server-Name wird lokal gekürzt
+  angelegt, der nächste Lauf lädt die gekürzte Fassung als neue Datei hoch
+  und löscht das Original auf dem Server („lokal gelöscht“). → S15.
+- `DOS\7` (System:, Dev: im Emulator), `RAM:` und das Host-Verzeichnis
+  `Setup:` nehmen mindestens 50 Zeichen.
+- `id_DiskType` aus `Info()` taugt **nicht** zur Erkennung: `RAM:` meldet
+  `DOS\0`, kann aber lange Namen; Handler melden ebenfalls `DOS\0`.
+  Entscheidung für S15: **Probedatei** mit langem Namen im Sync-Ordner
+  anlegen, Namen per `Examine()` zurücklesen, wieder löschen. Das
+  funktioniert mit jedem Dateisystem (FFS, PFS3, SFS, Handler).
+
+### Umlaute (Emulator)
+
+| Weg | Ergebnis |
+|---|---|
+| Sync, Server-Name UTF-8 → Amiga | wird mit den UTF-8-Bytes angelegt: `GrÃ¼Ãe.txt`, `Preisâ¬.txt`. Hin und zurück stabil, aber unlesbar. |
+| Sync, lokaler Latin-1-Name → Server | `Path is not valid UTF-8`, bei jedem Lauf ein Fehler, keine Datei |
+| `AMICLOUD:` lesen | gleiche UTF-8-Bytes wie beim Sync |
+| `AMICLOUD:` schreiben/umbenennen mit Umlaut | scheitert mit irreführender Meldung („Objekt nicht gefunden“ bzw. „Ungültiger Lock-Zugriff“) |
+| `OWNCLOUD:` schreiben mit Umlaut | **gelingt**, der ownCloud-Server wandelt Latin-1 selbst in UTF-8 um. Die Datei ist danach unter dem geschriebenen Namen nicht mehr auffindbar (`Ãpfel` statt `Äpfel`). |
+
+Für Phase 4 heißt das: Die Umwandlung muss in beide Richtungen und in
+beiden Handlern kommen, über `codesets.library` (§ 7). Nicht darstellbare
+Zeichen werden umgesetzt, nicht verboten (Entscheidung 13).
+
+### Zeitbasis am Server
+
+- `list`/`info` liefern `filemtime()`, also echte Epochensekunden.
+- `changes` liefert `UNIX_TIMESTAMP(modified_at)`. `modified_at` ist ein
+  `DATETIME` in Ortszeit: beim Upload `NOW()` (MySQL, Zeitzone `SYSTEM`),
+  bei `setdate` die Ortszeit aus PHP (`AMICLOUD_TIMEZONE`).
+- Produktion: MySQL `SYSTEM` = Host-Zeitzone MEZ/MESZ, PHP
+  `Europe/Berlin`. Das passt zusammen, außer in der doppelten Stunde bei
+  der Umstellung auf Winterzeit: `2026-10-25 02:30:00` gibt es zweimal,
+  MySQL nimmt immer die spätere. Dateien aus der ersten dieser Stunden
+  liegen in `changes` um 3600 s daneben. Läuft MySQL einmal in UTC, liegen
+  alle per `setdate` gesetzten Zeiten um 1–2 h daneben.
+- **Zusätzlich:** 123 von 167 Zeilen haben `change_seq = 0` (vor der
+  Migration angelegt). Sie fehlen in `changes?since=0` vollständig.
+- Für Phase 6: `changes` muss Epochensekunden ohne Ortszeit liefern
+  (eigene Spalte mit Epoche oder `filemtime()`), und eine Migration muss
+  allen Zeilen ein `change_seq` geben. Bis dahin bildet der Client seinen
+  Erststand aus `list`, nie aus `changes`.
+- `upload` liefert schon heute `md5`, `revision` und `mtime` zurück; für
+  S10 ist auf dem AmiCloud-Server nichts zu tun, nur Transport und Kern.
+
+### Zeitzone auf dem Amiga (Nebenbefund)
+
+- Die Sync-Programme setzen keine Zeitzone (→ S16). Heruntergeladene
+  Dateien tragen deshalb UTC-Zeit, im Emulator eine Stunde zu früh.
+- `gmt_offset` und `dst` in `amicloud.cfg` werden von Hand gepflegt. Im
+  Emulator steht noch `dst=1`, seit dem 25.10. gilt aber Winterzeit; der
+  Handler zeigt deshalb Zeiten eine Stunde zu spät. Für später: Vorgabe
+  aus `locale.library` (`loc_GMTOffset`) übernehmen.
