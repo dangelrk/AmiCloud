@@ -363,7 +363,7 @@ Die Schlüssel:
               ISO-8859-2 oder AmigaPL. Leer = Zeichensatz des
               Systems (Locale).
 
-Umlaute in Dateinamen (ab 0.2): Der Server speichert Namen in UTF-8,
+Umlaute in Dateinamen (ab 0.3): Der Server speichert Namen in UTF-8,
 der Amiga in seinem eigenen Zeichensatz. Alle Programme und der
 AMICLOUD:-Handler wandeln um, über die codesets.library (ab Version 6,
 Aminet util/libs/codesets). Fehlt sie, gilt ISO-8859-1. Zeichen, die
