@@ -5,6 +5,7 @@
 #include "config.h"
 #include "http.h"
 #include "cmd.h"
+#include "charset.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -14,6 +15,26 @@ long __stack = 65536; /* 64 KB — VBCC startup.o swaps stack if needed */
 const char amiga_ver[] = "$VER: amicloud " AC_VERSION " (" AC_DATE ")";
 extern int ac_verbose;
 #endif
+
+/* Phase 4: server paths are UTF-8, the command line and the console use
+ * the local codeset (charset.h). U() converts an argument for the
+ * server, L() a server path for printing. Rotating buffers. */
+static const char *U(const char *local)
+{
+    static char buf[2][AC_MAX_PATH];
+    static int k;
+    if (!local) return NULL;
+    k ^= 1;
+    cs_to_utf8(local, buf[k], sizeof(buf[k]));
+    return buf[k];
+}
+
+static const char *L(const char *utf8)
+{
+    static char buf[AC_MAX_PATH];
+    cs_from_utf8(utf8, buf, sizeof(buf));
+    return buf;
+}
 
 /* Thin printer around cmd_search(): one full path per line, directories
  * suffixed with '/' (like cmd_list()'s LIST_NAMES mode). */
@@ -25,7 +46,7 @@ static int cmd_search_print(const AcConfig *cfg, const char *root, const char *p
     if (!cmd_search(cfg, root, pattern, 1, &hits, &n, &truncated)) return 1;
 
     for (i = 0; i < n; i++) {
-        printf("%s%s\n", hits[i].path, hits[i].is_dir ? "/" : "");
+        printf("%s%s\n", L(hits[i].path), hits[i].is_dir ? "/" : "");
     }
     if (truncated) {
         fprintf(stderr, "amicloud: search: results truncated (server limit reached)\n");
@@ -109,11 +130,14 @@ int main(int argc, char **argv)
         fprintf(stderr, "amicloud: network initialisation failed\n");
         return 1;
     }
+    if (!cs_open(cfg.charset))
+        fprintf(stderr, "amicloud: codesets.library (ab 6) nicht gefunden -- "
+                "Dateinamen werden als ISO-8859-1 behandelt\n");
 
     int rc = 0;
 
     if (strcmp(cmd, "list") == 0) {
-        rc = cmd_list(&cfg, (i < argc) ? argv[i] : NULL);
+        rc = cmd_list(&cfg, (i < argc) ? U(argv[i]) : NULL);
 
     } else if (strcmp(cmd, "get") == 0) {
         int force = 0;
@@ -122,7 +146,7 @@ int main(int argc, char **argv)
         else {
             const char *remote = argv[i++];
             const char *local  = (i < argc) ? argv[i] : NULL;
-            rc = cmd_get_checked(&cfg, remote, local, force);
+            rc = cmd_get_checked(&cfg, U(remote), local, force);
         }
 
     } else if (strcmp(cmd, "put") == 0) {
@@ -132,31 +156,31 @@ int main(int argc, char **argv)
         else {
             const char *local  = argv[i++];
             const char *remote = (i < argc) ? argv[i] : NULL;
-            rc = cmd_put_checked(&cfg, local, remote, force);
+            rc = cmd_put_checked(&cfg, local, U(remote), force);
         }
 
     } else if (strcmp(cmd, "del") == 0) {
         if (i >= argc) { fprintf(stderr, "amicloud: del requires <remote>\n"); rc = 1; }
-        else rc = cmd_del(&cfg, argv[i]);
+        else rc = cmd_del(&cfg, U(argv[i]));
 
     } else if (strcmp(cmd, "info") == 0) {
         if (i >= argc) { fprintf(stderr, "amicloud: info requires <remote>\n"); rc = 1; }
-        else rc = cmd_info(&cfg, argv[i]);
+        else rc = cmd_info(&cfg, U(argv[i]));
 
     } else if (strcmp(cmd, "mkdir") == 0) {
         if (i >= argc) { fprintf(stderr, "amicloud: mkdir requires <path>\n"); rc = 1; }
-        else rc = cmd_mkdir(&cfg, argv[i]);
+        else rc = cmd_mkdir(&cfg, U(argv[i]));
 
     } else if (strcmp(cmd, "rename") == 0) {
         if (i + 1 >= argc) { fprintf(stderr, "amicloud: rename requires <old> <new>\n"); rc = 1; }
-        else rc = cmd_rename(&cfg, argv[i], argv[i + 1]);
+        else rc = cmd_rename(&cfg, U(argv[i]), U(argv[i + 1]));
 
     } else if (strcmp(cmd, "search") == 0 || strcmp(cmd, "find") == 0) {
         if (i >= argc) { fprintf(stderr, "amicloud: search requires <pattern>\n"); rc = 1; }
         else {
             const char *pat  = argv[i++];
             const char *root = (i < argc) ? argv[i] : NULL; /* NULL = basepath/"/" */
-            rc = cmd_search_print(&cfg, root, pat);
+            rc = cmd_search_print(&cfg, U(root), U(pat));
         }
 
     } else if (strcmp(cmd, "quota") == 0 || strcmp(cmd, "df") == 0) {
