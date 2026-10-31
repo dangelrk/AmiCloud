@@ -688,3 +688,32 @@ grün, dazu Tests für jede Maßnahme (67 Tests, `make test` im Core).
 - Release 0.2 am 31.10.2026 veröffentlicht (Tags `v0.2` in allen vier
   Repos, GitHub-Releases, AmiSuite).
 
+## 14. Stand der Umsetzung Phase 4 (31.10.2026)
+
+- **parson** schreibt ganze Zahlen per `%ld` (vbcc-`printf`-Fehler, § 13).
+- **`libcloudcore/charset.c`:** `cs_open`, `cs_to_utf8`, `cs_from_utf8`,
+  `cs_nfc`; auf dem Amiga über `codesets.library` (Sprungtabelle aus der
+  `.fd`, keine fremden Header), ohne Bibliothek eingebautes ISO-8859-1.
+  Nicht darstellbare Zeichen und das `?`, das die Bibliothek dafür setzt,
+  werden zu `_`. NFC-Tabelle U+00C0–U+024F generiert
+  (`tools/gen-nfc-table.py`). Einstellung `charset=`.
+- **Sync-Kern:** Schlüssel immer UTF-8; lokale Pfade je Bestandteil
+  umgewandelt. Die vorgesehene Speicherung des lokalen Namens im Stand
+  war nicht nötig: Die Umwandlung ist deterministisch, eine Zuordnung aus
+  Server-Liste und Stand (`NameMap`) ordnet verlustbehaftete Namen zurück.
+  Gleiche lokale Form für verschiedene Server-Namen wird übersprungen. Der
+  Zeichensatz gehört zur Identität. 87 Tests (künstlicher ASCII-Zeichensatz
+  auf dem Host).
+- **Nebenbei gefunden:** `cmd.c` hat Pfade nie prozentkodiert – Namen mit
+  Leerzeichen, `&`, `#`, `+` scheiterten bei allen AmiCloud-Programmen.
+  `remote_resolve()`: `/x` an der Wurzel ergab auf dem Amiga einen
+  relativen Pfad; `:dir` wird jetzt erkannt.
+- **Programme:** `amicloud`, `amicloud-shell`, `amicloud-sync`,
+  MUI-Commander (`PanelEntry.uname`), AmiOwnCloud-Sync-Programme, beide
+  Handler-Worker (`cs_list_name`/`cs_path_to_utf8` merken sich
+  verlustbehaftete Namen der letzten Listen), Kommentare.
+- **Installer** nennen eine fehlende `codesets.library`; Doku ergänzt.
+- **Emulator:** Sync, Kommandozeile, Shell, Commander und beide Handler mit
+  Umlauten, `€`, Leerzeichen und `&#+` getestet.
+- **Offen:** optionale Virenprüfung über `xvs.library`; danach Phase 3.
+
