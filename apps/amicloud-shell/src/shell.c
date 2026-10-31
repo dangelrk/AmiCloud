@@ -8,6 +8,7 @@
 #include "shell.h"
 #include "amicloud.h"
 #include "cmd.h"
+#include "charset.h"
 #include "localfs.h"
 #include "lineedit.h"
 #include "history.h"
@@ -178,6 +179,39 @@ static const char *split_pattern(const char *path, int local, char *dir, size_t 
  * used for the prompt and `pwd` (plan §6.1/§8.2): ':' root on Amiga, '\'
  * root+separators on Windows, '/' root+separators elsewhere. Purely
  * cosmetic — never sent to the server. */
+/* Phase 4: server paths are UTF-8, the console and local files use the
+ * local codeset (charset.h). U() turns a typed remote argument into
+ * UTF-8, L() a server path or name into something printable. Rotating
+ * buffers (four, enough for one call with several arguments). */
+static const char *U(const char *local)
+{
+    static char buf[4][AC_MAX_PATH];
+    static int k;
+    if (!local) return NULL;
+    k = (k + 1) & 3;
+#ifdef PLATFORM_AMIGA
+    /* AmigaDOS ":dir" = from the root, like "/dir" for the server
+     * (cd resolves it itself, see remote_resolve()) */
+    if (local[0] == ':' && local[1]) {
+        buf[k][0] = '/';
+        cs_to_utf8(local + 1, buf[k] + 1, sizeof(buf[k]) - 1);
+        return buf[k];
+    }
+#endif
+    cs_to_utf8(local, buf[k], sizeof(buf[k]));
+    return buf[k];
+}
+
+static const char *L(const char *utf8)
+{
+    static char buf[4][AC_MAX_PATH];
+    static int k;
+    if (!utf8) return NULL;
+    k = (k + 1) & 3;
+    cs_from_utf8(utf8, buf[k], sizeof(buf[k]));
+    return buf[k];
+}
+
 static void render_remote_display(char *out, size_t outsz, const char *canon)
 {
 #ifdef PLATFORM_AMIGA
@@ -250,7 +284,7 @@ static void print_banner(const ShellSession *s)
         else
             printf("Speicher : %s von %s belegt\n", used, total);
     }
-    printf("Remote   : %s\n", s->remote_cwd);
+    printf("Remote   : %s\n", L(s->remote_cwd));
     if (localfs_getcwd(localcwd, sizeof(localcwd)))
         printf("Local    : %s\n", localcwd);
 
@@ -260,7 +294,7 @@ static void print_banner(const ShellSession *s)
 static void build_prompt(const ShellSession *s, char *out, size_t outsz)
 {
     char disp[AC_MAX_PATH];
-    render_remote_display(disp, sizeof(disp), s->remote_cwd);
+    render_remote_display(disp, sizeof(disp), L(s->remote_cwd));
     snprintf(out, outsz, "%s> ", disp);
 }
 
@@ -326,11 +360,11 @@ static void do_cd(ShellSession *s, const char *arg)
         strncpy(target, s->base_cfg.basepath, sizeof(target) - 1);
         target[sizeof(target) - 1] = '\0';
     } else {
-        remote_resolve(target, sizeof(target), s->remote_cwd, arg);
+        remote_resolve(target, sizeof(target), s->remote_cwd, U(arg));
     }
 
     if (!cmd_is_dir(&s->base_cfg, target)) {
-        fprintf(stderr, "amicloud: cd: %s: not a directory or not found\n", target);
+        fprintf(stderr, "amicloud: cd: %s: not a directory or not found\n", L(target));
         return;
     }
     strncpy(s->remote_cwd, target, sizeof(s->remote_cwd) - 1);
@@ -412,7 +446,7 @@ static void do_ls(ShellSession *s, char **tok, int n)
     }
 
     eff_config(s, &eff);
-    cmd_list_mode(&eff, path, mode);
+    cmd_list_mode(&eff, U(path), mode);
 }
 
 /* Lokale Auflistung: gleiche Spaltenreihenfolge und dieselben Anzeige-Modi
@@ -576,27 +610,29 @@ static void do_get_pattern(const AcConfig *eff,
     /* Pass 2: transfer. */
     for (i = 0; i < ne; i++) {
         char rchild[AC_MAX_PATH], lchild[AC_MAX_PATH];
+        const char *lname;
         if (!pattern_match(p, entries[i].name)) continue;
+        lname = L(entries[i].name);
         snprintf(rchild, sizeof(rchild), "%s/%s", rdir, entries[i].name);
-        localfs_join(lchild, sizeof(lchild), ldestdir, entries[i].name);
+        localfs_join(lchild, sizeof(lchild), ldestdir, lname);
         if (entries[i].is_dir) {
             if (recursive) panel_get_dir(eff, rchild, lchild, &c);
             else fprintf(stderr,
                     "amicloud: get: '%s' ist ein Verzeichnis (-r verwenden)\n",
-                    entries[i].name);
+                    lname);
         } else {
             FileMeta smeta, dmeta;
-            int have_dst = c.ask && local_file_meta(ldestdir, entries[i].name, &dmeta);
+            int have_dst = c.ask && local_file_meta(ldestdir, lname, &dmeta);
             meta_from_entry(&smeta, &entries[i]);
             panel_copy_file(PANEL_CLOUD, eff, rchild, PANEL_LOCAL, NULL, lchild,
-                            entries[i].name, &smeta, have_dst ? &dmeta : NULL, &c);
+                            lname, &smeta, have_dst ? &dmeta : NULL, &c);
         }
         if (c.cancelled) { printf("Abgebrochen.\n"); break; }
     }
     cmd_entries_free(entries);
     pattern_free(p);
 
-    if (matches == 0) printf("Keine Treffer fuer '%s'\n", pat);
+    if (matches == 0) printf("Keine Treffer fuer '%s'\n", L(pat));
     else               printf("%d Datei(en) ok, %d Fehler\n", c.pr.ok, c.pr.err);
 }
 
@@ -611,6 +647,7 @@ static void do_get(ShellSession *s, char **tok, int n)
     if (pa.npos < 1) { fprintf(stderr, "amicloud: get requires <remote> [local]\n"); return; }
     eff_config(s, &eff);
 
+    pa.pos[0] = (char *)U(pa.pos[0]);   /* the remote argument, in UTF-8 */
     pat = split_pattern(pa.pos[0], 0, dirpart, sizeof(dirpart));
     if (pat) {
         do_get_pattern(&eff, dirpart, pat,
@@ -627,8 +664,7 @@ static void do_get(ShellSession *s, char **tok, int n)
             strncpy(lbuf, pa.pos[1], sizeof(lbuf) - 1); lbuf[sizeof(lbuf) - 1] = '\0';
         } else {
             const char *slash = strrchr(rfull, '/');
-            strncpy(lbuf, slash ? slash + 1 : rfull, sizeof(lbuf) - 1);
-            lbuf[sizeof(lbuf) - 1] = '\0';
+            cs_from_utf8(slash ? slash + 1 : rfull, lbuf, sizeof(lbuf));
         }
         copyctx_init(&c, !pa.force);
         count_remote_tree(&eff, rfull, &c.pr);
@@ -657,7 +693,7 @@ static void do_put_pattern(const AcConfig *eff,
     int         dst_n = 0;
 
     if (remote_arg && *remote_arg) {
-        cmd_resolve_path(eff, remote_arg, rdestdir, sizeof(rdestdir));
+        cmd_resolve_path(eff, U(remote_arg), rdestdir, sizeof(rdestdir));
     } else {
         strncpy(rdestdir, eff->basepath, sizeof(rdestdir) - 1);
         rdestdir[sizeof(rdestdir) - 1] = '\0';
@@ -710,7 +746,7 @@ static void do_put_pattern(const AcConfig *eff,
         if (!pattern_match(p, e.name)) continue;
         matches++;
         localfs_join(lchild, sizeof(lchild), ldir, e.name);
-        snprintf(rchild, sizeof(rchild), "%s/%s", rdestdir, e.name);
+        snprintf(rchild, sizeof(rchild), "%s/%s", rdestdir, U(e.name));
         if (e.is_dir) {
             if (recursive) panel_put_dir(eff, lchild, rchild, &c);
             else fprintf(stderr,
@@ -718,7 +754,7 @@ static void do_put_pattern(const AcConfig *eff,
                     e.name);
         } else {
             FileMeta smeta, dmeta;
-            const AcEntry *ae = find_remote_file(dst_entries, dst_n, e.name);
+            const AcEntry *ae = find_remote_file(dst_entries, dst_n, U(e.name));
             smeta.size = e.size;
             strncpy(smeta.date, e.modified, sizeof(smeta.date) - 1);
             smeta.date[sizeof(smeta.date) - 1] = '\0';
@@ -760,7 +796,7 @@ static void do_put(ShellSession *s, char **tok, int n)
         CopyCtx c; /* ask = !force: prompts via ui_overwrite() on conflicts */
 
         if (pa.npos > 1) {
-            cmd_resolve_path(&eff, pa.pos[1], rbuf, sizeof(rbuf));
+            cmd_resolve_path(&eff, U(pa.pos[1]), rbuf, sizeof(rbuf));
         } else {
             const char *sep  = last_sep(pa.pos[0], 1);
             const char *name = sep ? sep + 1 : pa.pos[0];
@@ -769,7 +805,7 @@ static void do_put(ShellSession *s, char **tok, int n)
                         "Ziel angeben (put -r <lokal> <remote>)\n", pa.pos[0]);
                 return;
             }
-            cmd_resolve_path(&eff, name, rbuf, sizeof(rbuf));
+            cmd_resolve_path(&eff, U(name), rbuf, sizeof(rbuf));
         }
         copyctx_init(&c, !pa.force);
         count_local_tree(pa.pos[0], &c.pr);
@@ -777,7 +813,7 @@ static void do_put(ShellSession *s, char **tok, int n)
         if (c.cancelled) printf("Abgebrochen.\n");
         printf("%d Datei(en) ok, %d Fehler\n", c.pr.ok, c.pr.err);
     } else {
-        cmd_put_checked(&eff, pa.pos[0], pa.npos > 1 ? pa.pos[1] : NULL, pa.force);
+        cmd_put_checked(&eff, pa.pos[0], pa.npos > 1 ? U(pa.pos[1]) : NULL, pa.force);
     }
 }
 
@@ -789,13 +825,14 @@ static void do_del(ShellSession *s, char **tok, int n)
 
     if (pa.npos < 1) { fprintf(stderr, "amicloud: del requires <path>\n"); return; }
     eff_config(s, &eff);
+    pa.pos[0] = (char *)U(pa.pos[0]);
 
     if (pa.recursive) {
         char rfull[AC_MAX_PATH];
         cmd_resolve_path(&eff, pa.pos[0], rfull, sizeof(rfull));
         if (!pa.force) {
             char msg[AC_MAX_PATH + 64];
-            snprintf(msg, sizeof(msg), "Delete '%s' and ALL contents?", rfull);
+            snprintf(msg, sizeof(msg), "Delete '%s' and ALL contents?", L(rfull));
             if (!ui_confirm(msg)) { printf("Abgebrochen.\n"); return; }
         }
         cmd_del_recursive(&eff, pa.pos[0]);
@@ -809,7 +846,7 @@ static void do_mkdir(ShellSession *s, const char *arg)
     AcConfig eff;
     if (!arg) { fprintf(stderr, "amicloud: mkdir requires <path>\n"); return; }
     eff_config(s, &eff);
-    cmd_mkdir(&eff, arg);
+    cmd_mkdir(&eff, U(arg));
 }
 
 static void do_rename(ShellSession *s, const char *from, const char *to)
@@ -817,7 +854,7 @@ static void do_rename(ShellSession *s, const char *from, const char *to)
     AcConfig eff;
     if (!from || !to) { fprintf(stderr, "amicloud: rename requires <old> <new>\n"); return; }
     eff_config(s, &eff);
-    cmd_rename(&eff, from, to);
+    cmd_rename(&eff, U(from), U(to));
 }
 
 static void do_info(ShellSession *s, const char *arg)
@@ -825,7 +862,7 @@ static void do_info(ShellSession *s, const char *arg)
     AcConfig eff;
     if (!arg) { fprintf(stderr, "amicloud: info requires <path>\n"); return; }
     eff_config(s, &eff);
-    cmd_info(&eff, arg);
+    cmd_info(&eff, U(arg));
 }
 
 /* md5 <remote> / lmd5 <lokal> — Ausgabeformat wie md5sum, damit man Werte
@@ -837,7 +874,7 @@ static void do_md5(ShellSession *s, const char *arg)
     char hex[33];
     if (!arg) { fprintf(stderr, "amicloud: md5 requires <remote>\n"); return; }
     eff_config(s, &eff);
-    if (cmd_get_md5(&eff, arg, hex, sizeof(hex)) == 0)
+    if (cmd_get_md5(&eff, U(arg), hex, sizeof(hex)) == 0)
         printf("%s  %s\n", hex, arg);
 }
 
@@ -855,10 +892,10 @@ static void do_search(ShellSession *s, char **tok, int n)
     if (!pattern) { fprintf(stderr, "amicloud: search requires <pattern>\n"); return; }
 
     eff_config(s, &eff);
-    if (!cmd_search(&eff, scope, pattern, 1, &hits, &count, &truncated)) return;
+    if (!cmd_search(&eff, U(scope), U(pattern), 1, &hits, &count, &truncated)) return;
 
     for (i = 0; i < count; i++) {
-        printf("%s%s\n", hits[i].path, hits[i].is_dir ? "/" : "");
+        printf("%s%s\n", L(hits[i].path), hits[i].is_dir ? "/" : "");
     }
     if (truncated) {
         fprintf(stderr, "amicloud: search: Ergebnis gekappt (Server-Limit erreicht)\n");
@@ -888,7 +925,7 @@ static int dispatch(ShellSession *s, char **tok, int n)
         return 0;
 
     if (ac_strcasecmp(cmd, "help") == 0) { print_help(); return 1; }
-    if (ac_strcasecmp(cmd, "pwd") == 0) { printf("%s\n", s->remote_cwd); return 1; }
+    if (ac_strcasecmp(cmd, "pwd") == 0) { printf("%s\n", L(s->remote_cwd)); return 1; }
     if (ac_strcasecmp(cmd, "lpwd") == 0) {
         char b[AC_MAX_PATH];
         if (localfs_getcwd(b, sizeof(b))) printf("%s\n", b);
@@ -958,7 +995,10 @@ int shell_run(const AcConfig *cfg)
 
     memset(&sess, 0, sizeof(sess));
     sess.base_cfg = *cfg;
-    strncpy(sess.remote_cwd, cfg->basepath, sizeof(sess.remote_cwd) - 1);
+    if (!cs_open(cfg->charset))
+        fprintf(stderr, "amicloud-shell: codesets.library (ab 6) nicht gefunden -- "
+                "Dateinamen werden als ISO-8859-1 behandelt\n");
+    strncpy(sess.remote_cwd, U(cfg->basepath), sizeof(sess.remote_cwd) - 1);
     if (!localfs_getcwd(sess.local_start_cwd, sizeof(sess.local_start_cwd)))
         sess.local_start_cwd[0] = '\0';
     localfs_set_tz(cfg->gmt_offset, cfg->dst);
