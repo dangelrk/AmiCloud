@@ -617,9 +617,36 @@ Datei wird übersprungen und gemeldet, nichts wird überschrieben</li>
 wird übertragen</li>
 </ul>
 <p>Den Stand des letzten Abgleichs merkt sich amicloud-sync in der Datei
-<code>.amicloudsync</code> im lokalen Ordner. Fehlende Ordner werden auf
-beiden Seiten angelegt (nicht beim Probelauf). Rückgabewert 1, wenn Fehler
-auftraten, sonst 0.</p>
+<code>.amicloudsync</code> im lokalen Ordner. Beim ersten Abgleich werden
+fehlende Ordner auf beiden Seiten angelegt (nicht beim Probelauf).
+Rückgabewert 1, wenn Fehler auftraten, sonst 0.</p>
+<h4>Schutz vor Datenverlust (ab 0.2)</h4>
+<ul>
+<li>Kann ein Ordner auf einer Seite nicht gelesen werden (Netzfehler,
+gesperrter Ordner), bricht der Abgleich ab, bevor er etwas ändert.</li>
+<li>Ctrl-C bricht nach der laufenden Übertragung ab. Ein abgebrochener
+Abgleich löscht nichts; der nächste macht den Rest.</li>
+<li>Ist der Ordner auf dem Server verschwunden (etwa umbenannt), wird er
+nicht leer neu angelegt; der Abgleich bricht ab.</li>
+<li>Gehört <code>.amicloudsync</code> zu einem anderen Server, Benutzer
+oder Server-Ordner, wird der Stand verworfen. Der Abgleich führt dann nur
+zusammen und löscht nichts.</li>
+<li>Ein Ordner wird nur gelöscht, wenn auch alles darin gelöscht wird.
+Liegt darin etwas Neues, wird er wieder angelegt.</li>
+<li>Dateien, die während des Abgleichs geändert werden, werden weder
+überschrieben noch gelöscht.</li>
+<li>Hochgeladen wird nur, wenn die Datei auf dem Server noch die beim
+Abgleich gesehene ist. Sonst wird ein Konflikt gemeldet.</li>
+<li>Namen, die sich nur in Groß-/Kleinschreibung unterscheiden, und Namen,
+die für das Dateisystem zu lang sind (klassisches FFS: 30 Zeichen), werden
+übersprungen und gemeldet.</li>
+<li>Nie abgeglichen werden <code>.DS_Store</code>, <code>._*</code>,
+<code>Thumbs.db</code>, <code>desktop.ini</code>, <code>~$*</code>,
+<code>*.part</code> sowie Namen mit Backslash oder Steuerzeichen.</li>
+</ul>
+<p>Lokale Dateien bekommen die Ortszeit nach <code>gmt_offset</code> und
+<code>dst</code> aus <code>amicloud.cfg</code> (die Sommerzeit wird von Hand
+umgestellt).</p>
 
 <pre>amicloud-sync -n Work:Texte /texte      ; erst schauen
 amicloud-sync Work:Texte /texte         ; dann abgleichen</pre>
