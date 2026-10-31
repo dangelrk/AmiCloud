@@ -281,6 +281,7 @@ lokal verwenden).
 | AmigaOS 3.x, 68020 oder besser | alle Programme (übersetzt für 68020, AmigaOS 3.x; seit 0.2, AmiSSL 5 braucht ihn ohnehin) |
 | TCP/IP-Stack mit `bsdsocket.library` (Version 4 oder neuer), z. B. Roadshow, AmiTCP, Miami | alle Programme außer AmiCloudPrefs |
 | **AmiSSL 5** (`amisslmaster.library`) mit installierten CA-Zertifikaten | alle Programme außer AmiCloudPrefs – die Verbindung zum Server läuft immer über HTTPS |
+| `codesets.library` ab 6 (Aminet `util/libs/codesets`) | Umlaute und andere Sonderzeichen in Dateinamen (seit 0.2); ohne sie gilt ISO-8859-1 |
 | **MUI 3.8** oder neuer (`muimaster.library` ab Version 19) | nur `amicloud-commander` |
 | erreichbarer AmiCloud-Server | alle Programme außer AmiCloudPrefs |
 

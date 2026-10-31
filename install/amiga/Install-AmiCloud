@@ -121,6 +121,8 @@
   (set #fehlt (cat #fehlt "AmiSSL 5 (LIBS:amisslmaster.library)\n")))
 (if (= 0 (exists "LIBS:muimaster.library" (noreq)))
   (set #fehlt (cat #fehlt "MUI (für amicloud-commander)\n")))
+(if (= 0 (exists "LIBS:codesets.library" (noreq)))
+  (set #fehlt (cat #fehlt "codesets.library (Umlaute; Aminet util/libs)\n")))
 
 (message "\nAmiCloud @VERSION@ - eigener Cloud-Speicher\n\n"
          "Kommandozeile, Shell, Dateimanager und\n"

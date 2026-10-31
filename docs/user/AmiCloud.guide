@@ -359,10 +359,22 @@ Die Schlüssel:
   cache_ttl   Nur AMICLOUD:-Handler: wie viele Sekunden ein
               Verzeichnisinhalt zwischengespeichert wird,
               Standard 30. Über ein Modem lohnen 120 bis 300.
+  charset     Nur Amiga: Zeichensatz der Dateinamen, z. B.
+              ISO-8859-2 oder AmigaPL. Leer = Zeichensatz des
+              Systems (Locale).
 
-gmt_offset und dst werden von amicloud-shell und vom AMICLOUD:-Handler
-ausgewertet. Die Amiga-Uhr kennt keine Zeitzone; ohne passende Werte
-stimmen die Datumsangaben von Dateien nicht mit dem Server überein.
+Umlaute in Dateinamen (ab 0.2): Der Server speichert Namen in UTF-8,
+der Amiga in seinem eigenen Zeichensatz. Alle Programme und der
+AMICLOUD:-Handler wandeln um, über die codesets.library (ab Version 6,
+Aminet util/libs/codesets). Fehlt sie, gilt ISO-8859-1. Zeichen, die
+es im lokalen Zeichensatz nicht gibt (Emoji, chinesische Schrift),
+erscheinen als '_'; die Datei bleibt unter diesem Namen erreichbar,
+und der Abgleich ordnet sie wieder richtig zu.
+
+gmt_offset und dst werden von den Sync-Programmen, amicloud-shell und
+vom AMICLOUD:-Handler ausgewertet. Die Amiga-Uhr kennt keine Zeitzone;
+ohne passende Werte stimmen die Datumsangaben von Dateien nicht mit dem
+Server überein.
 
 Wo die Datei gesucht wird:
 

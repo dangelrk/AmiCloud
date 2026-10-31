@@ -425,7 +425,15 @@ pass=geheim
 <tr><td><code>dst</code></td><td><code>0</code></td><td>nur Amiga: <code>1</code> = Sommerzeit, addiert 60 Minuten</td></tr>
 <tr><td><code>timeout</code></td><td><code>120</code></td><td>Netz-Timeout in Sekunden: so lange darf eine Verbindung ganz ohne Datenfluss bleiben, bevor sie als abgebrochen gilt. Die Dauer einer Übertragung ist nicht begrenzt – eine große Datei über ein Modem läuft, solange Daten fließen.</td></tr>
 <tr><td><code>cache_ttl</code></td><td><code>30</code></td><td>nur <code>AMICLOUD:</code>-Handler: wie viele Sekunden ein Verzeichnisinhalt zwischengespeichert wird; über ein Modem lohnen 120 bis 300</td></tr>
+<tr><td><code>charset</code></td><td>(System)</td><td>nur Amiga: Zeichensatz der Dateinamen, z.&nbsp;B. <code>ISO-8859-2</code> oder <code>AmigaPL</code>; leer = Zeichensatz des Systems</td></tr>
 </table>
+<p><strong>Umlaute in Dateinamen (ab 0.2):</strong> Der Server speichert Namen in
+UTF-8, der Amiga in seinem eigenen Zeichensatz. Alle Programme und der
+<code>AMICLOUD:</code>-Handler wandeln um, über die <code>codesets.library</code> (ab
+Version&nbsp;6, Aminet <code>util/libs/codesets</code>). Fehlt sie, gilt ISO-8859-1.
+Zeichen, die es im lokalen Zeichensatz nicht gibt (Emoji, chinesische Schrift),
+erscheinen als <code>_</code>; die Datei bleibt unter diesem Namen erreichbar, und der
+Abgleich ordnet sie wieder richtig zu.</p>
 
 <p><code>gmt_offset</code> und <code>dst</code> werden von
 <code>amicloud-shell</code> und vom <code>AMICLOUD:</code>-Handler ausgewertet.
