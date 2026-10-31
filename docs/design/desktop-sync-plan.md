@@ -517,7 +517,7 @@ Arbeit an Code und Tests.
 | 0 | Prüfen im Emulator: Umlaute (Kommandozeile, Sync, Handler), FFS bei zu langen Namen, Abfrage der Namensgrenze je Datenträger; Zeitbasis von `changes` gegenüber `list` am Server | S |
 | 1 | Kern-Unit-Tests (`FakeTransport`), heutiges Verhalten festschreiben | M |
 | 2 | **Datensicherheit S1–S16** und `cloudsync_run_ex`; Mindest-CPU 68020; Server: `if_revision`/`create_only`, `max_upload` in `status`; Amiga: `FORCE`/EasyRequest. **Release für alle Amiga-Programme.** | L |
-| 3 | Konfliktkopien (§ 4) und Massenlöschungsschwelle (§ 5) im Kern, Transport `rename`; Amiga im Emulator testen; **Release** | M–L |
+| 3 | Konfliktkopien (§ 4) und Massenlöschungsschwelle (§ 5) im Kern, Transport `rename`; Amiga im Emulator testen; **Release** — *erledigt bis auf Release, § 15* | M–L |
 | 4 | Zeichensatz ↔ UTF-8 über `codesets.library` (Kern, `localfs_amiga`, beide Handler, Kommentare, NFC), Installer-Prüfung, lokaler Name im Stand; parson schreibt ganze Zahlen als Ganzzahl (vbcc-`printf` gibt 986,0 als `985.999999999999` aus, § 13); optional Virenprüfung über `xvs.library`; **Release** | M–L |
 | 5 | macOS-Client Grundstufe: Assistent, Keychain, Startordner mit Auswahlbaum, Abgleich auf Knopfdruck und nach Intervall, Tray, Aktivität, Pause | L |
 | 6 | macOS: FSEvents, Papierkorb, Autostart, `.dmg`, SDK-curl, Signatur; Server: `changes` mit Paginierung, Grabsteine bei Umbenennungen, einheitliche Zeitbasis; `changes` im Kern. **Mac-Release** | L |
@@ -715,5 +715,46 @@ grün, dazu Tests für jede Maßnahme (67 Tests, `make test` im Core).
 - **Installer** nennen eine fehlende `codesets.library`; Doku ergänzt.
 - **Emulator:** Sync, Kommandozeile, Shell, Commander und beide Handler mit
   Umlauten, `€`, Leerzeichen und `&#+` getestet.
-- **Offen:** optionale Virenprüfung über `xvs.library`; danach Phase 3.
+- **Virenprüfung** (Core 2568227): `localfs_virus_check` über
+  `xvs.library` 33+ (bis 2 MB), im Sync, im Commander und in
+  `amicloud get/put`; ohne Bibliothek keine Prüfung. Im Emulator getestet.
+
+## 15. Stand der Umsetzung Phase 3 (31.10.2026)
+
+Core 4d59922 und 8df1871, AmiCloud 43bc21f, AmiOwnCloud 5404200,
+AmiVCS 4ebf124. Version 0.3 eingetragen, **noch kein Release**
+(Entscheidung des Nutzers).
+
+- **Konflikte** (§ 4): `SyncOptions.conflict_skip` (0 = beide behalten,
+  Vorgabe; 1 = bisheriges Überspringen). Aktionen `SA_KEEP_BOTH` (Server-
+  Fassung in `.part`, Inhalt vergleichen, gleich → nichts; sonst lokale
+  Datei → Konfliktkopie, Server-Fassung an den Originalnamen, Kopie mit
+  `create_only` hoch), `SA_FILE_AWAY`, `SA_RFILE_AWAY`. Gelöscht gegen
+  geändert: die geänderte Fassung wird wieder übertragen.
+  `SyncSummary.copies`.
+- **Abweichungen vom Plan:**
+  - Keine Abhängigkeiten zwischen Aktionen (`depends_on`); jede
+    Konfliktaktion erledigt Umbenennen, Download und Upload selbst und
+    stellt bei einem Fehler den alten Zustand her.
+  - Kein Transport-`rename`: „lokaler Ordner gegen Server-Datei“ lädt die
+    Server-Datei als Kopie, lädt sie unter dem neuen Namen hoch und löscht
+    das Original bedingt (`if_revision`/`If-Match`).
+  - Statt `localfs_rename_noreplace()` prüft `find_conflict_copy()` vorher
+    auf ein freies Ziel (bis `-9`); das Restrisiko eines gleichzeitigen
+    Anlegens im selben Augenblick ist hingenommen.
+  - Der lokale Papierkorb (`localfs_set_trash_hook`) und der Qt-Dialog
+    folgen mit dem Desktop-Client (Phase 5/6).
+- **Massenlöschung** (§ 5): `guard_mass_deletion`, `del_min`/`del_pct`
+  (20/50 %), `force_deletes`. „Nein“ nimmt nichts zurück, der nächste
+  Lauf kopiert zurück; im Probelauf nur eine Warnung.
+  `SyncSummary.kept`.
+- **Programme:** `amicloud-sync`/`amiowncloud-sync` mit `-f`/`FORCE`
+  (auch hinter den Ordnern), Konsolen-Rückfrage `[j/N]`;
+  AmiOwnCloudSync fragt per EasyRequest („Löschen“/„Nicht löschen“).
+- **Tests:** 97 Unit-Tests. `amiowncloud-synctest` T6 prüft die
+  Konfliktkopie gegen einen echten WebDAV-Server (15/15 im Emulator).
+  Im Emulator: Konfliktkopie (`brief_K261031-2237.txt`), Rückfrage bei 100
+  Löschungen, Zurückkopieren nach „Nein“, `FORCE`.
+- **Doku:** Handbücher und Guides beider Projekte.
+
 
