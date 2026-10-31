@@ -3,7 +3,8 @@
 ; SPDX-License-Identifier: GPL-3.0-or-later
 ; Copyright (C) 2026 Ronny Krueger
 ;
-; Aufruf in einer Shell:  Execute Uninstall-AmiCloud
+; Aufruf: Icon Uninstall-AmiCloud doppelt anklicken (IconX), oder in
+; einer Shell:  Execute Uninstall-AmiCloud
 ; Die Konfiguration wird nur nach Rückfrage gelöscht. Ein gemountetes
 ; AMICLOUD: bleibt bis zum nächsten Neustart aktiv (es lässt sich nicht
 ; abmelden).
@@ -53,11 +54,20 @@ EndIf
 If EXISTS DEVS:DOSDrivers/AMICLOUD.info
   Delete DEVS:DOSDrivers/AMICLOUD.info QUIET
 EndIf
+If EXISTS SYS:Storage/DOSDrivers/AMICLOUD
+  Delete SYS:Storage/DOSDrivers/AMICLOUD QUIET
+EndIf
+If EXISTS SYS:Storage/DOSDrivers/AMICLOUD.info
+  Delete SYS:Storage/DOSDrivers/AMICLOUD.info QUIET
+EndIf
 
 Assign >NIL: EXISTS HELP:
 If NOT WARN
   If EXISTS HELP:AmiCloud.guide
     Delete HELP:AmiCloud.guide QUIET
+  EndIf
+  If EXISTS HELP:AmiCloud.guide.info
+    Delete HELP:AmiCloud.guide.info QUIET
   EndIf
 EndIf
 Echo "Programme, DOSDriver und Handbuch entfernt."

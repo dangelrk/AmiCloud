@@ -11,7 +11,7 @@
 
 #ifdef PLATFORM_AMIGA
 long __stack = 65536; /* 64 KB — VBCC startup.o swaps stack if needed */
-const char amiga_ver[] = "$VER: amicloud " AC_VERSION " (27.09.2026)";
+const char amiga_ver[] = "$VER: amicloud " AC_VERSION " (" AC_DATE ")";
 extern int ac_verbose;
 #endif
 

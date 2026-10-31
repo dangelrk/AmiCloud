@@ -1,0 +1,183 @@
+; $VER: Install-AmiCloud.shell @VERSION@ (@DATE@)
+; Install-AmiCloud.shell -- installiert AmiCloud auf AmigaOS 3.x (Shell-Variante)
+; SPDX-License-Identifier: GPL-3.0-or-later
+; Copyright (C) 2026 Ronny Krueger
+;
+; Aufruf in einer Shell, in der Installationsschublade:
+;     CD AmiCloud
+;     Execute Install-AmiCloud.shell
+;
+; Fragt nach jedem Teil, bevor er kopiert wird. Eine vorhandene
+; Konfiguration (ENVARC:amicloud.cfg, ENV:amicloud.cfg) und ein
+; vorhandener DOSDriver DEVS:DOSDrivers/AMICLOUD werden nie überschrieben.
+; Ein erneuter Aufruf aktualisiert eine vorhandene Installation; ist ein
+; installiertes Programm neuer als das im Archiv, fragt das Skript nach.
+; Ausführliche Anleitung: Docs/AmiCloud.guide, Kapitel Installation.
+
+FailAt 21
+
+If NOT EXISTS Install-Datei
+  Echo "Install-AmiCloud.shell bitte in der AmiCloud-Schublade starten:"
+  Echo "  CD AmiCloud"
+  Echo "  Execute Install-AmiCloud.shell"
+  Quit 10
+EndIf
+
+Set acfehler 0
+; Version dieses Archivs (setzt make dist-amiga ein). Install-Datei
+; ersetzt damit installierte Programme nur nach Rückfrage, wenn sie
+; neuer sind als die im Archiv; vorhandene Icons bleiben erhalten.
+Set instver @VER_MAJOR@
+Set instrevn @VER_REVN@
+Set instfehler 0
+Set acprefs 0
+Set achandler 0
+
+Echo ""
+Echo "AmiCloud-Installation (Version @VERSION@)"
+Echo "========================================="
+Echo "Benötigt: AmigaOS 3.x, TCP/IP-Stack (bsdsocket.library), AmiSSL 5,"
+Echo "für den Commander zusätzlich MUI 3.8."
+Echo "Antworten mit y (ja) oder n (nein)."
+Echo ""
+
+; ---- Kommandozeilenprogramme ---------------------------------------------
+Echo "Kommandozeilenprogramme: amicloud, amicloud-shell, amicloud-sync"
+Ask "Nach C: kopieren? (y/n)"
+If WARN
+  Execute Install-Datei amicloud C:
+  Execute Install-Datei amicloud-shell C:
+  Execute Install-Datei amicloud-sync C:
+EndIf
+
+; ---- Commander (MUI) -----------------------------------------------------
+Echo "Dateimanager amicloud-commander (braucht MUI)"
+Ask "Nach SYS:Tools kopieren? (y/n)"
+If WARN
+  Execute Install-Datei amicloud-commander SYS:Tools/ ICON
+EndIf
+
+; ---- AmiCloudPrefs -------------------------------------------------------
+Ask "Einstellungs-Editor AmiCloudPrefs nach SYS:Prefs kopieren? (y/n)"
+If WARN
+  Execute Install-Datei AmiCloudPrefs SYS:Prefs/ ICON
+  If EXISTS SYS:Prefs/AmiCloudPrefs
+    Set acprefs 1
+  EndIf
+EndIf
+
+; ---- AMICLOUD:-Handler ------------------------------------------------------
+Echo "Laufwerk AMICLOUD: (L:amicloud-handler, L:amicloud-worker, DOSDriver)"
+Ask "Installieren? (y/n)"
+If WARN
+  Execute Install-Datei amicloud-handler L:
+  Execute Install-Datei amicloud-worker L:
+  If NOT EXISTS L:amicloud-handler
+    Echo "FEHLER: L:amicloud-handler fehlt."
+    Set acfehler 1
+  Else
+    Set achandler 1
+    If EXISTS DEVS:DOSDrivers/AMICLOUD
+      Echo "  DEVS:DOSDrivers/AMICLOUD gibt es schon, bleibt unverändert."
+    Else
+      Copy Storage/DOSDrivers/AMICLOUD(%|.info) TO DEVS:DOSDrivers/ QUIET
+      If ERROR
+        Echo "FEHLER: Kopieren nach DEVS:DOSDrivers fehlgeschlagen."
+        Set acfehler 1
+      Else
+        Echo "  DEVS:DOSDrivers/AMICLOUD installiert (Mount beim Start)."
+      EndIf
+    EndIf
+  EndIf
+EndIf
+
+; ---- Konfiguration (nie überschreiben) -----------------------------------
+Echo ""
+If EXISTS ENVARC:amicloud.cfg
+  Echo "ENVARC:amicloud.cfg ist schon vorhanden und bleibt unverändert."
+Else
+  Copy Examples/amicloud.cfg.example ENVARC:amicloud.cfg QUIET
+  If ERROR
+    Echo "FEHLER: ENVARC:amicloud.cfg konnte nicht angelegt werden."
+    Set acfehler 1
+  Else
+    Echo "Beispielkonfiguration nach ENVARC:amicloud.cfg kopiert."
+  EndIf
+EndIf
+If NOT EXISTS ENV:amicloud.cfg
+  If EXISTS ENVARC:amicloud.cfg
+    Copy ENVARC:amicloud.cfg ENV:amicloud.cfg QUIET
+  EndIf
+EndIf
+
+If $acprefs EQ 1
+  Echo "  In AmiCloudPrefs Server, Benutzer und Passwort eintragen."
+  Ask "AmiCloudPrefs jetzt starten? (y/n)"
+  If WARN
+    Echo "Im Fenster die Werte eintragen und Speichern wählen."
+    SYS:Prefs/AmiCloudPrefs
+  EndIf
+EndIf
+
+; ---- Mounten -------------------------------------------------------------
+If $achandler EQ 1
+  Assign >NIL: EXISTS AMICLOUD:
+  If WARN
+    Ask "AMICLOUD: jetzt mounten? (Konfiguration muss fertig sein) (y/n)"
+    If WARN
+      Mount AMICLOUD:
+      If ERROR
+        Echo "FEHLER: Mount AMICLOUD: fehlgeschlagen (Handbuch, Fehlersuche)."
+        Set acfehler 1
+      Else
+        Echo "AMICLOUD: ist gemountet. Test: Dir AMICLOUD:"
+      EndIf
+    EndIf
+  Else
+    Echo "AMICLOUD: ist bereits gemountet. Neue Programmversionen und"
+    Echo "Konfigurationsänderungen wirken dort erst nach einem Neustart."
+  EndIf
+EndIf
+
+; ---- Handbuch ------------------------------------------------------------
+Assign >NIL: EXISTS HELP:
+If WARN
+  Echo "HELP: ist nicht zugewiesen, Handbuch bleibt in Docs/AmiCloud.guide."
+Else
+  Copy Docs/AmiCloud.guide TO HELP: QUIET
+  If ERROR
+    Echo "Hinweis: Handbuch konnte nicht nach HELP: kopiert werden."
+  Else
+    If NOT EXISTS HELP:AmiCloud.guide.info
+      Copy Docs/AmiCloud.guide.info TO HELP: QUIET
+    EndIf
+    Echo "Handbuch nach HELP:AmiCloud.guide kopiert."
+  EndIf
+EndIf
+
+; ---- Abschluss -----------------------------------------------------------
+Echo ""
+If $instfehler EQ 1
+  Set acfehler 1
+EndIf
+If $acfehler EQ 1
+  Echo "Installation mit FEHLERN beendet - bitte die Meldungen oben prüfen."
+Else
+  Echo "Installation beendet."
+EndIf
+Echo ""
+Echo "Nächste Schritte:"
+Echo "  1. Zugangsdaten eintragen: SYS:Prefs/AmiCloudPrefs (Speichern)"
+Echo "     oder ENVARC:amicloud.cfg mit einem Editor bearbeiten."
+Echo "  2. Verbindung testen:      amicloud list /"
+Echo "  3. Laufwerk:  Dir AMICLOUD:  (nach Neustart oder Mount AMICLOUD:)"
+Echo "  4. Handbuch:               MultiView Docs/AmiCloud.guide"
+Echo ""
+
+Unset acfehler
+Unset acprefs
+Unset achandler
+UnSet instver
+UnSet instrevn
+UnSet instfehler
+UnSet instok

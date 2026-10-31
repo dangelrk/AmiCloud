@@ -1033,7 +1033,7 @@ int gui_run(const AcConfig *cfg)
 
     g_app = ApplicationObject,
         MUIA_Application_Title,       "AmiCloud Commander",
-        MUIA_Application_Version,     "$VER: amicloud-commander " AC_VERSION " (27.09.2026)",
+        MUIA_Application_Version,     "$VER: amicloud-commander " AC_VERSION " (" AC_DATE ")",
         MUIA_Application_Copyright,   "(C) 2026 Ronny Krueger",
         MUIA_Application_Author,      "Ronny Krueger",
         MUIA_Application_Description, "Dual-pane AmiCloud file manager",

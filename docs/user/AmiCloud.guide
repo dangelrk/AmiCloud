@@ -113,7 +113,8 @@ INSTALLATION MIT INSTALL-AMICLOUD
 Die Installationsschublade AmiCloud (zum Beispiel aus AmiCloud.lha)
 enthält:
 
-  Install-AmiCloud        Installationsskript
+  Install-AmiCloud        Installationsskript (Commodore-Installer)
+  Install-AmiCloud.shell  dasselbe als Shell-Skript
   Uninstall-AmiCloud      Deinstallationsskript
   ReadMe                  Kurzbeschreibung
   LICENSE                 GNU GPL Version 3
@@ -123,36 +124,55 @@ enthält:
   Examples/               amicloud.cfg.example, AMICLOUD.mountlist
   Storage/DOSDrivers/AMICLOUD   DOSDriver für AMICLOUD:
 
-In einer Shell:
+Alle Teile haben Icons. Zum Installieren das Icon Install-AmiCloud
+doppelt anklicken. Es startet den Installer (bei OS 3.2 in
+SYS:System, bei älteren Systemen von der Install-Diskette nach C:
+kopieren). In einer Shell geht dasselbe mit
 
   CD AmiCloud
-  Execute Install-AmiCloud
+  Installer Install-AmiCloud
 
-Das Skript fragt nacheinander (Antwort y oder n):
+Der Installer fragt zuerst, welche Teile installiert werden sollen:
 
   1. Kommandozeilenprogramme nach C:
-  2. amicloud-commander nach SYS:Tools
-  3. AmiCloudPrefs nach SYS:Prefs
-  4. AMICLOUD:-Handler nach L: und DEVS:DOSDrivers
+  2. amicloud-commander (mit Icon) nach SYS:Tools
+  3. AmiCloudPrefs (mit Icon) nach SYS:Prefs
+  4. AMICLOUD:-Handler nach L: und DOSDriver - wahlweise nach
+     DEVS:DOSDrivers (Mount bei jedem Systemstart) oder nach
+     SYS:Storage/DOSDrivers (Mount nur bei Bedarf)
+  5. dieses Handbuch nach HELP: (falls zugewiesen)
 
-Danach legt es ENVARC:amicloud.cfg und ENV:amicloud.cfg aus der
+Danach legt er ENVARC:amicloud.cfg und ENV:amicloud.cfg aus der
 Beispieldatei an - aber nur, wenn es sie noch nicht gibt. Eine
-vorhandene Konfiguration und ein vorhandener DOSDriver
-DEVS:DOSDrivers/AMICLOUD werden nie überschrieben.
+vorhandene Konfiguration und ein vorhandener DOSDriver AMICLOUD
+werden nie überschrieben.
 
-Anschließend bietet das Skript an, AmiCloudPrefs zu starten (dort
-Server, Benutzer und Passwort eintragen und Speichern wählen) und
-AMICLOUD: sofort zu mounten. Ist HELP: zugewiesen, kopiert es dieses
-Handbuch nach HELP:AmiCloud.guide.
+Anschließend bietet er an, AmiCloudPrefs zu starten (dort Server,
+Benutzer und Passwort eintragen und Speichern wählen) und AMICLOUD:
+sofort zu mounten.
+
+Ohne Installer gibt es dasselbe als Shell-Skript (Fragen mit y oder
+n beantworten; der DOSDriver kommt dort immer nach DEVS:DOSDrivers):
+
+  CD AmiCloud
+  Execute Install-AmiCloud.shell
+
+Aktualisieren: eine neuere Version installiert man genauso - Archiv
+auspacken, Installer erneut starten. Er vergleicht bei jedem Programm
+die installierte Version mit der im Archiv. Als Einsteiger oder
+Geübter Benutzer ersetzt er gleiche und ältere Versionen; eine
+NEUERE installierte Version bleibt stehen und wird am Ende genannt.
+Im Expertenmodus zeigt er bei jedem schon installierten Programm
+beide Versionen und fragt. Vorhandene Icons (mit eigenen Tooltypes
+und Positionen) bleiben erhalten. Die Shell-Variante fragt nur nach,
+wenn ein installiertes Programm neuer ist als das im Archiv.
+Ist AMICLOUD: schon gemountet, arbeitet es bis zum nächsten Neustart
+mit der alten Version weiter.
 
 Test:
 
   amicloud list /
   Dir AMICLOUD:
-
-Für die Programme werden keine Icons mitgeliefert. Wer AmiCloudPrefs
-oder den Commander von der Workbench starten möchte, legt sich ein
-Projekt- oder Werkzeug-Icon an.
 
 @endnode
 
@@ -167,7 +187,7 @@ MANUELLE INSTALLATION
   -----------------------     ----------------------------------
   C/amicloud                  C:
   C/amicloud-shell            C:
-  C/amicloud-sync                 C:
+  C/amicloud-sync             C:
   C/amicloud-commander        SYS:Tools/ (oder beliebig)
   C/AmiCloudPrefs             SYS:Prefs/
   C/amicloud-handler          L:
@@ -180,8 +200,8 @@ MANUELLE INSTALLATION
 Als Shell-Befehle, in der Schublade:
 
   Copy C/amicloud C/amicloud-shell C/amicloud-sync C:
-  Copy C/amicloud-commander SYS:Tools/
-  Copy C/AmiCloudPrefs SYS:Prefs/
+  Copy C/amicloud-commander(%|.info) SYS:Tools/
+  Copy C/AmiCloudPrefs(%|.info) SYS:Prefs/
   Copy C/amicloud-handler C/amicloud-worker L:
   Copy Storage/DOSDrivers/AMICLOUD DEVS:DOSDrivers/
   Copy Examples/amicloud.cfg.example ENVARC:amicloud.cfg
@@ -830,12 +850,14 @@ Pfeiltasten in amicloud-shell wirken nicht
 
 DEINSTALLATION
 
-In der Installationsschublade:
+In der Installationsschublade das Icon Uninstall-AmiCloud doppelt
+anklicken oder in einer Shell:
 
   Execute Uninstall-AmiCloud
 
-Das Skript löscht die Programme aus C:, SYS:Tools, SYS:Prefs und L:,
-den DOSDriver DEVS:DOSDrivers/AMICLOUD und HELP:AmiCloud.guide. Die
+Das Skript löscht die Programme aus C:, SYS:Tools, SYS:Prefs und L:
+(samt Icons), den DOSDriver AMICLOUD aus DEVS:DOSDrivers und
+SYS:Storage/DOSDrivers und HELP:AmiCloud.guide. Die
 Konfiguration (ENV:amicloud.cfg, ENVARC:amicloud.cfg) löscht es nur
 nach Rückfrage. Ein gemountetes AMICLOUD: verschwindet erst mit dem
 nächsten Neustart.

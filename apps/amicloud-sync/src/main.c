@@ -24,7 +24,7 @@
 
 #ifdef PLATFORM_AMIGA
 long __stack = 65536;
-const char amiga_ver[] = "$VER: amicloud-sync " AC_VERSION " (27.09.2026)";
+const char amiga_ver[] = "$VER: amicloud-sync " AC_VERSION " (" AC_DATE ")";
 #endif
 
 static void usage(const char *prog)

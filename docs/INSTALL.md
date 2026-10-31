@@ -296,14 +296,15 @@ benutzen, die direkt von/auf Platte übertragen.
 
 ### Installation mit dem Install-Skript
 
-Die Installationsschublade `AmiCloud` (aus `AmiCloud.lha` oder erzeugt mit
+Die Installationsschublade `AmiCloud` (aus dem Release-Archiv `AmiCloud-<version>.lha` oder erzeugt mit
 `make dist-amiga`, siehe [BUILD.md](BUILD.md#amiga-installationsschublade))
 enthält:
 
 ```
 AmiCloud/
-  Install-AmiCloud        Installationsskript
-  Uninstall-AmiCloud      Deinstallationsskript
+  Install-AmiCloud        Installationsskript (Commodore-Installer, Icon)
+  Install-AmiCloud.shell  dasselbe als Shell-Skript
+  Uninstall-AmiCloud      Deinstallationsskript (Icon oder Execute)
   ReadMe                  Kurzbeschreibung
   LICENSE                 GNU GPL v3
   THIRD-PARTY-NOTICES     Lizenz der Fremdkomponente Parson (MIT)
@@ -313,20 +314,45 @@ AmiCloud/
   Storage/DOSDrivers/AMICLOUD   DOSDriver fuer AMICLOUD:
 ```
 
-In einer Shell:
+Alle Teile haben Workbench-Icons. Zum Installieren in der Schublade das Icon **Install-AmiCloud** doppelt anklicken.
+Es startet den Commodore-Installer (bei AmigaOS 3.2 in `SYS:System`, bei
+älteren Systemen von der Install-Diskette nach `C:` kopieren); in einer
+Shell geht dasselbe mit `Installer Install-AmiCloud`. Ohne Installer gibt es dasselbe als
+Shell-Skript:
 
 ```
 CD AmiCloud
-Execute Install-AmiCloud
+Execute Install-AmiCloud.shell
 ```
 
-Das Skript fragt nacheinander, welche Teile installiert werden sollen
-(Kommandozeilenprogramme, Commander, AmiCloudPrefs, `AMICLOUD:`-Handler),
-kopiert sie an die Orte aus der Tabelle unten, legt eine
+Das Skript fragt, welche Teile installiert werden sollen
+(Kommandozeilenprogramme, Commander, AmiCloudPrefs, `AMICLOUD:`-Handler,
+Handbuch), kopiert sie samt Icons an die Orte aus der Tabelle unten (den
+DOSDriver im Installer wahlweise nach `DEVS:DOSDrivers/` oder
+`SYS:Storage/DOSDrivers/`), legt eine
 Beispielkonfiguration an, **ohne eine vorhandene Konfiguration zu
 überschreiben**, bietet an, AmiCloudPrefs zum Eintragen der Zugangsdaten
 zu starten und `AMICLOUD:` sofort zu mounten, und kopiert das Handbuch nach
 `HELP:`, falls diese Zuweisung existiert.
+
+### Aktualisieren
+
+Eine neuere Version installiert man genauso: Archiv auspacken und den
+Installer erneut starten. Er vergleicht bei jedem Programm die installierte
+Version mit der im Archiv (`$VER`-Angabe, `getversion`):
+
+- **Einsteiger / Geübter Benutzer:** gleiche und ältere Versionen werden
+  ersetzt. Ist die installierte Version *neuer*, bleibt sie stehen; der
+  Installer nennt sie am Ende.
+- **Experte:** für jedes schon installierte Programm zeigt der Installer beide
+  Versionen und fragt, ob ersetzt werden soll.
+
+Vorhandene Icons bleiben erhalten (eigene Tooltypes und Positionen gehen
+nicht verloren), ebenso Einstellungen und DOSDriver. Die Shell-Variante
+`Install-AmiCloud.shell` fragt nur nach, wenn ein installiertes Programm neuer ist
+als das im Archiv (Hilfsskript `Install-Datei`, Vergleich mit
+`Version … FILE`). Ist `AMICLOUD:` schon gemountet, arbeitet es bis zum nächsten
+Neustart mit der alten Version weiter.
 
 ### Manuelle Installation
 
@@ -335,7 +361,7 @@ zu starten und `AMICLOUD:` sofort zu mounten, und kopiert das Handbuch nach
 | `C/amicloud` | `C:` | Kommandozeilen-Client |
 | `C/amicloud-shell` | `C:` | interaktive Shell |
 | `C/amicloud-sync` | `C:` | einmaliger Ordnerabgleich |
-| `C/amicloud-commander` | `SYS:Tools/` (oder beliebig) | braucht MUI; ein Icon wird nicht mitgeliefert |
+| `C/amicloud-commander` | `SYS:Tools/` (oder beliebig) | braucht MUI; Icon `C/amicloud-commander.info` mitkopieren |
 | `C/AmiCloudPrefs` | `SYS:Prefs/` | Einstellungs-Editor |
 | `C/amicloud-handler` | `L:` | Pfad steht im DOSDriver (`Handler = L:amicloud-handler`) |
 | `C/amicloud-worker` | `L:` | **muss** `L:amicloud-worker` heißen, der Handler startet ihn von dort |

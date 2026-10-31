@@ -35,9 +35,11 @@ make qt                          # Qt-Commander -> bin/pc/ (Qt 6 + CMake)
 export VBCC=/pfad/zu/vbcc
 make amiga                       # alle Amiga-Programme -> bin/amiga/
 make dist-amiga                  # Installationsschublade build/dist/AmiCloud/
+make release                     # build/release/AmiCloud-<version>.lha + .readme
 ```
 
-Dann auf dem Amiga in der Schublade `Execute Install-AmiCloud`, in
+Dann auf dem Amiga in der Schublade das Icon `Install-AmiCloud` doppelt
+anklicken (Commodore-Installer; ohne Installer `Execute Install-AmiCloud.shell`), in
 AmiCloudPrefs Server und Zugangsdaten eintragen und loslegen:
 
 ```

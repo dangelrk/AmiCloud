@@ -42,7 +42,8 @@ die Liste):
 | `make pc` (= `make`) | Kommandozeilenprogramme für den Host: `amicloud`, `amicloud-shell`, `amicloud-sync` → `bin/pc/` |
 | `make qt` | Qt-6-Programm `amicloud-commander` per CMake (Build-Ordner `build/amicloud-commander-qt/`) → `bin/pc/` |
 | `make amiga` | Alle AmigaOS-Programme per vbcc-Cross-Compiler → `bin/amiga/` |
-| `make dist-amiga` | Amiga-Installationsschublade `build/dist/AmiCloud/`, zusätzlich `build/AmiCloud.lha`, falls `lha` installiert ist |
+| `make dist-amiga` | Amiga-Installationsschublade `build/dist/AmiCloud/` mit Icons, dazu `build/AmiCloud.lha` |
+| `make release` | wie `dist-amiga`, dazu `build/release/AmiCloud-<version>.lha` und `.readme` |
 | `make build-amiga-script` | Das native Amiga-Buildskript `Build-Amiga` neu erzeugen |
 | `make verify-amiga-script` | … und auf dem Host mit vbcc gegenprüfen |
 | `make check-guide` | AmigaGuide-Handbuch in `docs/user/` prüfen (Knoten, Verweise, Latin-1, Zeilenlänge) |
@@ -265,17 +266,35 @@ baut zuerst alles für den Amiga und legt dann unter
 | `Docs/AmiCloud.guide` | `docs/user/AmiCloud.guide` |
 | `Examples/` | `config-examples/*` |
 | `Storage/DOSDrivers/AMICLOUD` | `handler/cloudhandler/mount/AMICLOUD` (über `DIST_EXTRA` im Makefile) |
-| `Install-AmiCloud`, `Uninstall-AmiCloud`, `ReadMe` | `install/amiga/` |
+| `Install-AmiCloud` (Installer), `Install-AmiCloud.shell`, `Uninstall-AmiCloud`, `ReadMe` | `install/amiga/` |
+| `*.info` | erzeugt nach `install/amiga/icons.spec` |
 | `LICENSE` | GPLv3-Text |
 
-Ist das Programm `lha` installiert, entsteht zusätzlich
-`build/AmiCloud.lha`. Achtung: Lhasa (unter macOS z. B. per Homebrew als
-`lha` installiert) kann nur entpacken – dann gibt `make dist-amiga` nur
-einen Hinweis aus und erzeugt ausschließlich die Schublade
-`build/dist/AmiCloud/`. Zum Packen ein `lha` verwenden, das Archive
-erzeugen kann (z. B. „LHa for UNIX“), oder die Schublade auf dem Amiga
-packen. Die Installation auf dem
-Amiga beschreibt [INSTALL.md](INSTALL.md#amiga).
+Zu allen Teilen der Schublade erzeugt `core/tools/mkicon.py` Workbench-Icons
+nach `install/amiga/icons.spec` (Bild, Standardprogramm, Tooltypes, Position).
+Gepackt wird mit `core/tools/lhapack.py` zu `build/AmiCloud.lha` – einem eigenen
+LHA-Packer (Methode `-lh5-`, Level-2-Köpfe) in reinem Python, weil es unter
+macOS keinen LHA-*Packer* gibt (Homebrews `lha` ist Lhasa und packt nur aus).
+Die Archive lassen sich mit Lhasa und mit dem `lha` von AmigaOS 3.2 auspacken.
+
+### Release
+
+```sh
+make release
+```
+
+baut `make dist-amiga` und legt in `build/release/` die Dateien für
+Aminet/GitHub ab: `AmiCloud-<version>.lha` und `AmiCloud-<version>.readme` (aus
+`install/amiga/aminet.readme`, `@VERSION@` wird ersetzt). Version und
+Datum stehen nur in `core/libcloudcore/include/cloudcore/version.h`
+(`AC_VERSION`, `AC_DATE`): daraus bauen alle Programme ihre `$VER`-Angabe,
+und `make dist-amiga` setzt beide in die Installer-Skripte ein (`@VERSION@`,
+`@DATE@`, für die Shell-Variante `@VER_MAJOR@`/`@VER_REVN@`). Weil die
+Installer nur ersetzen, wenn die Version im Archiv nicht älter ist, **vor
+jedem Release `AC_VERSION` erhöhen** (und `AC_DATE` anpassen). Ist Lhasa
+installiert, prüft `lha t` das Archiv gleich mit.
+
+Die Installation auf dem Amiga beschreibt [INSTALL.md](INSTALL.md#amiga).
 
 ## Testen im Emulator (FS-UAE)
 

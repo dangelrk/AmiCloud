@@ -220,7 +220,8 @@ und auf die Platte übertragen.</p>
 <code>AmiCloud.lha</code>) enthält:</p>
 
 <pre>AmiCloud/
-  Install-AmiCloud          Installationsskript
+  Install-AmiCloud          Installationsskript (Commodore-Installer)
+  Install-AmiCloud.shell    dasselbe als Shell-Skript
   Uninstall-AmiCloud        Deinstallationsskript
   ReadMe                    Kurzbeschreibung
   LICENSE                   GNU GPL Version 3
@@ -230,11 +231,27 @@ und auf die Platte übertragen.</p>
   Examples/                 amicloud.cfg.example, AMICLOUD.mountlist
   Storage/DOSDrivers/AMICLOUD  DOSDriver für AMICLOUD:</pre>
 
-<p>In einer Shell:</p>
+<p>Alle Teile haben Workbench-Icons. Zum Installieren in der Schublade das
+Icon <strong>Install-AmiCloud</strong> doppelt anklicken. Es startet den
+Commodore-Installer (bei AmigaOS&nbsp;3.2 in <code>SYS:System</code>, bei
+älteren Systemen von der Install-Diskette nach <code>C:</code> kopieren).
+Ohne Installer gibt es dasselbe als Shell-Skript:</p>
 <pre>CD AmiCloud
-Execute Install-AmiCloud</pre>
+Execute Install-AmiCloud.shell</pre>
 
-<p>Das Skript fragt nacheinander (Antwort <kbd>y</kbd> oder <kbd>n</kbd>):</p>
+<p><strong>Aktualisieren:</strong> Eine neuere Version installiert man genauso –
+Archiv auspacken, Installer erneut starten. Er vergleicht bei jedem Programm
+die installierte Version mit der im Archiv. Als Einsteiger oder Geübter
+Benutzer ersetzt er gleiche und ältere Versionen; eine <em>neuere</em>
+installierte Version bleibt stehen und wird am Ende genannt. Im
+Expertenmodus zeigt er bei jedem schon installierten Programm beide Versionen
+und fragt. Vorhandene Icons (mit eigenen Tooltypes und Positionen) bleiben
+erhalten. Die Shell-Variante fragt nur nach, wenn ein installiertes Programm
+neuer ist als das im Archiv. Ist <code>AMICLOUD:</code> schon gemountet, arbeitet es bis zum
+nächsten Neustart mit der alten Version weiter.</p>
+
+<p>Das Skript fragt, welche Teile installiert werden sollen (im Installer per
+Auswahlliste, im Shell-Skript mit <kbd>y</kbd> oder <kbd>n</kbd>):</p>
 <ol>
 <li>Kommandozeilenprogramme nach <code>C:</code></li>
 <li><code>amicloud-commander</code> nach <code>SYS:Tools</code></li>

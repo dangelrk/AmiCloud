@@ -38,7 +38,7 @@ extern int ac_verbose;
 extern int ac_errors_to_stderr;
 
 long __stack = 65536;
-const char amiga_ver[] = "$VER: amicloud-commander " AC_VERSION " (27.09.2026)";
+const char amiga_ver[] = "$VER: amicloud-commander " AC_VERSION " (" AC_DATE ")";
 
 /* Debug toggle: -v on the shell command line, or a DEBUG tooltype on the
  * Workbench icon (Workbench "Information..." window on

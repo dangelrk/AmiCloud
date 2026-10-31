@@ -1,0 +1,43 @@
+Short:        Own cloud storage client for AmigaOS 3
+Author:       Ronny Krueger
+Uploader:     Ronny Krueger
+Type:         comm/net
+Version:      @VERSION@
+Architecture: m68k-amigaos >= 3.0.0
+Requires:     TCP/IP stack (bsdsocket.library), AmiSSL 5, MUI 3.8 (commander)
+Distribution: Aminet
+Replaces:     comm/net/AmiCloud.lha
+
+AmiCloud connects your Amiga to your own AmiCloud server over HTTPS.
+Files can be used from the command line (amicloud), an interactive shell
+(amicloud-shell), a two-pane MUI file manager (amicloud-commander), a
+folder sync tool (amicloud-sync) or simply as the DOS volume AMICLOUD:
+provided by a filesystem handler. AmiCloudPrefs edits the settings.
+
+The server (PHP 7.4+, MariaDB) and the same tools for macOS, Linux and
+Windows are part of the source distribution.
+
+Installation
+------------
+Unpack the archive and double-click "Install-AmiCloud" (Commodore
+Installer, part of OS 3.2 in SYS:System). Without the Installer, use the
+shell script instead:  CD AmiCloud  and  Execute Install-AmiCloud.shell
+Existing settings and an existing DOSDriver are never overwritten.
+
+Requirements
+------------
+- AmigaOS 3.x, 68000 or better, no FPU needed
+- a TCP/IP stack with bsdsocket.library (Roadshow, AmiTCP, Miami, ...)
+- AmiSSL 5
+- MUI 3.8 or newer for amicloud-commander only
+- an AmiCloud server (see docs/INSTALL.md in the sources)
+
+Documentation and user interface are in German.
+Die Dokumentation (Docs/AmiCloud.guide) und die Programme sind deutsch.
+
+License
+-------
+GNU General Public License, version 3 or later. Contains the JSON parser
+Parson (MIT license, see THIRD-PARTY-NOTICES).
+
+Source: https://github.com/dangelrk/AmiCloud

@@ -1,4 +1,4 @@
-AmiCloud 0.1 - eigener Cloud-Speicher für AmigaOS 3.x
+AmiCloud @VERSION@ - eigener Cloud-Speicher für AmigaOS 3.x
 ======================================================
 
 AmiCloud verbindet den Amiga über HTTPS mit einem eigenen
@@ -9,14 +9,16 @@ Dateimanager gibt es auch für macOS, Linux und Windows.
 
 Inhalt dieser Schublade
 -----------------------
-  Install-AmiCloud      Installationsskript
-  Uninstall-AmiCloud    Deinstallationsskript
+  Install-AmiCloud      Installationsskript (Commodore-Installer, Icon)
+  Install-AmiCloud.shell  dasselbe als Shell-Skript (ohne Installer)
+  Install-Datei           Hilfsskript der Shell-Variante
+  Uninstall-AmiCloud    Deinstallationsskript (Icon oder Execute)
   ReadMe                diese Datei
   LICENSE               GNU General Public License, Version 3
   THIRD-PARTY-NOTICES   Lizenz der Fremdkomponente Parson (MIT)
   C/amicloud            Kommandozeilen-Client (ein Befehl je Aufruf)
   C/amicloud-shell      interaktive Shell (cd, ls, get, put, ...)
-  C/amicloud-sync           einmaliger Abgleich lokaler Ordner <-> Cloud
+  C/amicloud-sync       einmaliger Abgleich lokaler Ordner <-> Cloud
   C/amicloud-commander  Dateimanager mit zwei Fenstern (MUI)
   C/AmiCloudPrefs       Einstellungs-Editor für amicloud.cfg
   C/amicloud-handler    Handler für das Laufwerk AMICLOUD:
@@ -27,12 +29,22 @@ Inhalt dieser Schublade
 
 Installation
 ------------
-  1. In einer Shell:  CD AmiCloud
-  2. Execute Install-AmiCloud  (fragt, was installiert werden soll)
-  3. In AmiCloudPrefs Server, Benutzer und Passwort eintragen,
-     Speichern wählen.
-  4. Testen:  amicloud list /
-  5. Laufwerk:  Mount AMICLOUD:  (oder neu starten), dann  Dir AMICLOUD:
+  1. Icon Install-AmiCloud doppelt anklicken und die Fragen
+     beantworten (braucht den Installer, ab OS 3.2 in SYS:System).
+     Ohne Installer in einer Shell:
+       CD AmiCloud
+       Execute Install-AmiCloud.shell
+  2. In AmiCloudPrefs Server, Benutzer und Passwort eintragen,
+     Speichern wählen (der Installer bietet den Start an).
+  3. Testen:  amicloud list /
+  4. Laufwerk:  Mount AMICLOUD:  (oder neu starten), dann  Dir AMICLOUD:
+
+Aktualisieren
+-------------
+Neuere Version: Archiv auspacken und den Installer erneut starten.
+Programme werden nur ersetzt, wenn die installierte Version nicht
+neuer ist als die im Archiv (Experten werden jedes Mal gefragt).
+Vorhandene Icons, Einstellungen und DOSDriver bleiben erhalten.
 
 Voraussetzungen
 ---------------

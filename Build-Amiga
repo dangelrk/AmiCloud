@@ -152,11 +152,11 @@ Echo "*N==> amicloud-handler"
 If NOT EXISTS obj/amiga/amicloud-handler
   MakeDir obj/amiga/amicloud-handler
 EndIf
-vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -c handler/cloudhandler/src/handler.c -o obj/amiga/amicloud-handler/handler.o
-vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -c handler/cloudhandler/src/actions.c -o obj/amiga/amicloud-handler/actions.o
-vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -c handler/cloudhandler/src/vol.c -o obj/amiga/amicloud-handler/vol.o
-vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -c handler/cloudhandler/src/util.c -o obj/amiga/amicloud-handler/util.o
-vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -c handler/cloudhandler/src/backend.c -o obj/amiga/amicloud-handler/backend.o
+vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -Icore/libcloudcore/include/cloudcore -c handler/cloudhandler/src/handler.c -o obj/amiga/amicloud-handler/handler.o
+vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -Icore/libcloudcore/include/cloudcore -c handler/cloudhandler/src/actions.c -o obj/amiga/amicloud-handler/actions.o
+vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -Icore/libcloudcore/include/cloudcore -c handler/cloudhandler/src/vol.c -o obj/amiga/amicloud-handler/vol.o
+vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -Icore/libcloudcore/include/cloudcore -c handler/cloudhandler/src/util.c -o obj/amiga/amicloud-handler/util.o
+vc +aos68k -O1 -cpu=68000 -nostdlib -Ihandler/cloudhandler/src -Icore/libcloudcore/include/cloudcore -c handler/cloudhandler/src/backend.c -o obj/amiga/amicloud-handler/backend.o
 CD obj/amiga/amicloud-handler
 vc +aos68k -o ///bin/amiga/amicloud-handler handler.o actions.o vol.o util.o backend.o -nostdlib -lvc
 CD ///
