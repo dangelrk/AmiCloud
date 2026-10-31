@@ -19,6 +19,7 @@
 #include "http.h"
 #include "sync.h"
 #include "amicloud_transport.h"
+#include "localfs.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -102,6 +103,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "amicloud-sync: network initialisation failed\n");
         return 1;
     }
+
+    /* S16: local file dates in local time, like the shell and the
+     * handler (gmt_offset/dst from the config; no-op on the PC) */
+    localfs_set_tz(cfg.gmt_offset, cfg.dst);
 
     t = amicloud_transport_open(&cfg);
     if (!t) {

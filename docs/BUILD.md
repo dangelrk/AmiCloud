@@ -124,7 +124,7 @@ ist aber **nicht getestet**:
 ## Amiga: Cross-Compile mit vbcc
 
 Die Amiga-Programme werden mit dem Compiler **vbcc** für AmigaOS 3.x
-(Ziel-CPU 68000) übersetzt. Das ist der verifizierte Weg: alle
+(Ziel-CPU 68020, seit 0.2) übersetzt. Das ist der verifizierte Weg: alle
 Amiga-Programme dieses Projekts wurden so gebaut.
 
 ### Toolchain und SDKs
@@ -173,7 +173,7 @@ in `bin/amiga/`:
 Auf dem Host gibt es kein `oml`; darum erzeugt der Cross-Build keine
 `.lib`-Archive, sondern jedes Programm übersetzt die benötigten
 Bibliotheksquellen aus `core/` direkt mit. Mathematik läuft über
-`-lmieee` (der JSON-Parser rechnet mit `double`, ein 68000 hat keine FPU).
+`-lmieee` (der JSON-Parser rechnet mit `double`, ein 68020 hat keine FPU).
 
 ### Cross-Compile unter Windows (MSYS2) – ungetestet
 

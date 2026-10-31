@@ -105,6 +105,13 @@
          "starten (Icon Install-AmiCloud).")
 )
 
+; ---- Prozessor ------------------------------------------------------------
+; Ab Version 0.2 sind alle Programme für den 68020 übersetzt (AmiSSL 5
+; braucht ihn ohnehin). Auf einem 68000/68010 würden sie abstürzen.
+(if (or (= (database "cpu") "68000") (= (database "cpu") "68010"))
+  (abort "AmiCloud @VERSION@ braucht mindestens einen 68020.\n\n"
+         "Dieser Amiga hat einen " (database "cpu") "."))
+
 ; ---- Voraussetzungen -----------------------------------------------------
 ; Nur was als Datei in LIBS: liegen muss. Den TCP/IP-Stack prüft das Skript
 ; nicht: bsdsocket.library liegt je nach Stack woanders oder wird erst beim
