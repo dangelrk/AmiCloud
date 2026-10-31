@@ -6,6 +6,7 @@
 #include "http.h"
 #include "cmd.h"
 #include "charset.h"
+#include "localfs.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -34,6 +35,25 @@ static const char *L(const char *utf8)
     static char buf[AC_MAX_PATH];
     cs_from_utf8(utf8, buf, sizeof(buf));
     return buf;
+}
+
+/* Virus check after "get" (xvs.library on the Amiga, else nothing): the
+ * file cmd_get_checked() wrote -- local, or a file named like the server
+ * file in local (a directory) or in the current directory. An infected
+ * file is deleted again. */
+static int virus_after_get(const char *remote_utf8, const char *local)
+{
+    char path[AC_MAX_PATH], name[AC_MAX_PATH], virus[128];
+    const char *slash = strrchr(remote_utf8, '/');
+    if (!localfs_virus_available()) return 0;
+    cs_from_utf8(slash ? slash + 1 : remote_utf8, name, sizeof(name));
+    if (!local || !*local) snprintf(path, sizeof(path), "%s", name);
+    else if (localfs_is_dir(local)) localfs_join(path, sizeof(path), local, name);
+    else snprintf(path, sizeof(path), "%s", local);
+    if (localfs_virus_check(path, 0, virus, sizeof(virus)) != 1) return 0;
+    remove(path);
+    fprintf(stderr, "amicloud: VIRUS in %s: %s -- Datei wieder geloescht\n", path, virus);
+    return 1;
 }
 
 /* Thin printer around cmd_search(): one full path per line, directories
@@ -147,6 +167,7 @@ int main(int argc, char **argv)
             const char *remote = argv[i++];
             const char *local  = (i < argc) ? argv[i] : NULL;
             rc = cmd_get_checked(&cfg, U(remote), local, force);
+            if (rc == 0) rc = virus_after_get(U(remote), local);
         }
 
     } else if (strcmp(cmd, "put") == 0) {
@@ -156,7 +177,13 @@ int main(int argc, char **argv)
         else {
             const char *local  = argv[i++];
             const char *remote = (i < argc) ? argv[i] : NULL;
-            rc = cmd_put_checked(&cfg, local, U(remote), force);
+            char virus[128];
+            if (localfs_virus_check(local, 0, virus, sizeof(virus)) == 1) {
+                fprintf(stderr, "amicloud: VIRUS in %s: %s -- nicht hochgeladen\n", local, virus);
+                rc = 1;
+            } else {
+                rc = cmd_put_checked(&cfg, local, U(remote), force);
+            }
         }
 
     } else if (strcmp(cmd, "del") == 0) {

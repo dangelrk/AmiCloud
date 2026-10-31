@@ -26,13 +26,15 @@ AMISSL_INC  = $(VBCC)/sdk/AmiSSL-v5/Developer/include
 LIBS_DIR = ../../core
 CORE_DIR = $(LIBS_DIR)/libcloudcore
 HTTP_DIR = $(LIBS_DIR)/libcloudhttp
+FS_DIR   = $(LIBS_DIR)/libcloudfs
 
 CORE_INC = $(CORE_DIR)/include/cloudcore
 HTTP_INC = $(HTTP_DIR)/include/cloudhttp
+FS_INC   = $(FS_DIR)/include/cloudfs
 
 # AMISSL_INC before NDK_INC/RUNTIME_INC -- see libcloudhttp/Makefile.amiga-cross
 CFLAGS  = $(TARGET) -O2 -DAMIGA -DPLATFORM_AMIGA -cpu=$(CPU) \
-          -I$(CORE_INC) -I$(HTTP_INC) \
+          -I$(CORE_INC) -I$(HTTP_INC) -I$(FS_INC) \
           -I$(AMISSL_INC) -I$(NET_INC) -I$(NDK_INC) -I$(RUNTIME_INC)
 
 # -lmieee: parson (libcloudcore, since the cJSON->parson migration) uses
@@ -49,6 +51,8 @@ CORE_SRCS = config base64 parson md5 ui_hooks cloudtime progress charset
 CORE_OBJS = $(CORE_SRCS:%=$(OBJDIR)/core_%.o)
 HTTP_SRCS = cmd http_amiga
 HTTP_OBJS = $(HTTP_SRCS:%=$(OBJDIR)/http_%.o)
+FS_SRCS   = localfs_amiga localfs_util
+FS_OBJS   = $(FS_SRCS:%=$(OBJDIR)/fs_%.o)
 OWN_OBJS  = $(OBJDIR)/main.o
 
 all: $(OBJDIR) $(BINDIR) $(TARGET_BIN)
@@ -56,8 +60,8 @@ all: $(OBJDIR) $(BINDIR) $(TARGET_BIN)
 $(OBJDIR) $(BINDIR):
 	mkdir -p $@
 
-$(TARGET_BIN): $(OWN_OBJS) $(HTTP_OBJS) $(CORE_OBJS)
-	$(CC) $(LDFLAGS) -o $(TARGET_BIN) $(OWN_OBJS) $(HTTP_OBJS) $(CORE_OBJS)
+$(TARGET_BIN): $(OWN_OBJS) $(HTTP_OBJS) $(FS_OBJS) $(CORE_OBJS)
+	$(CC) $(LDFLAGS) -o $(TARGET_BIN) $(OWN_OBJS) $(HTTP_OBJS) $(FS_OBJS) $(CORE_OBJS)
 
 $(OBJDIR)/main.o: src/main.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -66,6 +70,9 @@ $(OBJDIR)/core_%.o: $(CORE_DIR)/src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/http_%.o: $(HTTP_DIR)/src/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/fs_%.o: $(FS_DIR)/src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Header dependencies: vbcc writes no dependency files usable here (its

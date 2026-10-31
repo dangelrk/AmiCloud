@@ -11,9 +11,11 @@ CC       = gcc
 LIBS_DIR   = ../../core
 CORE_DIR   = $(LIBS_DIR)/libcloudcore
 HTTP_DIR   = $(LIBS_DIR)/libcloudhttp
+FS_DIR     = $(LIBS_DIR)/libcloudfs
 
 CORE_INC = $(CORE_DIR)/include/cloudcore
 HTTP_INC = $(HTTP_DIR)/include/cloudhttp
+FS_INC   = $(FS_DIR)/include/cloudfs
 
 PKG_CF  := $(shell pkg-config --cflags libcurl 2>/dev/null)
 PKG_LF  := $(shell pkg-config --libs   libcurl 2>/dev/null)
@@ -22,7 +24,7 @@ ifeq ($(PKG_CF),)
   PKG_LF := -L/opt/homebrew/lib -L/usr/local/lib -lcurl
 endif
 
-CFLAGS  = -MMD -MP -O2 -Wall -Wextra -std=c99 -I$(CORE_INC) -I$(HTTP_INC) $(PKG_CF)
+CFLAGS  = -MMD -MP -O2 -Wall -Wextra -std=c99 -I$(CORE_INC) -I$(HTTP_INC) -I$(FS_INC) $(PKG_CF)
 
 OBJDIR = obj/pc
 BINDIR = ../../bin/pc
@@ -38,7 +40,8 @@ all: libs $(TARGET)
 # own Makefile.pc (FORCE: always asked, it knows its sources); the program
 # is relinked only when one of them actually changed.
 LIB_ARCHIVES = $(LIBDIR)/libcloudcore.a \
-               $(LIBDIR)/libcloudhttp.a
+               $(LIBDIR)/libcloudhttp.a \
+               $(LIBDIR)/libcloudfs.a
 
 libs: $(LIB_ARCHIVES)
 
@@ -48,10 +51,13 @@ $(LIBDIR)/libcloudcore.a: FORCE
 $(LIBDIR)/libcloudhttp.a: FORCE
 	$(MAKE) -C $(HTTP_DIR) -f Makefile.pc
 
+$(LIBDIR)/libcloudfs.a: FORCE
+	$(MAKE) -C $(FS_DIR) -f Makefile.pc
+
 FORCE:
 
 $(TARGET): $(OBJS) $(LIB_ARCHIVES) | $(BINDIR)
-	$(CC) $(CFLAGS) -o $@ $(OBJS) -lcloudhttp -lcloudcore $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) -lcloudhttp -lcloudfs -lcloudcore $(LDFLAGS)
 
 $(OBJDIR)/%.o: src/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c -o $@ $<

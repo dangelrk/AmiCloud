@@ -655,6 +655,11 @@ die für das Dateisystem zu lang sind (klassisches FFS: 30 Zeichen), werden
 <p>Lokale Dateien bekommen die Ortszeit nach <code>gmt_offset</code> und
 <code>dst</code> aus <code>amicloud.cfg</code> (die Sommerzeit wird von Hand
 umgestellt).</p>
+<p><strong>Virenprüfung (ab 0.3, optional):</strong> Ist die <code>xvs.library</code>
+installiert (Aminet <code>util/virus</code>), prüfen Abgleich, Kommandozeile, Shell und
+Dateimanager jede Datei bis 2&nbsp;MB vor dem Hochladen und vor dem Ablegen eines
+Downloads. Eine verseuchte Datei wird weder übertragen noch gelöscht, sondern als
+Fehler mit dem Namen des Virus gemeldet. Ohne die Bibliothek wird nicht geprüft.</p>
 
 <pre>amicloud-sync -n Work:Texte /texte      ; erst schauen
 amicloud-sync Work:Texte /texte         ; dann abgleichen</pre>
