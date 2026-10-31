@@ -239,7 +239,7 @@ Fehler: 404, 416.
 ```
 POST api.php?action=upload&path=/sub/f
 POST api.php?action=upload&path=/sub/f&md5=<32 Hex-Zeichen>
-POST api.php?action=upload&path=/sub/f&if_revision=3
+POST api.php?action=upload&path=/sub/f&if_revision=3&if_id=815
 POST api.php?action=upload&path=/sub/f&create_only=1
 Body: rohe Dateibytes (Content-Type: application/octet-stream)
 ```
@@ -251,8 +251,10 @@ des empfangenen Bodys **vor** dem Schreiben verifizieren — stimmt sie
 nicht überein, wird nichts geschrieben (422). Ohne den Parameter
 unverändertes Verhalten (abwärtskompatibel für Handler/ältere Clients).
 
-Bedingungen für den Abgleich (seit 0.2): Mit `if_revision=N` wird nur
-geschrieben, wenn die Datei existiert und genau die Revision `N` hat; mit
+Bedingungen für den Abgleich (seit 0.2): Mit `if_revision=N` bzw.
+`if_id=M` wird nur geschrieben, wenn die Datei existiert und genau diese
+Revision bzw. ID hat (eine auf den Pfad umbenannte andere Datei behält ihre
+Revision, hat aber eine andere ID; Werte ≤ 0 bedeuten „nicht prüfen“); mit
 `create_only=1` nur, wenn sie noch nicht existiert. Sonst antwortet der
 Server mit **412** (`Revision mismatch` bzw. `File exists`) und schreibt
 nichts. Geprüft wird in derselben Transaktion wie das Schreiben, also
@@ -280,6 +282,7 @@ Speicherkontingent überschreiten – es wird nichts geschrieben; beim
 ```
 DELETE api.php?action=delete&path=/sub/f
 DELETE api.php?action=delete&path=/sub&recursive=1
+DELETE api.php?action=delete&path=/sub/f&if_revision=3&if_id=815
 ```
 
 Ohne `recursive` müssen Verzeichnisse leer sein (sonst 409). Mit `recursive=1` wird der komplette
@@ -290,8 +293,13 @@ Protection/Revision) bleiben dagegen als **Tombstone** in der DB erhalten (`dele
 sofort (die Datei existiert ja nicht mehr), aber `changes` liefert ihn mit `"deleted": true`, damit
 ein Client die Löschung von einer echten Neuanlage auf der Gegenseite unterscheiden kann.
 Öffentliche Links auf den Pfad (und alles darunter) werden mitgelöscht.
+
+Bedingtes Löschen für den Abgleich (seit 0.2): Mit `if_revision` und/oder `if_id` wird nur eine
+Datei gelöscht, die noch genau diese Revision bzw. ID hat; sonst **412** und nichts wird gelöscht.
+So nimmt ein Client keine fremde Änderung mit, die nach seinem letzten `list` dazukam. Geprüft unter
+derselben Sperre wie `upload`.
 Fehler: 400 (`path=/` – der Stammordner selbst ist nicht löschbar), 404, 409 (nicht-leer, nur ohne
-`recursive`), 500.
+`recursive`), 412 (Bedingung nicht erfüllt), 500.
 
 ### info — Datei-/Verzeichnisinformationen
 

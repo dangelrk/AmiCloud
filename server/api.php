@@ -73,9 +73,15 @@ switch ($action) {
                          (string)file_get_contents('php://input'),
                          isset($_GET['md5']) ? (string)$_GET['md5'] : null,
                          isset($_GET['if_revision']) ? (int)$_GET['if_revision'] : null,
-                         !empty($_GET['create_only'])
+                         !empty($_GET['create_only']),
+                         isset($_GET['if_id']) ? (int)$_GET['if_id'] : null
                      ); break;
-    case 'delete':   FileStore::delete($path, (bool)($_GET['recursive'] ?? false)); break;
+    case 'delete':   FileStore::delete(
+                         $path,
+                         (bool)($_GET['recursive'] ?? false),
+                         isset($_GET['if_revision']) ? (int)$_GET['if_revision'] : null,
+                         isset($_GET['if_id']) ? (int)$_GET['if_id'] : null
+                     ); break;
     case 'info':     FileStore::info($path); break;
     case 'mkdir':    FileStore::mkdir($path); break;
     case 'rename':   FileStore::rename($path, sanitizePath($_GET['to'] ?? '')); break;

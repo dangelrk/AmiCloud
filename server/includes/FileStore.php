@@ -319,9 +319,10 @@ class FileStore
 
     /* ------------------------------------------------------------------ */
     public static function upload(string $path, string $data, ?string $expectedMd5 = null,
-                                  ?int $ifRevision = null, bool $createOnly = false): void
+                                  ?int $ifRevision = null, bool $createOnly = false,
+                                  ?int $ifId = null): void
     {
-        $r = self::uploadImpl($path, $data, null, $expectedMd5, $ifRevision, $createOnly);
+        $r = self::uploadImpl($path, $data, null, $expectedMd5, $ifRevision, $createOnly, $ifId);
         if ($r[0] !== 0) {
             Response::error($r[0], $r[1]);
         }
@@ -336,13 +337,17 @@ class FileStore
      * ueberschreiten. Rueckgabe [0, '', Antwortdaten] oder [Code, Meldung].
      *
      * Bedingungen fuer den Abgleich (412 Precondition Failed, nichts wird
-     * geschrieben): $ifRevision -- die Datei muss existieren und genau
-     * diese Revision haben; $createOnly -- die Datei darf noch nicht
+     * geschrieben): $ifRevision/$ifId -- die Datei muss existieren und
+     * genau diese Revision bzw. ID haben (eine Umbenennung auf diesen Pfad
+     * behaelt die Revision, wechselt aber die ID); $createOnly -- die Datei darf noch nicht
      * existieren. Geprueft innerhalb der Transaktion, also atomar gegen
      * andere Uploads desselben Benutzers. */
     private static function uploadImpl(string $path, ?string $data, ?string $tmpFile, ?string $expectedMd5,
-                                       ?int $ifRevision = null, bool $createOnly = false): array
+                                       ?int $ifRevision = null, bool $createOnly = false,
+                                       ?int $ifId = null): array
     {
+        $ifRevision = ($ifRevision ?? 0) > 0 ? $ifRevision : null;
+        $ifId       = ($ifId ?? 0) > 0 ? $ifId : null;
         if ($path === '/') {
             return [400, 'Cannot upload to root'];
         }
@@ -381,7 +386,7 @@ class FileStore
              * Pfades) — Umbenennen/Verschieben laesst sie unberuehrt (siehe
              * renameImpl()). Vorherige Zeile wird unabhaengig von deleted_at
              * gesucht, damit ein Re-Upload denselben Verlauf fortsetzt. */
-            $prev = $db->prepare('SELECT checksum, revision, size_bytes, deleted_at FROM files WHERE user_id = ? AND path = ?');
+            $prev = $db->prepare('SELECT id, checksum, revision, size_bytes, deleted_at FROM files WHERE user_id = ? AND path = ?');
             $prev->execute([Auth::$user_id, $dbP]);
             $existing = $prev->fetch();
 
@@ -390,9 +395,10 @@ class FileStore
                 $db->rollBack();
                 return [412, 'File exists'];
             }
-            if ($ifRevision !== null
+            if (($ifRevision !== null || $ifId !== null)
                 && (!$live || $existing === false || $existing['deleted_at'] !== null
-                    || (int)$existing['revision'] !== $ifRevision)) {
+                    || ($ifRevision !== null && (int)$existing['revision'] !== $ifRevision)
+                    || ($ifId !== null && (int)$existing['id'] !== $ifId))) {
                 $db->rollBack();
                 return [412, 'Revision mismatch'];
             }
@@ -476,8 +482,15 @@ class FileStore
     }
 
     /* ------------------------------------------------------------------ */
-    public static function delete(string $path, bool $recursive = false): void
+    public static function delete(string $path, bool $recursive = false,
+                                  ?int $ifRevision = null, ?int $ifId = null): void
     {
+        $ifRevision = ($ifRevision ?? 0) > 0 ? $ifRevision : null;
+        $ifId       = ($ifId ?? 0) > 0 ? $ifId : null;
+        if ($ifRevision !== null || $ifId !== null) {
+            self::deleteIfUnchanged($path, $ifRevision, $ifId);
+            return;
+        }
         $result = self::deleteImpl($path, $recursive);
         if ($result !== true) {
             [$code, $message] = $result;
@@ -506,6 +519,41 @@ class FileStore
      * "changes"). Ein Re-Upload desselben Pfades belebt die Zeile wieder (siehe
      * upload()). true bei Erfolg, sonst [HTTP-Code, Fehlertext] — die
      * Aufrufer entscheiden, wie sie das nach aussen zeigen. */
+    /* Bedingtes Loeschen fuer den Abgleich: nur eine Datei, die noch die
+     * angegebene Revision bzw. ID hat -- sonst 412 und nichts geloescht
+     * (eine fremde Aenderung seit dem letzten list des Clients bleibt).
+     * Unter derselben Sperre der users-Zeile wie uploadImpl(), also
+     * atomar gegen Uploads desselben Benutzers. */
+    private static function deleteIfUnchanged(string $path, ?int $ifRevision, ?int $ifId): void
+    {
+        $db = DB::get();
+        $db->beginTransaction();
+        try {
+            $db->prepare('SELECT id FROM users WHERE id = ? FOR UPDATE')->execute([Auth::$user_id]);
+            $q = $db->prepare('SELECT id, revision, deleted_at FROM files WHERE user_id = ? AND path = ?');
+            $q->execute([Auth::$user_id, dbPath($path)]);
+            $row = $q->fetch();
+            if (!is_file(storagePath($path)) || $row === false || $row['deleted_at'] !== null
+                || ($ifRevision !== null && (int)$row['revision'] !== $ifRevision)
+                || ($ifId !== null && (int)$row['id'] !== $ifId)) {
+                $db->rollBack();
+                Response::error(412, 'Revision mismatch');
+            }
+            $result = self::deleteImpl($path, false);
+            if ($result !== true) {
+                $db->rollBack();
+                Response::error($result[0], $result[1]);
+            }
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+        Response::ok(['path' => $path]);
+    }
+
     private static function deleteImpl(string $path, bool $recursive)
     {
         if ($path === '/') {
