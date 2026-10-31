@@ -518,7 +518,7 @@ Arbeit an Code und Tests.
 | 1 | Kern-Unit-Tests (`FakeTransport`), heutiges Verhalten festschreiben | M |
 | 2 | **Datensicherheit S1–S16** und `cloudsync_run_ex`; Mindest-CPU 68020; Server: `if_revision`/`create_only`, `max_upload` in `status`; Amiga: `FORCE`/EasyRequest. **Release für alle Amiga-Programme.** | L |
 | 3 | Konfliktkopien (§ 4) und Massenlöschungsschwelle (§ 5) im Kern, Transport `rename`; Amiga im Emulator testen; **Release** | M–L |
-| 4 | Zeichensatz ↔ UTF-8 über `codesets.library` (Kern, `localfs_amiga`, beide Handler, Kommentare, NFC), Installer-Prüfung, lokaler Name im Stand; **Release** | M–L |
+| 4 | Zeichensatz ↔ UTF-8 über `codesets.library` (Kern, `localfs_amiga`, beide Handler, Kommentare, NFC), Installer-Prüfung, lokaler Name im Stand; parson schreibt ganze Zahlen als Ganzzahl (vbcc-`printf` gibt 986,0 als `985.999999999999` aus, § 13); optional Virenprüfung über `xvs.library`; **Release** | M–L |
 | 5 | macOS-Client Grundstufe: Assistent, Keychain, Startordner mit Auswahlbaum, Abgleich auf Knopfdruck und nach Intervall, Tray, Aktivität, Pause | L |
 | 6 | macOS: FSEvents, Papierkorb, Autostart, `.dmg`, SDK-curl, Signatur; Server: `changes` mit Paginierung, Grabsteine bei Umbenennungen, einheitliche Zeitbasis; `changes` im Kern. **Mac-Release** | L |
 | 7 | Windows: Kern-Port (localfs_win, 64-Bit-Größen, alle direkten Dateizugriffe), Client-Anpassungen, Installer | L |
@@ -669,4 +669,22 @@ grün, dazu Tests für jede Maßnahme (67 Tests, `make test` im Core).
 - Offen für das Release 0.2: Installer im Emulator gegen die neue
   CPU-Prüfung testen, Release laut `core/docs/RELEASE.md` (Bauen und
   Taggen am selben Tag).
+
+### Nachtrag Release 0.2 (31.10.2026)
+
+- Unabhängige Prüfung durch einen Subagenten; behoben vor dem Release:
+  Umbenennen am Server bei gleicher Revision (Datei-ID und MD5 werden
+  jetzt verglichen), unbedingtes Löschen am Server (`delete` mit
+  `if_revision`/`if_id`, WebDAV `If-Match`, Ordner werden vor dem Löschen
+  neu gelesen), ausgeschlossene Dateien blockierten das Löschen ihres
+  Ordners, Zwischenstand quadratisch, fehlendes lokales Laufwerk,
+  unsicheres Ersetzen (`localfs_replace`).
+- Im Emulator gefunden: Die C-Bibliothek von vbcc (`vc.lib`, `-lmieee`)
+  gibt mit `printf("%1.17g")` manche ganzen Zahlen falsch aus (986,0 →
+  `985.999999999999`); `strtod` liest korrekt. parson schrieb so Datei-IDs
+  in den Stand, `(long)` schnitt auf 985 ab. Behoben durch `AC_DTOL()`
+  (runden beim Einlesen); in Phase 4 schreibt parson ganze Zahlen
+  zusätzlich per `%ld`. Fehlerbericht an vbcc sinnvoll.
+- Release 0.2 am 31.10.2026 veröffentlicht (Tags `v0.2` in allen vier
+  Repos, GitHub-Releases, AmiSuite).
 
