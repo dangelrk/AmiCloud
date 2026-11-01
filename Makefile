@@ -14,6 +14,11 @@ AMIGA_DIRS = apps/amicloud apps/amicloud-shell apps/amicloud-sync apps/amicloud-
 # ihn von dort nach DEVS:DOSDrivers/).
 DIST_EXTRA = handler/cloudhandler/mount/AMICLOUD:Storage/DOSDrivers
 
+# Server-Paket (make server-release): Abschnitt aus docs/INSTALL.md und
+# Zusatzdateien (quelle[:ziel im Archiv])
+SERVER_DOC_HEADING = \#\# Server
+SERVER_EXTRA = docs/api/API.md:api/API.md scripts/test_api.sh scripts/test_changes.py
+
 # Without the AmiCloudCore submodule there is no core/mk/project.mk --
 # say so instead of make's bare "No such file or directory".
 ifeq ($(wildcard core/mk/project.mk),)
