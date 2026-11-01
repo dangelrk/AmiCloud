@@ -1036,6 +1036,11 @@ Verwandte Projekte desselben Autors:
 
 VERSIONSGESCHICHTE
 
+Programme 0.4 (01.11.2026)
+  - SetDate und Copy CLONE auf AMICLOUD: übernehmen das Datum
+    (vorher wurde daraus immer der 01.01.1978).
+  - Der Server liegt dem Archiv bei (Schublade Server).
+
 Programme 0.3 (01.11.2026)
   - Umlaute in Dateinamen (codesets.library, sonst ISO-8859-1),
     Leerzeichen und Sonderzeichen in Pfaden.
