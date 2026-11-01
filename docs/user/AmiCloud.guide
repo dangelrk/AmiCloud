@@ -1036,6 +1036,12 @@ Verwandte Projekte desselben Autors:
 
 VERSIONSGESCHICHTE
 
+Programme 0.5 (01.11.2026)
+  - Wird eine Anmeldung abgelehnt (falsches Passwort), versuchen
+    es die Programme mit denselben Zugangsdaten 15 Minuten lang
+    nicht erneut. Vorher konnte das die Sperre des Servers gegen
+    zu viele Fehlversuche auslösen.
+
 Programme 0.4 (01.11.2026)
   - SetDate und Copy CLONE auf AMICLOUD: übernehmen das Datum
     (vorher wurde daraus immer der 01.01.1978).
