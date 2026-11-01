@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Ronny Krueger
 #include "settingsdialog.h"
 #include "foldertree.h"
+#include "platform.h"
 #include "synccontroller.h"
 
 #include <QCheckBox>
@@ -173,7 +174,11 @@ QWidget *SettingsDialog::buildSyncTab()
     m_interval->setRange(1, 1440);
     m_interval->setSuffix(tr(" min"));
     m_interval->setValue(m_orig.intervalMin);
-    form->addRow(tr("Abgleich alle:"), m_interval);
+    auto *irow = new QHBoxLayout;   // not stretched over the whole width
+    irow->addWidget(m_interval);
+    irow->addWidget(new QLabel(tr("und sofort bei Änderungen im Ordner")));
+    irow->addStretch();
+    form->addRow(tr("Abgleich alle:"), irow);
     m_delMin = new QSpinBox;
     m_delMin->setRange(1, 100000);
     m_delMin->setSuffix(tr(" Dateien"));
@@ -193,6 +198,12 @@ QWidget *SettingsDialog::buildSyncTab()
                                "nächsten Abgleich zurück."));
     hint->setWordWrap(true);
     form->addRow(QString(), hint);
+    if (platformAutostartSupported()) {
+        // lives in the system (login items), not in our settings file
+        m_autostart = new QCheckBox(tr("Bei der Anmeldung starten"));
+        m_autostart->setChecked(platformAutostartEnabled());
+        form->addRow(QString(), m_autostart);
+    }
     return w;
 }
 
@@ -273,6 +284,12 @@ void SettingsDialog::accept()
         }
     }
 
+    if (m_autostart && m_autostart->isChecked() != platformAutostartEnabled()) {
+        QString err;
+        if (!platformSetAutostart(m_autostart->isChecked(), &err) || !err.isEmpty())
+            QMessageBox::information(this, windowTitle(),
+                                     tr("Start bei der Anmeldung: %1").arg(err));
+    }
     m_ctl->applySettings(s, m_password->text(), trash);
     QDialog::accept();
 }

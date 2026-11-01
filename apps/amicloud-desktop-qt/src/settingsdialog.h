@@ -50,4 +50,5 @@ private:
     QLabel *m_treeError;
     bool m_treeLoaded = false;
     QSpinBox *m_interval, *m_delMin, *m_delPct;
+    QCheckBox *m_autostart = nullptr;
 };

@@ -84,11 +84,15 @@ else()
 endif()
 
 if(APPLE)
-    add_executable(amicloud-desktop MACOSX_BUNDLE ${CORE_SRCS} ${APP_SRCS})
+    # app icon, made by scripts/make_desktop_icon.sh from server/logo.svg
+    set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/macos/AmiCloud.icns)
+    set_source_files_properties(${APP_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    add_executable(amicloud-desktop MACOSX_BUNDLE ${CORE_SRCS} ${APP_SRCS} ${APP_ICON})
     set_target_properties(amicloud-desktop PROPERTIES
         OUTPUT_NAME "AmiCloud Desktop"
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/macos/Info.plist.in
         MACOSX_BUNDLE_GUI_IDENTIFIER de.planet-rk.amicloud-desktop
+        MACOSX_BUNDLE_ICON_FILE AmiCloud.icns
     )
 else()
     add_executable(amicloud-desktop ${CORE_SRCS} ${APP_SRCS})
@@ -115,7 +119,8 @@ target_compile_definitions(amicloud-desktop PRIVATE AC_BUILD_DATE=${AC_BUILD_DAT
 target_compile_options(amicloud-desktop PRIVATE $<$<COMPILE_LANGUAGE:CXX,OBJCXX>:-Wall -Wextra>)
 target_link_libraries(amicloud-desktop PRIVATE Qt6::Widgets ${CURL_LIBRARIES})
 if(APPLE)
-    target_link_libraries(amicloud-desktop PRIVATE "-framework AppKit" "-framework CoreServices")
+    target_link_libraries(amicloud-desktop PRIVATE "-framework AppKit" "-framework CoreServices"
+        "-framework ServiceManagement")
 endif()
 
 set_target_properties(amicloud-desktop PROPERTIES
