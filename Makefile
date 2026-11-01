@@ -18,6 +18,8 @@ DIST_EXTRA = handler/cloudhandler/mount/AMICLOUD:Storage/DOSDrivers
 # Zusatzdateien (quelle[:ziel im Archiv])
 SERVER_DOC_HEADING = \#\# Server
 SERVER_EXTRA = docs/api/API.md:api/API.md scripts/test_api.sh scripts/test_changes.py
+# make server-test: diese Tests aus dem Paket gegen die Probeinstallation
+SERVER_TEST = sh "$$PKG/scripts/test_api.sh" && python3 "$$PKG/scripts/test_changes.py"
 
 # Without the AmiCloudCore submodule there is no core/mk/project.mk --
 # say so instead of make's bare "No such file or directory".
