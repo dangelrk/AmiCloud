@@ -1036,6 +1036,17 @@ Verwandte Projekte desselben Autors:
 
 VERSIONSGESCHICHTE
 
+Programme 0.3 (01.11.2026)
+  - Umlaute in Dateinamen (codesets.library, sonst ISO-8859-1),
+    Leerzeichen und Sonderzeichen in Pfaden.
+  - Abgleich: bei Konflikten bleiben beide Fassungen erhalten,
+    Rückfrage vor dem Löschen vieler Dateien, optionale
+    Virenprüfung über xvs.library, schneller bei großen Ordnern
+    (Änderungsliste des Servers).
+  - Neu: AmiCloud Desktop für macOS.
+  - Server: Änderungsliste seitenweise und mit Umbenennungen
+    (Migration 006).
+
 Programme 0.2 (31.10.2026)
   - Abgleich (amicloud-sync) sicherer: Abbruch bei Lesefehlern, Ctrl-C
     ohne Löschungen, kein leeres Neuanlegen eines verschwundenen
