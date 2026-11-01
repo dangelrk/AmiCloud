@@ -1,10 +1,10 @@
-Short:        Own cloud storage client for AmigaOS 3
+Short:        Self-hosted cloud: drive, sync, client
 Author:       Ronny Krueger
-Uploader:     Ronny Krueger (amitools@planet-rk.de)
+Uploader:     amitools@planet-rk.de (Ronny Krueger)
 Type:         comm/net
 Version:      @VERSION@
 Architecture: m68k-amigaos >= 3.0.0
-Requires:     TCP/IP stack (bsdsocket.library), AmiSSL 5, MUI 3.8 (commander)
+Requires:     util/libs/AmiSSL-v5-OS3.lha; util/libs/mui38usr.lha
 Distribution: Aminet
 
 AmiCloud connects your Amiga to your own AmiCloud server over HTTPS.
@@ -27,8 +27,12 @@ Requirements
 ------------
 - AmigaOS 3.x, 68020 or better (since 0.2), no FPU needed
 - a TCP/IP stack with bsdsocket.library (Roadshow, AmiTCP, Miami, ...)
-- AmiSSL 5
-- MUI 3.8 or newer for amicloud-commander only
+- AmiSSL 5 (Aminet util/libs/AmiSSL-v5-OS3.lha)
+- MUI 3.8 or newer for amicloud-commander only (util/libs/mui38usr.lha)
+- optional: codesets.library 6 or newer for umlauts in other charsets
+  than ISO-8859-1 (util/libs/codesets-6.22.lha)
+- optional: xvs.library for the virus check of downloads
+  (util/virus/xvslibrary.lha)
 - an AmiCloud server (included, see the drawer Server)
 
 Documentation and user interface are in German.
