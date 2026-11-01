@@ -7,6 +7,7 @@ ReadMe                     project doc       tool=SYS:Utilities/MultiView pos=37
 Docs                       drawer  drawer    win=80,50,300,100 pos=42,70
 C                          drawer  drawer    win=80,50,360,100 pos=132,70
 Examples                   drawer  drawer    win=80,50,380,100 pos=222,70
+Server                     drawer  drawer    win=80,50,360,100 pos=422,70
 Storage                    drawer  drawer    win=80,50,300,100 pos=322,70
 LICENSE                    project doc       tool=SYS:Utilities/MultiView pos=42,132
 THIRD-PARTY-NOTICES        project doc       tool=SYS:Utilities/MultiView pos=192,132
@@ -19,3 +20,4 @@ Examples/amicloud.cfg.example project doc    tool=SYS:Utilities/MultiView pos=82
 Examples/AMICLOUD.mountlist project doc      tool=SYS:Utilities/MultiView pos=232,6
 Storage/DOSDrivers         drawer  drawer    win=80,50,300,100 pos=82,6
 Storage/DOSDrivers/AMICLOUD project mount    tool=C:Mount pos=82,6
+Server/ReadMe              project doc       tool=SYS:Utilities/MultiView pos=62,6
