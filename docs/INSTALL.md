@@ -36,7 +36,7 @@ Der Server liegt im Ordner `server/`:
 | `bin/amicloud-admin.php` | Verwaltung auf der Kommandozeile (Benutzer anlegen, Passwort, Admin, Kontingent …); `bin/` ist für den Browser gesperrt |
 | `includes/` | PHP-Klassen (per `.htaccess` für Browser gesperrt) |
 | `sql/schema.sql` | Datenbankschema für eine Neuinstallation (`sql/` per `.htaccess` für Browser gesperrt) |
-| `sql/migrate_001.sql` … `migrate_005.sql` | Nachrüsten älterer Installationen |
+| `sql/migrate_001.sql` … `migrate_006.sql` | Nachrüsten älterer Installationen |
 | `config.php.example` | Vorlage für `config.php` |
 | `.user.ini` | Upload-Grenzen für PHP-FPM (100 MB, passend zu `MAX_UPLOAD`) |
 | `.htaccess` | sperrt `config.php`, `config.php.example` und `.user.ini` |
@@ -149,7 +149,7 @@ sudo mysql -e "CREATE USER 'amicloud'@'localhost' IDENTIFIED BY 'ein-langes-db-p
 
 `schema.sql` legt die Datenbank `amicloud` mit allen Tabellen (`users`,
 `files`, `app_passwords`, `shares`, `auth_failures`) an. Die Dateien
-`sql/migrate_001.sql` bis `migrate_005.sql` sind **nur** für ältere,
+`sql/migrate_001.sql` bis `migrate_006.sql` sind **nur** für ältere,
 bereits laufende Installationen gedacht; sie werden der Reihe nach
 eingespielt (`mysql amicloud < migrate_00x.sql`) und sind nicht
 wiederholbar – vorher mit dem in jeder Datei genannten
@@ -192,6 +192,8 @@ herabgestuft werden.
 MariaDB-root einspielen (der Datenbankbenutzer `amicloud` darf kein
 `ALTER`), danach einen vorhandenen Benutzer zum Administrator machen:
 `sudo -u apache php bin/amicloud-admin.php user:admin bob on`.
+Für die Programme ab 0.3 (Abgleich über die Änderungsliste) zusätzlich
+`migrate_006.sql`.
 
 Für die Clients empfiehlt sich je Gerät ein **App-Passwort** statt des
 Kontopassworts (Weboberfläche → *Persönliche Einstellungen → Geräte &

@@ -673,6 +673,12 @@ ausgeführte Löschungen („20 Loeschung(en) zurueckgehalten“) mit.</p>
 <p>Lokale Dateien bekommen die Ortszeit nach <code>gmt_offset</code> und
 <code>dst</code> aus <code>amicloud.cfg</code> (die Sommerzeit wird von Hand
 umgestellt).</p>
+<p><strong>Schneller bei großen Ordnern (ab 0.3):</strong> Hat sich auf dem Server
+etwas geändert, holt der Abgleich nur noch die Liste der Änderungen seit dem
+letzten Mal, statt jeden Ordner einzeln abzufragen. Jeder 20. Abgleich liest
+trotzdem alles, ebenso nach einem Konflikt, nach mehr als 30 Tagen Pause oder wenn
+der Server-Ordner selbst umbenannt wurde. Das braucht den Server ab
+<code>migrate_006.sql</code>.</p>
 <p><strong>Virenprüfung (ab 0.3, optional):</strong> Ist die <code>xvs.library</code>
 installiert (Aminet <code>util/virus</code>), prüfen Abgleich, Kommandozeile, Shell und
 Dateimanager jede Datei bis 2&nbsp;MB vor dem Hochladen und vor dem Ablegen eines
@@ -713,9 +719,21 @@ für die anderen Geräte, den Amiga eingeschlossen.</li>
 die nur der Benutzer lesen kann (<code>~/Library/Preferences/AmiCloud/AmiCloud
 Desktop/credentials</code>), nicht im Schlüsselbund.</li>
 </ul>
-<p>Noch nicht enthalten: Abgleich sofort bei lokalen Änderungen (bisher nach
-Zeitplan, Vorgabe alle 5&nbsp;Minuten), Start bei der Anmeldung und ein
-fertiges <code>.dmg</code>.</p>
+<ul>
+<li><strong>Wann abgeglichen wird:</strong> wenige Sekunden nach einer Änderung im
+lokalen Ordner und außerdem nach Zeitplan (Vorgabe alle 5&nbsp;Minuten), damit
+Änderungen auf dem Server ankommen.</li>
+<li><strong>Papierkorb:</strong> Was der Abgleich auf dem Mac löscht, weil es auf dem
+Server gelöscht wurde, landet im Papierkorb, ein ganzer Ordner als Einheit. Geht
+das nicht, wird nichts gelöscht, sondern ein Fehler gemeldet.</li>
+<li><strong>Start bei der Anmeldung:</strong> Einstellungen → Abgleich → „Bei der
+Anmeldung starten“. macOS fragt eventuell nach einer Erlaubnis unter
+Systemeinstellungen → Allgemein → Anmeldeobjekte.</li>
+<li><strong>Installation:</strong> <code>AmiCloud-Desktop-0.3.dmg</code> öffnen und das
+Programm auf „Programme“ ziehen. Es ist nicht von Apple beglaubigt: Beim ersten
+Start unter Systemeinstellungen → Datenschutz &amp; Sicherheit „Trotzdem öffnen“
+wählen.</li>
+</ul>
 
 <h2 id="commander">12. amicloud-commander – Dateimanager</h2>
 

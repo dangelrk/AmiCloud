@@ -1,7 +1,7 @@
 # Plan: AmiCloud Desktop – Ordnerabgleich für macOS, Windows, Linux
 
 Stand: 01.11.2026 · Status: Fassung 5; Phasen 0–4 umgesetzt (§ 13–15),
-Phase 5 umgesetzt (§ 16). Entscheidungen in § 11, Befunde aus Phase 0 und 1
+Phase 5 umgesetzt (§ 16), Phase 6 umgesetzt bis auf Deploy und Release (§ 17). Entscheidungen in § 11, Befunde aus Phase 0 und 1
 in § 12 (S14–S16 neu). Der Entwurf wurde von einem Subagenten gegen den
 Code geprüft und die Befunde eingearbeitet.
 
@@ -829,3 +829,77 @@ CMake, `make qt`). Version 0.3, **noch kein Release**.
   Autostart (`SMAppService`), `.dmg` mit `macdeployqt` und Ad-hoc-
   Signatur; Server: `changes` mit Paginierung, Grabsteine, einheitliche
   Zeitbasis.
+
+## 17. Stand der Umsetzung Phase 6 (01.11.2026)
+
+Core db0fdaa und 82f1dda, AmiCloud f1d90ab, a5da0eb und 79e65cd.
+**Noch nicht deployt, kein Release.**
+
+- **Papierkorb** (§ 5): `localfs_set_trash_hook()`/`localfs_trash()` in
+  libcloudfs. Ein auf dem Server gelöschter Ordner wandert als **Einheit**
+  in den Papierkorb, wenn der Lauf alles darin löscht, jede Datei noch so
+  ist wie beim Scan (S7) und auf der Platte genau so viele Einträge liegen
+  wie Löschaktionen. Sonst geht es Datei für Datei. Scheitert der
+  Papierkorb, wird nichts gelöscht und ein Fehler gemeldet. Amiga und
+  Kommandozeile löschen wie bisher. Der Desktop setzt
+  `QFile::moveToTrash`. 6 Tests.
+- **FSEvents** (`LocalWatcher`): Ereignisse auf Dateiebene, Latenz 1 s.
+  Namen, die nie abgeglichen werden (`.amicloudsync*`, `.DS_Store` …),
+  werden ignoriert. Ein Lauf startet 3 s nach der letzten Änderung.
+  Änderungen während eines Laufs, auch eigene Schreibzugriffe, führen zu
+  genau einem Folgelauf, der dann nichts mehr zu tun hat. Im Selbsttest
+  gemessen: 1 Lauf, danach Ruhe.
+- **Autostart:** `SMAppService.mainApp`, Häkchen unter Einstellungen →
+  Abgleich. Der Zustand liegt beim System. **Nicht getestet:** Das
+  Eintragen eines Anmeldeobjekts hat die Sicherheitsprüfung der
+  Sitzung abgelehnt (dauerhafte Systemänderung). Von Hand prüfen.
+- **App-Symbol** aus `server/logo.svg` (`scripts/make_desktop_icon.sh`).
+- **`.dmg`** (`scripts/make_desktop_dmg.sh`):
+  - Release-Build und `macdeployqt`, die SVG/PDF-Plugins entfernt.
+  - Das Skript bricht ab, wenn im Bundle noch etwas auf Homebrew zeigt.
+  - Ad-hoc-Signatur, Image mit Verweis auf „Programme“, etwa 28 MB.
+  - Geprüft: Das Programm aus dem Image lädt keine Bibliothek aus
+    Homebrew (`DYLD_PRINT_LIBRARIES`).
+- **Server** (`migrate_006.sql`):
+  - `changes` mit `path`-Präfix, Seiten (`limit`, `has_more`, `next`),
+    die nie eine `change_seq` teilen.
+  - `mtime` aus `filemtime()` wie bei `list`, damit ist die Zeitbasis
+    geklärt (§ 12). MD5 wie bei `list`.
+  - Grabsteine werden nach 30 Tagen entfernt; ein älteres `since` ergibt
+    `410`. Das Gegenstück ist `users.tombstone_seq`.
+  - Umbenennen legt Grabsteine für die alten Pfade an. Am Ziel werden
+    nur noch die Grabsteine gelöscht, deren Pfad neu belegt wird; vorher
+    gingen dort alle verloren.
+  - Zeilen mit `change_seq = 0` bekommen 1.
+  - `scripts/test_changes.py` mit 25 Prüfungen, 410 von Hand geprüft.
+- **Kern – Abgleich über `changes`:**
+  - Hat sich `global_revision` bewegt, wird der letzte Stand mit dem
+    Delta fortgeschrieben (`transport.changes`, nur AmiCloud).
+  - Voll gelistet wird bei jedem 20. Lauf (`delta_runs` im Stand), bei
+    410, bei Fehlern, nach mehr als 50 Seiten, bei offenen Konflikten,
+    nach geänderter Auswahl und im Probelauf.
+  - **Gefunden beim Bau:** Ein Grabstein für den Server-Ordner selbst
+    (umbenannt oder gelöscht) hätte alles lokal löschen lassen. Jetzt
+    führt er zur vollen Liste, und die bricht ab (S4).
+  - FakeTransport mit Änderungsprotokoll: Alle AmiCloud-Tests laufen
+    jetzt über das Delta. Zwillingstests vergleichen Delta und volle
+    Liste über gemischte Folgen (Umbenennen, Ordner wird Datei und
+    umgekehrt, Löschen und Neuanlegen, Konflikte); lokal und auf dem
+    Server ist das Ergebnis gleich.
+  - 119 Tests. Selbsttest gegen echten Server 56/56 mit 20 Delta-Abrufen
+    ohne Rückfall. `amicloud-sync` nach Umbenennung am Server: eine
+    `changes`-Anfrage, kein `list`.
+  - `cmd_changes` ist neu: `AcChange.path` liegt im selben Block statt in
+    einem eigenen 1-KB-Puffer. Auf dem Amiga sind Seiten 200 Zeilen lang.
+    Alle Amiga-Programme bauen.
+- **Abweichungen:**
+  - `changes` mit Präfix statt einer Zuordnung über `server_id`.
+  - Kein Purge-Job: Aufgeräumt wird beim Abruf von `changes`.
+  - Ein Teil-Scan je Verzeichnis lokal bleibt eine spätere Optimierung.
+- **Offen:**
+  - Server deployen (`migrate_006.sql` als root, dann die PHP-Dateien).
+    Clients der neuen Fassung gegen den alten Server fallen auf die volle
+    Liste zurück und melden „Server zu alt für den schrittweisen Abgleich“.
+  - Mac-Release auf Wunsch des Nutzers.
+  - Autostart von Hand testen.
+  - AmiOwnCloud/AmiVCS auf den neuen Core heben (Locale-Fix).

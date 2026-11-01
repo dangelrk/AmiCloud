@@ -672,6 +672,14 @@ und nicht ausgeführte Löschungen mit.
 Zeiten: Lokale Dateien bekommen die Ortszeit nach gmt_offset und dst
 aus amicloud.cfg (die Sommerzeit wird von Hand umgestellt).
 
+Schneller bei großen Ordnern (ab 0.3): Hat sich auf dem Server etwas
+geändert, holt der Abgleich nur die Liste der Änderungen seit dem
+letzten Mal, statt jeden Ordner einzeln abzufragen - das spart über
+eine langsame Leitung viel Zeit. Jeder 20. Abgleich liest trotzdem
+alles, ebenso nach einem Konflikt, nach mehr als 30 Tagen Pause oder
+wenn der Server-Ordner selbst umbenannt wurde. Braucht den Server ab
+migrate_006.sql.
+
 Virenprüfung (ab 0.3, optional): Ist die xvs.library installiert
 (Aminet util/virus), prüfen Abgleich, Kommandozeile, Shell und
 Dateimanager jede Datei bis 2 MB vor dem Hochladen und vor dem Ablegen

@@ -152,31 +152,52 @@ Fehler: 404 (Verzeichnis existiert nicht).
 
 ```
 GET api.php?action=changes&since=N
+GET api.php?action=changes&since=N&path=/Fotos&limit=500
 ```
 
 ```json
 {
   "status": "ok",
   "global_revision": 42,
+  "has_more": false,
+  "next": 42,
   "entries": [
     { "path": "/sub/file.txt", "type": "file", "size": 4096,
       "md5": "d41d8cd98f00b204e9800998ecf8427e", "mtime": 1719325800,
       "revision": 3, "change_seq": 41, "id": 17, "deleted": false },
-    { "path": "/sub/geloescht.txt", "type": "file", "size": 12,
-      "md5": "9e107d9d372bb6826bd81d3542a419d6", "mtime": 1719320000,
+    { "path": "/sub/geloescht.txt", "type": "file", "size": 0,
+      "md5": "", "mtime": 0,
       "revision": 2, "change_seq": 42, "id": 9, "deleted": true }
   ]
 }
 ```
 
-Liefert **alle** Zeilen dieses Users mit `change_seq &gt; since`, über den gesamten Baum hinweg
-(nicht auf ein Verzeichnis beschränkt wie `list`) — daher trägt jeder Eintrag seinen vollständigen,
-führend-`/`-Pfad in `path` statt nur eines `name`. Anders als `list` erscheinen hier auch gelöschte
-Pfade, markiert mit `"deleted": true` (siehe `delete` oben) — das ist die einzige Stelle der API, an
-der ein Client eine Löschung von einer Neuanlage auf der Gegenseite unterscheiden kann. `since=0`
-liefert die komplette Historie. Ein Client, der `since` gleich seiner zuletzt gesehenen
-`global_revision` setzt und eine leere `entries`-Liste zurückbekommt, weiß, dass sich seit dem
-letzten Sync nichts geändert hat, ohne einen vollen Verzeichnisbaum abzufragen.
+Liefert die Zeilen dieses Users mit `change_seq` &gt; `since`, aufsteigend nach `change_seq`. Sie
+sind nicht auf ein Verzeichnis beschränkt wie bei `list`, deshalb trägt jeder Eintrag seinen
+vollständigen Pfad mit führendem `/` in `path` statt nur eines `name`.
+
+- **Gelöschte Pfade** erscheinen mit `"deleted": true`. Das ist die einzige Stelle der API, an der
+  ein Client eine Löschung von einer Neuanlage auf der Gegenseite unterscheiden kann.
+- **Umbenennen und Verschieben** liefern den neuen Pfad (und alles darunter) als lebende Einträge
+  und den alten Pfad (und alles darunter) als gelöschte, alle mit derselben `change_seq`.
+- **`path`** (optional) schränkt auf diesen Ordner und alles darunter ein (`/` = alles).
+- **Seiten:** höchstens `limit` Zeilen (Vorgabe 1000, höchstens 5000). Gibt es mehr, ist
+  `has_more` wahr; die nächste Seite holt man mit `since` = `next`. Eine `change_seq` wird nie auf
+  zwei Seiten verteilt. Ein umbenannter Ordner kommt also ganz, auch wenn er größer als `limit` ist.
+- **`mtime`** ist wie bei `list` die Zeit der Datei im Dateisystem (Epochensekunden). `md5` ist wie
+  bei `list` ausgefüllt. Bei gelöschten Einträgen sind `mtime`, `size` und `md5` leer bzw. 0.
+- **`next`** ist ohne weitere Seiten mindestens `global_revision`.
+- **Grabsteine** (gelöschte Zeilen) werden nach 30 Tagen entfernt. Fragt ein Client mit einem
+  `since` vor dem ältesten entfernten Grabstein, antwortet der Server mit **410** (`since too old`).
+  Der Client muss dann alles mit `list` neu einlesen.
+- `since=0` liefert den ganzen Bestand.
+
+Ein Client, der `since` gleich seiner zuletzt gesehenen `global_revision` setzt und eine leere
+`entries`-Liste zurückbekommt, weiß, dass sich seit dem letzten Abgleich nichts geändert hat, ohne
+einen ganzen Verzeichnisbaum abzufragen. Der Abgleich der Clients (ab 0.3) nutzt `changes`, sobald
+sich `global_revision` bewegt hat, und liest bei jedem 20. Lauf alles mit `list`.
+
+Benötigt Migration `migrate_006.sql`.
 
 ### search — Datei-/Ordnernamen suchen
 
@@ -411,6 +432,7 @@ Fehler: 400 (Format), 404.
 
 ## Testsuite
 
+`scripts/test_changes.py` prüft `changes` (Grabsteine, Seiten, Präfix, Zeitbasis).
 `scripts/test_api.sh` prüft 11 der 13 Actions (alle außer `changes` und
 `search`) gegen einen laufenden Server, inklusive der MD5-/Mtime-Ergänzungen:
 
