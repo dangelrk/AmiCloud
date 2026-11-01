@@ -681,36 +681,127 @@ class FileStore
      * geloescht — der Client erkennt Loeschungen am 'deleted'-Flag statt
      * eine fehlende Zeile mit "neu auf der anderen Seite" zu verwechseln.
      * 'path' hat (anders als list()'s 'name') immer einen fuehrenden '/',
-     * da die Eintraege nicht auf ein Verzeichnis beschraenkt sind. */
-    public static function changes(int $since): void
+     * da die Eintraege nicht auf ein Verzeichnis beschraenkt sind.
+     *
+     * Phase 6 (docs/design/desktop-sync-plan.md):
+     *   - $prefix: nur $prefix selbst und alles darunter ("/" = alles).
+     *   - Seiten: hoechstens $limit Zeilen (Vorgabe 1000), 'has_more' und
+     *     'next' (das since der naechsten Seite). Eine change_seq wird nie
+     *     auf zwei Seiten verteilt -- ein umbenannter Ordner kommt ganz
+     *     oder gar nicht, auch wenn er groesser als $limit ist.
+     *   - mtime wie bei list: filemtime() der Datei, Epochensekunden ohne
+     *     Ortszeit (modified_at ist DATETIME in Ortszeit und in der
+     *     doppelten Stunde der Zeitumstellung mehrdeutig).
+     *   - Grabsteine (geloeschte Zeilen) werden nach 30 Tagen entfernt; wer
+     *     mit einem since davor fragt, bekommt 410 und gleicht voll ab. */
+    private const TOMBSTONE_DAYS = 30;
+
+    private static function purgeTombstones(): int
+    {
+        $db = DB::get();
+        $q = $db->prepare(
+            'SELECT MAX(change_seq) FROM files
+              WHERE user_id = ? AND deleted_at IS NOT NULL
+                AND deleted_at < NOW() - INTERVAL ' . self::TOMBSTONE_DAYS . ' DAY'
+        );
+        $q->execute([Auth::$user_id]);
+        $max = (int)($q->fetchColumn() ?: 0);
+        if ($max > 0) {
+            $db->beginTransaction();
+            try {
+                $db->prepare('UPDATE users SET tombstone_seq = GREATEST(tombstone_seq, ?) WHERE id = ?')
+                   ->execute([$max, Auth::$user_id]);
+                $db->prepare(
+                    'DELETE FROM files WHERE user_id = ? AND deleted_at IS NOT NULL AND change_seq <= ?
+                       AND deleted_at < NOW() - INTERVAL ' . self::TOMBSTONE_DAYS . ' DAY'
+                )->execute([Auth::$user_id, $max]);
+                $db->commit();
+            } catch (Throwable $e) {
+                $db->rollBack();
+                throw $e;
+            }
+        }
+        $q = $db->prepare('SELECT tombstone_seq FROM users WHERE id = ?');
+        $q->execute([Auth::$user_id]);
+        return (int)($q->fetchColumn() ?: 0);
+    }
+
+    public static function changes(int $since, int $limit = 0, string $prefix = '/'): void
     {
         $since = max(0, $since);
-        $stmt  = DB::get()->prepare(
-            'SELECT id, path, is_dir, size_bytes, checksum, revision, change_seq,
-                    UNIX_TIMESTAMP(modified_at) AS mtime_ts, deleted_at
-             FROM files
-             WHERE user_id = ? AND change_seq > ?
-             ORDER BY change_seq ASC'
-        );
-        $stmt->execute([Auth::$user_id, $since]);
+        $limit = $limit > 0 ? min($limit, 5000) : 1000;
+        $tombstoneSeq = self::purgeTombstones();
+        if ($since > 0 && $since < $tombstoneSeq) {
+            Response::error(410, 'since too old');
+        }
+        $global = self::currentGlobalRevision();
+
+        $where  = 'user_id = ? AND change_seq > ?';
+        $params = [Auth::$user_id, $since];
+        $prefixDb = dbPath($prefix);
+        if ($prefixDb !== '') {
+            $where   .= ' AND (path = ? OR path LIKE ?)';
+            $params[] = $prefixDb;
+            $params[] = self::likeEscape($prefixDb) . '/%';
+        }
+        $cols = 'id, path, is_dir, size_bytes, checksum, revision, change_seq,
+                 UNIX_TIMESTAMP(modified_at) AS mtime_ts, deleted_at';
+        $db = DB::get();
+        $stmt = $db->prepare("SELECT $cols FROM files WHERE $where
+                              ORDER BY change_seq ASC, id ASC LIMIT " . ($limit + 1));
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        $hasMore = count($rows) > $limit;
+        if ($hasMore) {
+            /* the group of the first row that did not fit must not be split */
+            $cut = (int)$rows[$limit]['change_seq'];
+            $page = array_values(array_filter($rows, fn($r) => (int)$r['change_seq'] < $cut));
+            if ($page === []) {
+                /* one group larger than $limit: deliver it whole */
+                $g = $db->prepare("SELECT $cols FROM files WHERE $where AND change_seq = ?
+                                   ORDER BY id ASC");
+                $g->execute(array_merge($params, [$cut]));
+                $page = $g->fetchAll();
+            }
+            $rows = $page;
+        }
 
         $entries = [];
-        foreach ($stmt->fetchAll() as $row) {
+        foreach ($rows as $row) {
+            $abs     = storagePath('/' . $row['path']);
+            $deleted = $row['deleted_at'] !== null || !file_exists($abs);
+            $isDir   = (int)$row['is_dir'] === 1;
+            $md5     = '';
+            $mtime   = 0;
+            if (!$deleted) {
+                $mtime = (int)@filemtime($abs);
+                if (!$isDir) {
+                    $md5 = self::md5For($abs, $row['path'], [$row['path'] => $row]);
+                }
+            }
             $entries[] = [
                 'path'       => '/' . $row['path'],
-                'type'       => ((int)$row['is_dir'] === 1) ? 'dir' : 'file',
-                'size'       => (int)$row['size_bytes'],
-                'md5'        => (string)($row['checksum'] ?? ''),
-                'mtime'      => (int)($row['mtime_ts'] ?? 0),
+                'type'       => $isDir ? 'dir' : 'file',
+                'size'       => $deleted ? 0 : ($isDir ? 0 : (int)@filesize($abs)),
+                'md5'        => $md5,
+                'mtime'      => $mtime,
                 'revision'   => (int)$row['revision'],
                 'change_seq' => (int)$row['change_seq'],
                 'id'         => (int)$row['id'],
-                'deleted'    => $row['deleted_at'] !== null,
+                'deleted'    => $deleted,
             ];
+        }
+        $next = $entries === [] ? max($since, $hasMore ? $since : $global)
+                                : (int)end($entries)['change_seq'];
+        if (!$hasMore) {
+            $next = max($next, $global);
         }
 
         Response::ok([
-            'global_revision' => self::currentGlobalRevision(),
+            'global_revision' => $global,
+            'has_more'        => $hasMore,
+            'next'            => $next,
             'entries'         => $entries,
         ]);
     }
@@ -938,10 +1029,28 @@ class FileStore
         $fromDb = dbPath($from);
         $toDb   = dbPath($to);
         $db = DB::get();
+        $oldPrefix = $fromDb . '/';
+        $newPrefix = $toDb . '/';
         $db->beginTransaction();
         try {
-            $db->prepare('DELETE FROM files WHERE user_id = ? AND deleted_at IS NOT NULL AND (path = ? OR path LIKE ?)')
-               ->execute([Auth::$user_id, $toDb, self::likeEscape($toDb) . '/%']);
+            /* Nur die Grabsteine am Ziel weg, deren Pfad gleich eine
+             * verschobene Zeile bekommt; die uebrigen bleiben, sonst
+             * erfuehre ein Client mit aelterem since nie von diesen
+             * Loeschungen (Phase 6). */
+            $db->prepare('DELETE FROM files WHERE user_id = ? AND deleted_at IS NOT NULL AND path = ?')
+               ->execute([Auth::$user_id, $toDb]);
+            if ($isDir) {
+                $db->prepare(
+                    'DELETE t FROM files t JOIN files s
+                       ON s.user_id = t.user_id AND s.path = CONCAT(?, SUBSTRING(t.path, ?))
+                     WHERE t.user_id = ? AND t.deleted_at IS NOT NULL AND t.path LIKE ?'
+                )->execute([
+                    $oldPrefix,
+                    strlen($newPrefix) + 1,
+                    Auth::$user_id,
+                    self::likeEscape($newPrefix) . '%',
+                ]);
+            }
 
             $changeSeq = self::bumpGlobalRevision();
             $db->prepare('UPDATE files SET path = ?, change_seq = ? WHERE user_id = ? AND path = ?')
@@ -949,8 +1058,6 @@ class FileStore
 
             if ($isDir) {
                 /* Alle Kind-Pfade umschreiben: alter Praefix -> neuer Praefix */
-                $oldPrefix = $fromDb . '/';
-                $newPrefix = $toDb . '/';
                 $db->prepare(
                     'UPDATE files SET path = CONCAT(?, SUBSTRING(path, ?)), change_seq = ?
                      WHERE user_id = ? AND path LIKE ?'
@@ -960,6 +1067,32 @@ class FileStore
                     $changeSeq,
                     Auth::$user_id,
                     self::likeEscape($oldPrefix) . '%',
+                ]);
+            }
+
+            /* Grabsteine fuer den alten Namen (und alles darunter), mit
+             * derselben change_seq: ein Client, der mit action=changes
+             * abgleicht, sieht sonst nur den neuen Pfad und haelt den alten
+             * fuer noch vorhanden (Phase 6). */
+            $db->prepare(
+                'INSERT INTO files (user_id, path, size_bytes, is_dir, checksum, revision, change_seq, deleted_at)
+                 SELECT user_id, ?, size_bytes, is_dir, checksum, revision, change_seq, NOW()
+                   FROM files WHERE user_id = ? AND path = ?
+                 ON DUPLICATE KEY UPDATE deleted_at = NOW(), change_seq = VALUES(change_seq)'
+            )->execute([$fromDb, Auth::$user_id, $toDb]);
+            if ($isDir) {
+                $db->prepare(
+                    'INSERT INTO files (user_id, path, size_bytes, is_dir, checksum, revision, change_seq, deleted_at)
+                     SELECT user_id, CONCAT(?, SUBSTRING(path, ?)), size_bytes, is_dir, checksum, revision,
+                            change_seq, NOW()
+                       FROM files WHERE user_id = ? AND path LIKE ? AND change_seq = ?
+                     ON DUPLICATE KEY UPDATE deleted_at = NOW(), change_seq = VALUES(change_seq)'
+                )->execute([
+                    $oldPrefix,
+                    strlen($newPrefix) + 1,
+                    Auth::$user_id,
+                    self::likeEscape($newPrefix) . '%',
+                    $changeSeq,
                 ]);
             }
             Shares::onRename(Auth::$user_id, $fromDb, $toDb);

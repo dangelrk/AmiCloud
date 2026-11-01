@@ -59,7 +59,11 @@ switch ($action) {
                          'quota'           => Users::quotaInfo(Auth::$user),
                          'max_upload'      => MAX_UPLOAD,
                      ]); break;
-    case 'changes':  FileStore::changes((int)($_GET['since'] ?? 0)); break;
+    case 'changes':  FileStore::changes(
+                         (int)($_GET['since'] ?? 0),
+                         (int)($_GET['limit'] ?? 0),
+                         $path   /* Praefix: nur Eintraege darunter, "/" = alle */
+                     ); break;
     case 'search':   FileStore::search($path, trim($_GET['q'] ?? ''),
                          isset($_GET['dirs']) ? (bool)$_GET['dirs'] : true); break;
     case 'list':     FileStore::list($path); break;

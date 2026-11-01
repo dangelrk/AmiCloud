@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_admin        TINYINT(1)       NOT NULL DEFAULT 0,
     quota_bytes     BIGINT UNSIGNED  NULL DEFAULT NULL,    -- NULL = unbegrenzt
     last_login      DATETIME         NULL DEFAULT NULL,
-    session_epoch   INT UNSIGNED     NOT NULL DEFAULT 0    -- ++ macht Web-Sessions ungueltig
+    session_epoch   INT UNSIGNED     NOT NULL DEFAULT 0,   -- ++ macht Web-Sessions ungueltig
+    tombstone_seq   BIGINT UNSIGNED  NOT NULL DEFAULT 0    -- aufgeraeumte Grabsteine bis hier (migrate_006)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS files (
