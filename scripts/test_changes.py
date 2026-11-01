@@ -142,6 +142,46 @@ check(by.get(f"{ROOT}/k/old.txt", {}).get("deleted") is True,
       f"alter Grabstein bleibt: {by.get(f'{ROOT}/k/old.txt')}")
 check(by.get(f"{ROOT}/k/f.txt", {}).get("deleted") is False, "verschobene Datei lebt")
 
+print("Ordner ohne mkdir (nur per Upload darunter): Zeile und Grabstein")
+s4 = rev()
+put(f"{ROOT}/imp/a.txt", "a")
+put(f"{ROOT}/imp/sub/b.txt", "b")
+ent, _, _ = changes(s4, path=ROOT)
+by = {e["path"]: e for e in ent}
+for p in ("imp", "imp/sub"):
+    check(by.get(f"{ROOT}/{p}", {}).get("deleted") is False and by[f"{ROOT}/{p}"]["type"] == "dir",
+          f"Ordner {p} gemeldet: {by.get(f'{ROOT}/{p}')}")
+s5 = rev()
+api("delete", "POST", b"", path=f"{ROOT}/imp", recursive=1)
+ent, _, _ = changes(s5, path=ROOT)
+by = {e["path"]: e for e in ent}
+check(by.get(f"{ROOT}/imp", {}).get("deleted") is True, f"Grabstein fuer imp selbst: {by.get(f'{ROOT}/imp')}")
+check(by.get(f"{ROOT}/imp/sub/b.txt", {}).get("deleted") is True, "Grabstein imp/sub/b.txt")
+
+print("Veralteter Grabstein eines Ordners, den es wieder gibt")
+put(f"{ROOT}/p/a/f.txt", "f")
+api("setcomment", "POST", b"", path=f"{ROOT}/p/a", comment="x")
+api("delete", "POST", b"", path=f"{ROOT}/p/a", recursive=1)
+put(f"{ROOT}/p/a/f.txt", "f2")
+s6 = rev()
+api("rename", "POST", b"", path=f"{ROOT}/p/a", to=f"{ROOT}/p/b")
+ent, _, _ = changes(s6, path=ROOT)
+by = {e["path"]: e for e in ent}
+check(by.get(f"{ROOT}/p/b", {}).get("deleted") is False, f"p/b lebt: {by.get(f'{ROOT}/p/b')}")
+check(by.get(f"{ROOT}/p/b/f.txt", {}).get("deleted") is False, "p/b/f.txt lebt")
+check(by.get(f"{ROOT}/p/a", {}).get("deleted") is True, "p/a geloescht")
+
+print("Umbenennen nimmt alte Grabsteine nicht mit")
+put(f"{ROOT}/q/t.txt", "t")
+put(f"{ROOT}/q/u.txt", "u")
+api("delete", "POST", b"", path=f"{ROOT}/q/t.txt")
+s7 = rev()
+api("rename", "POST", b"", path=f"{ROOT}/q", to=f"{ROOT}/q2")
+ent, _, _ = changes(s7, path=ROOT)
+paths = {e["path"] for e in ent}
+check(f"{ROOT}/q2/t.txt" not in paths, "kein Grabstein q2/t.txt")
+check(f"{ROOT}/q2/u.txt" in paths and f"{ROOT}/q/u.txt" in paths, "u.txt alt und neu")
+
 print("Aufraeumen")
 api("delete", "POST", b"", path=ROOT, recursive=1)
 print(f"\n{ok} ok, {fail} Fehler")

@@ -180,6 +180,10 @@ vollständigen Pfad mit führendem `/` in `path` statt nur eines `name`.
   ein Client eine Löschung von einer Neuanlage auf der Gegenseite unterscheiden kann.
 - **Umbenennen und Verschieben** liefern den neuen Pfad (und alles darunter) als lebende Einträge
   und den alten Pfad (und alles darunter) als gelöschte, alle mit derselben `change_seq`.
+  Schon gelöschte Pfade darunter bleiben dabei, wo sie waren.
+- **Ordner** erscheinen auch dann, wenn sie nur durch einen Upload darunter entstanden sind: Upload,
+  `mkdir` und `rename` legen fehlende Elternordner-Zeilen an und beleben gelöschte wieder. Ein
+  gelöschter Ordner bekommt immer einen eigenen Grabstein.
 - **`path`** (optional) schränkt auf diesen Ordner und alles darunter ein (`/` = alles).
 - **Seiten:** höchstens `limit` Zeilen (Vorgabe 1000, höchstens 5000). Gibt es mehr, ist
   `has_more` wahr; die nächste Seite holt man mit `since` = `next`. Eine `change_seq` wird nie auf
@@ -195,7 +199,8 @@ vollständigen Pfad mit führendem `/` in `path` statt nur eines `name`.
 Ein Client, der `since` gleich seiner zuletzt gesehenen `global_revision` setzt und eine leere
 `entries`-Liste zurückbekommt, weiß, dass sich seit dem letzten Abgleich nichts geändert hat, ohne
 einen ganzen Verzeichnisbaum abzufragen. Der Abgleich der Clients (ab 0.3) nutzt `changes`, sobald
-sich `global_revision` bewegt hat, und liest bei jedem 20. Lauf alles mit `list`.
+sich `global_revision` bewegt hat, und liest bei jedem 20. Lauf alles mit `list`. Enthält die
+Änderungsliste Löschungen, prüfen sie zusätzlich mit einem `list`, ob ihr Startordner noch existiert.
 
 Benötigt Migration `migrate_006.sql`.
 

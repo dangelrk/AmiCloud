@@ -78,6 +78,14 @@ void SyncController::stop()
     t.start();
     while (!m_thread->wait(50) && t.elapsed() < 20000)
         QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+    if (m_thread->isRunning()) {
+        // still inside a request that cannot be interrupted (list, a long
+        // MD5): let go of the thread instead of destroying it while it runs
+        // (qFatal); the process ends with it. Baseline and downloads are
+        // replaced atomically, so nothing is left half-written.
+        qWarning("AmiCloud Desktop: Abgleich endet nicht -- beende trotzdem");
+        m_thread->setParent(nullptr);
+    }
     m_thread = nullptr;
     m_worker = nullptr;
 }

@@ -896,10 +896,27 @@ Core db0fdaa und 82f1dda, AmiCloud f1d90ab, a5da0eb und 79e65cd.
   - `changes` mit Präfix statt einer Zuordnung über `server_id`.
   - Kein Purge-Job: Aufgeräumt wird beim Abruf von `changes`.
   - Ein Teil-Scan je Verzeichnis lokal bleibt eine spätere Optimierung.
+- **Unabhängige Prüfung vor 0.3 (01.11.2026), behoben:**
+  - Datenverlust: Ein Startordner ohne eigene Server-Zeile (nur durch
+    Uploads darunter entstanden) bekam beim Löschen oder Umbenennen keinen
+    Grabstein. Das Delta hätte alle lokalen Dateien gelöscht, S4 griff nicht.
+    Jetzt prüft der Kern bei Löschungen in der Änderungsliste mit einem
+    `list`, ob der Startordner noch existiert. Der Server schreibt zusätzlich
+    immer einen Grabstein für den Pfad selbst, und Upload, `mkdir` und
+    `rename` legen Elternordner-Zeilen an bzw. beleben sie wieder.
+  - Papierkorb-Ordner als Einheit nur, wenn genau die gescannten Einträge
+    darin liegen (nicht nur gleich viele).
+  - Der Zwischenstand speichert die alte Auswahl. Ein abgebrochener Lauf,
+    der einen Ordner wieder aufnimmt, listet danach erneut.
+  - Relative Server-Wurzel (`amicloud-sync Work:x texte`): Der Transport
+    gibt Pfade in der Form des Aufrufers zurück. Vorher ignorierte das
+    Delta alle Änderungen.
+  - Server: Zähler und Zeilen bei `delete` und `mkdir` in einer
+    Transaktion. `rename` verschiebt keine alten Grabsteine mehr, das sparte
+    unnötige 410-Antworten.
+  - App: Beenden während eines nicht abbrechbaren Aufrufs stürzt nicht mehr
+    ab. Der Text der Papierkorb-Frage nennt, dass lokal neue Dateien dann
+    nur noch im Papierkorb liegen.
+  - 122 Kerntests, `test_changes.py` 34/34.
 - **Offen:**
-  - Server deployen (`migrate_006.sql` als root, dann die PHP-Dateien).
-    Clients der neuen Fassung gegen den alten Server fallen auf die volle
-    Liste zurück und melden „Server zu alt für den schrittweisen Abgleich“.
-  - Mac-Release auf Wunsch des Nutzers.
   - Autostart von Hand testen.
-  - AmiOwnCloud/AmiVCS auf den neuen Core heben (Locale-Fix).

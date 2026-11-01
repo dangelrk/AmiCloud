@@ -268,8 +268,9 @@ void SettingsDialog::accept()
             box.setIcon(QMessageBox::Question);
             box.setWindowTitle(tr("Ordner abgewählt"));
             box.setText(tr("Diese Ordner werden nicht mehr abgeglichen. Was soll mit den "
-                           "Kopien auf diesem Rechner geschehen? Auf dem Server bleiben sie "
-                           "in jedem Fall erhalten."));
+                           "Kopien auf diesem Rechner geschehen? Was auf dem Server liegt, "
+                           "bleibt dort erhalten. Dateien, die seit dem letzten Abgleich hier "
+                           "neu oder geändert sind, gibt es dann nur noch im Papierkorb."));
             QStringList shown;
             for (const QString &g : std::as_const(gone)) shown << QDir::toNativeSeparators(g);
             box.setInformativeText(shown.join(QLatin1Char('\n')));

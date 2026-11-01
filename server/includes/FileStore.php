@@ -97,6 +97,62 @@ class FileStore
         return (int)DB::get()->lastInsertId();
     }
 
+    /* Elternordner eines gerade geschriebenen Pfades: geloeschte Zeilen
+     * (Grabsteine, deren Ordner es auf der Platte wieder gibt) leben
+     * wieder auf, fehlende werden angelegt -- sonst meldete changes den
+     * Ordner als geloescht bzw. gar nicht, und ein Client mit Delta-
+     * Abgleich verloere den Ordner oder alles darunter (Phase 6). */
+    private static function reviveParents(string $dbP, int $changeSeq): void
+    {
+        $parents = [];
+        $p = $dbP;
+        while (($pos = strrpos($p, '/')) !== false) {
+            $p = substr($p, 0, $pos);
+            if ($p !== '') {
+                $parents[] = $p;
+            }
+        }
+        if (!$parents) {
+            return;
+        }
+        $db = DB::get();
+        $ph = implode(',', array_fill(0, count($parents), '?'));
+        $db->prepare(
+            "UPDATE files SET deleted_at = NULL, is_dir = 1, change_seq = ?
+              WHERE user_id = ? AND deleted_at IS NOT NULL AND path IN ($ph)"
+        )->execute(array_merge([$changeSeq, Auth::$user_id], $parents));
+        $ins = $db->prepare(
+            'INSERT IGNORE INTO files (user_id, path, size_bytes, is_dir, change_seq, deleted_at)
+             VALUES (?, ?, 0, 1, ?, NULL)'
+        );
+        foreach ($parents as $par) {
+            $ins->execute([Auth::$user_id, $par, $changeSeq]);
+        }
+    }
+
+    /* fuehrt $fn in einer Transaktion aus, ausser es laeuft schon eine
+     * (deleteIfUnchanged()): Zaehler und Zeilen werden zusammen sichtbar,
+     * ein paralleles status/changes sieht nie einen Zaehlerstand ohne die
+     * zugehoerige Zeile (sonst verpasste ein Client diese Aenderung) */
+    private static function inTransaction(callable $fn)
+    {
+        $db = DB::get();
+        if ($db->inTransaction()) {
+            return $fn();
+        }
+        $db->beginTransaction();
+        try {
+            $r = $fn();
+            $db->commit();
+            return $r;
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     /* Aktueller Stand von Auth::$user_id's globalem Zaehler, ohne ihn zu
      * erhoehen — fuer action=status (billiger "nichts geaendert seit N"-
      * Kurzschluss) und die global_revision im action=changes-Envelope. */
@@ -453,6 +509,7 @@ class FileStore
                 ':rev'  => $revision,
                 ':cs'   => $changeSeq,
             ]);
+            self::reviveParents($dbP, $changeSeq);
             if (!rename($stage, $file)) {
                 throw new RuntimeException('rename to target failed');
             }
@@ -560,6 +617,7 @@ class FileStore
             return [400, 'Cannot delete root'];
         }
         $target = storagePath($path);
+        $wasDir = is_dir($target);
 
         if (is_dir($target)) {
             if ($recursive) {
@@ -575,17 +633,27 @@ class FileStore
             return [404, 'Not found'];
         }
 
-        $dbPath    = dbPath($path);
-        $db        = DB::get();
-        $changeSeq = self::bumpGlobalRevision();
-        $db->prepare('UPDATE files SET deleted_at = NOW(), change_seq = ? WHERE user_id = ? AND path = ?')
-           ->execute([$changeSeq, Auth::$user_id, $dbPath]);
-        if ($recursive) {
-            /* Kind-Zeilen aufraeumen — gleiches Praefix-Muster wie renameImpl() */
-            $db->prepare('UPDATE files SET deleted_at = NOW(), change_seq = ? WHERE user_id = ? AND path LIKE ?')
-               ->execute([$changeSeq, Auth::$user_id, self::likeEscape($dbPath) . '/%']);
-        }
-        Shares::onDelete(Auth::$user_id, $dbPath);
+        $dbPath = dbPath($path);
+        self::inTransaction(function () use ($dbPath, $recursive, $wasDir) {
+            $db        = DB::get();
+            $changeSeq = self::bumpGlobalRevision();
+            /* Grabstein auch dann, wenn der Pfad nie eine Zeile hatte (Ordner,
+             * die nur durch einen Upload darunter entstanden): sonst sieht
+             * changes nur die Kinder verschwinden, nicht den Ordner selbst */
+            $db->prepare(
+                'INSERT INTO files (user_id, path, size_bytes, is_dir, change_seq, deleted_at)
+                 VALUES (?, ?, 0, ?, ?, NOW())
+                 ON DUPLICATE KEY UPDATE deleted_at = NOW(), change_seq = VALUES(change_seq)'
+            )->execute([Auth::$user_id, $dbPath, $wasDir ? 1 : 0, $changeSeq]);
+            if ($recursive) {
+                /* Kind-Zeilen aufraeumen — gleiches Praefix-Muster wie renameImpl();
+                 * alte Grabsteine darunter behalten ihre Nummer */
+                $db->prepare('UPDATE files SET deleted_at = NOW(), change_seq = ?
+                               WHERE user_id = ? AND path LIKE ? AND deleted_at IS NULL')
+                   ->execute([$changeSeq, Auth::$user_id, self::likeEscape($dbPath) . '/%']);
+            }
+            Shares::onDelete(Auth::$user_id, $dbPath);
+        });
 
         return true;
     }
@@ -981,12 +1049,16 @@ class FileStore
          * KEY UPDATE statt INSERT IGNORE, damit ein zuvor geloeschtes
          * Verzeichnis (deleted_at gesetzt) beim Neuanlegen wiederbelebt
          * wird, statt eine Tombstone-Zeile stehen zu lassen. */
-        $changeSeq = self::bumpGlobalRevision();
-        DB::get()->prepare(
-            'INSERT INTO files (user_id, path, size_bytes, is_dir, change_seq, deleted_at)
-             VALUES (?, ?, 0, 1, ?, NULL)
-             ON DUPLICATE KEY UPDATE change_seq = VALUES(change_seq), deleted_at = NULL'
-        )->execute([Auth::$user_id, dbPath($path), $changeSeq]);
+        $changeSeq = self::inTransaction(function () use ($path) {
+            $changeSeq = self::bumpGlobalRevision();
+            DB::get()->prepare(
+                'INSERT INTO files (user_id, path, size_bytes, is_dir, change_seq, deleted_at)
+                 VALUES (?, ?, 0, 1, ?, NULL)
+                 ON DUPLICATE KEY UPDATE change_seq = VALUES(change_seq), deleted_at = NULL'
+            )->execute([Auth::$user_id, dbPath($path), $changeSeq]);
+            self::reviveParents(dbPath($path), $changeSeq);
+            return $changeSeq;
+        });
 
         Response::ok(['path' => $path, 'change_seq' => $changeSeq]);
     }
@@ -1043,6 +1115,7 @@ class FileStore
                 $db->prepare(
                     'DELETE t FROM files t JOIN files s
                        ON s.user_id = t.user_id AND s.path = CONCAT(?, SUBSTRING(t.path, ?))
+                          AND s.deleted_at IS NULL
                      WHERE t.user_id = ? AND t.deleted_at IS NOT NULL AND t.path LIKE ?'
                 )->execute([
                     $oldPrefix,
@@ -1053,14 +1126,24 @@ class FileStore
             }
 
             $changeSeq = self::bumpGlobalRevision();
-            $db->prepare('UPDATE files SET path = ?, change_seq = ? WHERE user_id = ? AND path = ?')
+            /* die Quelle gibt es auf der Platte, ihre Zeile lebt also --
+             * auch wenn sie ein veralteter Grabstein war */
+            $db->prepare('UPDATE files SET path = ?, change_seq = ?, deleted_at = NULL
+                           WHERE user_id = ? AND path = ?')
                ->execute([$toDb, $changeSeq, Auth::$user_id, $fromDb]);
+            /* ein Ordner ohne eigene Zeile bekommt eine, damit changes ihn
+             * unter dem neuen Namen meldet */
+            $db->prepare(
+                'INSERT IGNORE INTO files (user_id, path, size_bytes, is_dir, change_seq, deleted_at)
+                 VALUES (?, ?, 0, ?, ?, NULL)'
+            )->execute([Auth::$user_id, $toDb, $isDir ? 1 : 0, $changeSeq]);
+            self::reviveParents($toDb, $changeSeq);
 
             if ($isDir) {
                 /* Alle Kind-Pfade umschreiben: alter Praefix -> neuer Praefix */
                 $db->prepare(
                     'UPDATE files SET path = CONCAT(?, SUBSTRING(path, ?)), change_seq = ?
-                     WHERE user_id = ? AND path LIKE ?'
+                     WHERE user_id = ? AND path LIKE ? AND deleted_at IS NULL'
                 )->execute([
                     $newPrefix,
                     strlen($oldPrefix) + 1,
@@ -1211,12 +1294,16 @@ class FileStore
             return false;
         }
 
-        $changeSeq = self::bumpGlobalRevision();
-        DB::get()->prepare(
-            'INSERT INTO files (user_id, path, size_bytes, is_dir, change_seq, deleted_at)
-             VALUES (?, ?, 0, 1, ?, NULL)
-             ON DUPLICATE KEY UPDATE change_seq = VALUES(change_seq), deleted_at = NULL'
-        )->execute([Auth::$user_id, dbPath($path), $changeSeq]);
+        $changeSeq = self::inTransaction(function () use ($path) {
+            $changeSeq = self::bumpGlobalRevision();
+            DB::get()->prepare(
+                'INSERT INTO files (user_id, path, size_bytes, is_dir, change_seq, deleted_at)
+                 VALUES (?, ?, 0, 1, ?, NULL)
+                 ON DUPLICATE KEY UPDATE change_seq = VALUES(change_seq), deleted_at = NULL'
+            )->execute([Auth::$user_id, dbPath($path), $changeSeq]);
+            self::reviveParents(dbPath($path), $changeSeq);
+            return $changeSeq;
+        });
 
         return true;
     }
