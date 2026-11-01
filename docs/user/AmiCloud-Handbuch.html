@@ -682,6 +682,41 @@ Fehler mit dem Namen des Virus gemeldet. Ohne die Bibliothek wird nicht geprüft
 <pre>amicloud-sync -n Work:Texte /texte      ; erst schauen
 amicloud-sync Work:Texte /texte         ; dann abgleichen</pre>
 
+<h3 id="desktop">AmiCloud Desktop – Abgleich im Hintergrund <span class="platform-tag">macOS</span></h3>
+<p><strong>In Arbeit (ab 0.3):</strong> AmiCloud Desktop gleicht wie der
+ownCloud-Client einen Ordner im Hintergrund ab. Es sitzt als Wolke in der
+Menüleiste und nutzt denselben Abgleich wie <code>amicloud-sync</code>, mit allen
+Schutzregeln oben (Konfliktkopien, Rückfrage bei vielen Löschungen). Vorerst
+nur für Mac mit Apple-Chip ab macOS&nbsp;15; Windows und Linux folgen.</p>
+<ul>
+<li><strong>Einrichten:</strong> Beim ersten Start fragt ein Assistent nach
+Server-Adresse, Benutzer und App-Passwort (die Schaltfläche „App-Passwort im
+Browser anlegen“ öffnet die passende Seite der Weboberfläche), dem lokalen
+Ordner (Vorgabe <code>~/AmiCloud</code>) und der Auswahl.</li>
+<li><strong>Auswahl:</strong> Ein Startordner auf dem Server (Vorgabe
+<code>/</code>) und darunter ein Baum mit Häkchen. Gespeichert wird, was
+<em>abgewählt</em> ist; neue Server-Ordner sind also automatisch dabei. Wird ein
+Ordner abgewählt, der schon auf dem Mac liegt, fragt das Programm: in den
+Papierkorb oder behalten (dann wird er nicht mehr abgeglichen). Auf dem Server
+bleibt er in jedem Fall. Ein später wieder gewählter Ordner wird zusammengeführt
+wie beim ersten Abgleich, gelöscht wird dabei nichts.</li>
+<li><strong>Menü:</strong> Zustand und laufende Übertragung, „Jetzt abgleichen“,
+„Pause“/„Fortsetzen“ (hält auch eine laufende Übertragung an, der Rest folgt
+danach), „Ordner öffnen“, „Im Browser öffnen“, „Aktivität …“ (alle Aktionen,
+Konflikte und Fehler), „Einstellungen …“ (Konto, Ordner und Auswahl, Abstand der
+Abgleiche, Grenzen für die Rückfrage beim Löschen).</li>
+<li><strong>Abgelehnte Anmeldung:</strong> Lehnt der Server das App-Passwort ab
+(etwa weil es widerrufen wurde), fragt das Programm nicht weiter nach, bis ein
+neues eingetragen ist. So sperrt die Login-Bremse des Servers das Konto nicht
+für die anderen Geräte, den Amiga eingeschlossen.</li>
+<li><strong>Passwort:</strong> Das App-Passwort liegt in einer eigenen Datei,
+die nur der Benutzer lesen kann (<code>~/Library/Preferences/AmiCloud/AmiCloud
+Desktop/credentials</code>), nicht im Schlüsselbund.</li>
+</ul>
+<p>Noch nicht enthalten: Abgleich sofort bei lokalen Änderungen (bisher nach
+Zeitplan, Vorgabe alle 5&nbsp;Minuten), Start bei der Anmeldung und ein
+fertiges <code>.dmg</code>.</p>
+
 <h2 id="commander">12. amicloud-commander – Dateimanager</h2>
 
 <p>Ein Dateimanager mit zwei Panels nebeneinander. Jedes Panel zeigt über

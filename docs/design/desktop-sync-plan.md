@@ -1,9 +1,9 @@
 # Plan: AmiCloud Desktop – Ordnerabgleich für macOS, Windows, Linux
 
-Stand: 31.10.2026 · Status: Fassung 5, Phase 2 umgesetzt (§ 13). Entscheidungen in § 11, Befunde aus
-Phase 0 und 1 in § 12 (S14–S16 neu). Der Entwurf wurde von einem
-Subagenten gegen den Code geprüft und die Befunde eingearbeitet. Phase 0
-und 1 sind erledigt, am Sync-Kern selbst ist noch nichts geändert.
+Stand: 01.11.2026 · Status: Fassung 5; Phasen 0–4 umgesetzt (§ 13–15),
+Phase 5 umgesetzt (§ 16). Entscheidungen in § 11, Befunde aus Phase 0 und 1
+in § 12 (S14–S16 neu). Der Entwurf wurde von einem Subagenten gegen den
+Code geprüft und die Befunde eingearbeitet.
 
 ## 1. Ziel
 
@@ -757,4 +757,66 @@ AmiVCS 4ebf124. Version 0.3 eingetragen, **noch kein Release**
   Löschungen, Zurückkopieren nach „Nein“, `FORCE`.
 - **Doku:** Handbücher und Guides beider Projekte.
 
+## 16. Stand der Umsetzung Phase 5 (01.11.2026)
 
+macOS-Client Grundstufe, `apps/amicloud-desktop-qt/` (Qt 6 Widgets,
+CMake, `make qt`). Version 0.3, **noch kein Release**.
+
+- **Kern:**
+  - `SyncOptions.excludes`/`n_excludes`: Pfadpräfixe relativ zum
+    Startordner. Sie werden auf beiden Seiten übergangen, ihre
+    Stand-Einträge entfallen. Ein Stempel der Liste (MD5) steht im Stand
+    (`selection`); eine geänderte Liste schaltet den Schnellweg für einen
+    Lauf ab. `sync_path_excluded()` für die Clients.
+  - 9 neue Tests, jetzt 106.
+- **Befund, behoben:** parson las und schrieb Zahlen nach dem Locale des
+  Prozesses. Qt setzt `setlocale(LC_ALL, "")`; unter `de_DE` war damit
+  jede Antwort mit einer Zahl vor einem weiteren Feld ungültig. Auch der
+  eigene Stand ließ sich nicht lesen, jeder Lauf wäre ein Erstabgleich
+  gewesen, ohne Löschungen. Betroffen war auch der Qt-Commander, wenn er
+  mit `LANG=de_DE` startet (aus dem Terminal; aus dem Finder meist im
+  C-Locale). Jetzt gilt im Kern unabhängig vom Locale immer `.`.
+- **Befund, behoben (S2):** Bricht Pause oder Ctrl-C die laufende
+  Übertragung ab, zählt das nicht mehr als Fehler. Der Lauf gilt als
+  abgebrochen, auch wenn es die letzte Aktion war.
+- **Client:**
+  - `CoreWorker` ist der einzige Thread für Kernaufrufe: Kontoprüfung,
+    Ordnerliste und Lauf.
+  - `CoreBridge` leitet `ui_hooks` als Qt-Signale weiter. `ui_confirm`
+    blockiert den Worker, bis die Frage im GUI-Thread beantwortet ist.
+  - `SyncController` übernimmt Zeitplan, Zustände, Pause und das Anwenden
+    neuer Einstellungen erst nach dem laufenden Lauf. Papierkorb erst
+    danach, mit der neuen Auswahl schon gespeichert.
+  - `CredentialStore` speichert das App-Passwort in einer eigenen Datei,
+    die von Anfang an 0600 hat (`QSaveFile`).
+  - Assistent, Auswahlbaum, Einstellungen, Aktivität, Menüleiste mit
+    gezeichnetem Vorlagen-Symbol.
+- **401:** Vor jedem Lauf wird `status` abgefragt; bei 401/403 kommt
+  kein Lauf und kein Zeitplan mehr, bis neue Zugangsdaten eingetragen
+  sind. Ohne Netz wird mit Rückzug neu versucht (1, 2, 4, … Minuten bis
+  zum Intervall).
+- **Abweichungen:**
+  - Kein `RemoteWatcher` mit eigenem Takt: Der Zeitplan startet den Lauf,
+    der Schnellweg (`global_revision`) hält ihn billig.
+  - Pause setzt den Break-Merker des Kerns (`ui_break_set`).
+  - Der Papierkorb gilt für abgewählte Ordner (`QFile::moveToTrash`);
+    `localfs_set_trash_hook` für Löschungen im Lauf folgt in Phase 6.
+- **Tests:** `amicloud-desktop-selftest` läuft ohne Oberfläche gegen einen
+  echten Server: lokaler `php -S` mit MariaDB im Scratchpad. Alle 47
+  Prüfungen grün, unter `de_DE`. Geprüft:
+  - Konto richtig und falsch (401)
+  - zwei Clients mit und ohne Ordner B, Wiederaufnahme
+  - Abwählen mit Papierkorb
+  - Massenlöschung „Nein“ und Zurückkopieren
+  - Pause während 40 MB und Fortsetzen
+  - widerrufenes Passwort und Rückkehr
+  - Logik des Auswahlbaums (Ab- und Anwählen unter einem
+    ausgeschlossenen Ordner)
+
+  Die App startet, Menüleistensymbol und Assistent erscheinen. Von Hand
+  noch zu prüfen: der ganze Assistent, die Einstellungen und die
+  Rückfrage-Dialoge an echter Oberfläche.
+- **Nächstes (Phase 6):** FSEvents, Papierkorb-Hook für Löschungen,
+  Autostart (`SMAppService`), `.dmg` mit `macdeployqt` und Ad-hoc-
+  Signatur; Server: `changes` mit Paginierung, Grabsteine, einheitliche
+  Zeitbasis.

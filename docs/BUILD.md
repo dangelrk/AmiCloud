@@ -40,7 +40,7 @@ die Liste):
 | Ziel | Wirkung |
 |---|---|
 | `make pc` (= `make`) | Kommandozeilenprogramme für den Host: `amicloud`, `amicloud-shell`, `amicloud-sync` → `bin/pc/` |
-| `make qt` | Qt-6-Programm `amicloud-commander` per CMake (Build-Ordner `build/amicloud-commander-qt/`) → `bin/pc/` |
+| `make qt` | Qt-6-Programme `amicloud-commander` und AmiCloud Desktop per CMake (Build-Ordner `build/<verzeichnis>/`) → `bin/pc/` |
 | `make amiga` | Alle AmigaOS-Programme per vbcc-Cross-Compiler → `bin/amiga/` |
 | `make dist-amiga` | Amiga-Installationsschublade `build/dist/AmiCloud/` mit Icons, dazu `build/AmiCloud.lha` |
 | `make release` | wie `dist-amiga`, dazu `build/release/AmiCloud-<version>.lha` und `.readme` |
@@ -66,12 +66,22 @@ cmake -S apps/amicloud-commander-qt -B build/amicloud-commander-qt
 cmake --build build/amicloud-commander-qt           # Qt
 ```
 
+AmiCloud Desktop hat einen Selbsttest ohne Oberfläche gegen einen echten
+Server (am besten ein leeres Testkonto; er legt `/dt_<pid>/` an):
+
+```sh
+cmake --build build/amicloud-desktop-qt --target amicloud-desktop-selftest
+AC_TEST_SERVER=http://127.0.0.1:8099 AC_TEST_USER=tester AC_TEST_PASS=… \
+  build/amicloud-desktop-qt/amicloud-desktop-selftest /pfad/zu/leerem/ordner
+```
+
 | Verzeichnis | Programm | `make pc` | `make qt` | `make amiga` |
 |---|---|---|---|---|
 | `apps/amicloud` | `amicloud` | ja | – | ja |
 | `apps/amicloud-shell` | `amicloud-shell` | ja | – | ja |
 | `apps/amicloud-sync` | `amicloud-sync` | ja | – | ja |
 | `apps/amicloud-commander-qt` | `amicloud-commander` (Qt 6) | – | ja | – |
+| `apps/amicloud-desktop-qt` | `AmiCloud Desktop.app` (Qt 6, macOS; Abgleich im Hintergrund) | – | ja | – |
 | `apps/amicloud-commander-mui` | `amicloud-commander` (MUI) | – | – | ja |
 | `apps/amicloud-prefs` | `AmiCloudPrefs` | – | – | ja |
 | `handler/cloudhandler` | `amicloud-handler`, `amicloud-worker` | – | – | ja |

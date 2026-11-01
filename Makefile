@@ -7,7 +7,7 @@
 
 PROJECT    = AmiCloud
 PC_DIRS    = apps/amicloud apps/amicloud-shell apps/amicloud-sync
-QT_DIRS    = apps/amicloud-commander-qt
+QT_DIRS    = apps/amicloud-commander-qt apps/amicloud-desktop-qt
 AMIGA_DIRS = apps/amicloud apps/amicloud-shell apps/amicloud-sync apps/amicloud-commander-mui apps/amicloud-prefs handler/cloudhandler
 # Zusaetzlich in die Amiga-Installationsschublade (make dist-amiga):
 # DOSDriver fuer AMICLOUD: nach Storage/DOSDrivers/ (Install-AmiCloud kopiert
