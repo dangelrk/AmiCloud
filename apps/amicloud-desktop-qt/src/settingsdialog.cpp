@@ -76,6 +76,9 @@ QWidget *SettingsDialog::buildAccountTab()
     auto *row = new QHBoxLayout;
     auto *create = new QPushButton(tr("App-Passwort im Browser anlegen …"));
     auto *check = new QPushButton(tr("Anmeldung prüfen"));
+    // Enter in a field = "Übernehmen", never one of these
+    create->setAutoDefault(false);
+    check->setAutoDefault(false);
     row->addWidget(create);
     row->addWidget(check);
     row->addStretch();
@@ -130,12 +133,14 @@ QWidget *SettingsDialog::buildFolderTab()
     auto *lrow = new QHBoxLayout;
     m_local = new QLineEdit(m_orig.localFolder);
     auto *pick = new QPushButton(tr("Wählen …"));
+    pick->setAutoDefault(false);
     lrow->addWidget(m_local, 1);
     lrow->addWidget(pick);
     form->addRow(tr("Lokaler Ordner:"), lrow);
     auto *rrow = new QHBoxLayout;
     m_remote = new QLineEdit(m_orig.remoteFolder);
     auto *show = new QPushButton(tr("Anzeigen"));
+    show->setAutoDefault(false);
     rrow->addWidget(m_remote, 1);
     rrow->addWidget(show);
     form->addRow(tr("Startordner auf dem Server:"), rrow);

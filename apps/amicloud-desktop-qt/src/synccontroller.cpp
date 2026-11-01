@@ -296,6 +296,13 @@ void SyncController::onMessage(int level, const QString &msg)
 {
     QString text = msg;
     if (text.startsWith(QStringLiteral("amicloudcore: "))) text.remove(0, 14);
+    // the kernel names local files by their full path: show them relative
+    // to the sync folder, the line is about the file, not the folder
+    if (!m_settings.localFolder.isEmpty()) {
+        QString root = QDir::cleanPath(m_settings.localFolder);
+        text.replace(root + QLatin1Char('/'), QString());
+        text.replace(root, QStringLiteral("."));
+    }
     addLog(level, text);
 }
 

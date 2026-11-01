@@ -813,9 +813,18 @@ CMake, `make qt`). Version 0.3, **noch kein Release**.
   - Logik des Auswahlbaums (Ab- und Anwählen unter einem
     ausgeschlossenen Ordner)
 
-  Die App startet, Menüleistensymbol und Assistent erscheinen. Von Hand
-  noch zu prüfen: der ganze Assistent, die Einstellungen und die
-  Rückfrage-Dialoge an echter Oberfläche.
+  **Oberfläche (01.11.2026, per AppleScript/Bedienungshilfen und echten
+  Mausklicks gegen den Testserver):** Assistent komplett (falsches und
+  richtiges Passwort, lokaler Ordner, Auswahlbaum mit Ab-/Teilauswahl,
+  Server-Wurzel `/`), erster Abgleich, Statusmenü, Pause/Fortsetzen
+  (Symbol, Menütexte, gespeicherter Zustand), Aktivität, Einstellungen
+  (Anmeldung prüfen mit Belegung, gespeicherte Auswahl, Abwählen →
+  Rückfrage → Papierkorb, Server unverändert), Beenden über das Menü.
+  Dabei gefunden und behoben: Vorschlagspfad im Assistenten nicht
+  übernehmbar (Pflichtfeld zählte erst nach Änderung), Zusatzschaltflächen
+  waren Standardschaltfläche (Enter öffnete den Browser), Aktivität zeigte
+  volle lokale Pfade. Noch offen: eigenes App-Symbol (`.icns`, Phase 6);
+  die Rückfrage bei Massenlöschung nur im Selbsttest, nicht als Fenster.
 - **Nächstes (Phase 6):** FSEvents, Papierkorb-Hook für Löschungen,
   Autostart (`SMAppService`), `.dmg` mit `macdeployqt` und Ad-hoc-
   Signatur; Server: `changes` mit Paginierung, Grabsteine, einheitliche

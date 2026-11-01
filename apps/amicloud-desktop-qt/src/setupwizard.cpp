@@ -62,6 +62,7 @@ public:
         auto *open = new QPushButton(tr("App-Passwort im Browser anlegen …"));
         open->setToolTip(tr("Öffnet die Einstellungen der Web-Oberfläche. Dort ein "
                             "App-Passwort anlegen und hier einfügen."));
+        open->setAutoDefault(false);   // Enter in the password field = Weiter
         auto *row = new QHBoxLayout;
         row->addWidget(open);
         row->addStretch();
@@ -129,6 +130,7 @@ public:
         auto *row = new QHBoxLayout;
         w->localEdit = new QLineEdit(QDir::homePath() + QStringLiteral("/AmiCloud"));
         auto *pick = new QPushButton(tr("Wählen …"));
+        pick->setAutoDefault(false);
         row->addWidget(w->localEdit, 1);
         row->addWidget(pick);
         v->addLayout(row);
@@ -136,14 +138,25 @@ public:
         m_hint->setWordWrap(true);
         v->addWidget(m_hint);
         v->addStretch();
-        registerField(QStringLiteral("local*"), w->localEdit);
+        // not "local*": a mandatory field only counts as filled once it
+        // differs from its value at registration -- the proposed path
+        // could not be taken as it is (isComplete() below instead)
+        registerField(QStringLiteral("local"), w->localEdit);
         connect(pick, &QPushButton::clicked, this, [this] {
             QString d = QFileDialog::getExistingDirectory(this, tr("Lokaler Ordner"),
                                                           m_w->localEdit->text());
             if (!d.isEmpty()) m_w->localEdit->setText(d);
         });
-        connect(w->localEdit, &QLineEdit::textChanged, this, [this] { updateHint(); });
+        connect(w->localEdit, &QLineEdit::textChanged, this, [this] {
+            updateHint();
+            emit completeChanged();
+        });
         updateHint();
+    }
+
+    bool isComplete() const override
+    {
+        return !m_w->localEdit->text().trimmed().isEmpty();
     }
 
     bool validatePage() override
@@ -194,6 +207,7 @@ public:
         row->addWidget(new QLabel(tr("Startordner auf dem Server:")));
         w->remoteEdit = new QLineEdit(QStringLiteral("/"));
         auto *reload = new QPushButton(tr("Anzeigen"));
+        reload->setAutoDefault(false);
         row->addWidget(w->remoteEdit, 1);
         row->addWidget(reload);
         v->addLayout(row);
