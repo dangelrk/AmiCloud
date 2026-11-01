@@ -76,9 +76,11 @@ set(APP_SRCS
 )
 if(APPLE)
     enable_language(OBJCXX)
-    list(APPEND APP_SRCS src/platform_mac.mm)
+    # localwatcher.h listed: its sources have other base names, AUTOMOC
+    # would not find the Q_OBJECT header otherwise
+    list(APPEND APP_SRCS src/platform_mac.mm src/localwatcher_mac.mm src/localwatcher.h)
 else()
-    list(APPEND APP_SRCS src/platform_other.cpp)
+    list(APPEND APP_SRCS src/platform_other.cpp src/localwatcher_other.cpp src/localwatcher.h)
 endif()
 
 if(APPLE)
@@ -113,7 +115,7 @@ target_compile_definitions(amicloud-desktop PRIVATE AC_BUILD_DATE=${AC_BUILD_DAT
 target_compile_options(amicloud-desktop PRIVATE $<$<COMPILE_LANGUAGE:CXX,OBJCXX>:-Wall -Wextra>)
 target_link_libraries(amicloud-desktop PRIVATE Qt6::Widgets ${CURL_LIBRARIES})
 if(APPLE)
-    target_link_libraries(amicloud-desktop PRIVATE "-framework AppKit")
+    target_link_libraries(amicloud-desktop PRIVATE "-framework AppKit" "-framework CoreServices")
 endif()
 
 set_target_properties(amicloud-desktop PROPERTIES
@@ -132,7 +134,12 @@ add_executable(amicloud-desktop-selftest EXCLUDE_FROM_ALL
     src/coreworker.cpp
     src/synccontroller.cpp
     src/foldertree.cpp
+    $<IF:$<BOOL:${APPLE}>,src/localwatcher_mac.mm,src/localwatcher_other.cpp>
+    src/localwatcher.h
 )
+if(APPLE)
+    target_link_libraries(amicloud-desktop-selftest PRIVATE "-framework CoreServices")
+endif()
 target_include_directories(amicloud-desktop-selftest PRIVATE src
     ${LIBS_DIR}/libcloudcore/include/cloudcore
     ${LIBS_DIR}/libcloudhttp/include/cloudhttp

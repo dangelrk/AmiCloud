@@ -11,6 +11,7 @@
 
 #include "appsettings.h"
 #include "coreworker.h"
+#include "localwatcher.h"
 
 #include <QDateTime>
 #include <QObject>
@@ -80,6 +81,7 @@ private slots:
     void onSyncStarted();
     void onSyncFinished(const SyncResult &res);
     void onTimer();
+    void onLocalChange();
 
 private:
     void setState(State s, const QString &text);
@@ -87,6 +89,7 @@ private:
     void applyPending();
     void scheduleNext();
     bool readyToRun() const;
+    void updateWatch();
 
     AppSettings m_settings;
     QString m_password;
@@ -95,6 +98,10 @@ private:
     QThread *m_thread = nullptr;
     CoreWorker *m_worker = nullptr;
     QTimer m_timer;
+    LocalWatcher m_watcher;
+    QTimer m_debounce;            // local changes: one run 3 s after the last
+    bool m_localDirty = false;    // a local change arrived during a run
+    QString m_watchedPath;
     bool m_running = false;       // a sync request is queued or running
     bool m_again = false;         // "sync now" while running: one more run after it
     int m_nextReq = 1;

@@ -17,6 +17,7 @@ extern "C" {
 #include "progress.h"
 #include "sync.h"
 #include "amicloud_transport.h"
+#include "localfs.h"
 }
 
 static std::atomic<bool> g_stop{false};
@@ -45,10 +46,18 @@ static void fill_config(AcConfig *cfg, const Account &acc)
     cfg->verify_ssl = acc.verifySsl ? 1 : 0;
 }
 
+// local deletions of a sync run go to the trash (plan section 5); a
+// directory as one unit. Called in the worker thread.
+static int trash_hook(const char *path, int)
+{
+    return QFile::moveToTrash(QFile::decodeName(path)) ? 1 : 0;
+}
+
 void CoreWorker::init()
 {
     http_init();
     cs_open(nullptr);   // PC: UTF-8 names, NFC (charset.c)
+    localfs_set_trash_hook(trash_hook);
 }
 
 void CoreWorker::shutdown()

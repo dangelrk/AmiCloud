@@ -20,6 +20,10 @@ SyncController::SyncController(QObject *parent) : QObject(parent)
 {
     m_timer.setSingleShot(true);
     connect(&m_timer, &QTimer::timeout, this, &SyncController::onTimer);
+    m_debounce.setSingleShot(true);
+    m_debounce.setInterval(3000);
+    connect(&m_debounce, &QTimer::timeout, this, &SyncController::syncNow);
+    connect(&m_watcher, &LocalWatcher::changed, this, &SyncController::onLocalChange);
 }
 
 SyncController::~SyncController()
@@ -47,6 +51,7 @@ void SyncController::start()
     m_thread->start();
     QMetaObject::invokeMethod(m_worker, &CoreWorker::init, Qt::QueuedConnection);
 
+    updateWatch();
     if (!m_settings.isConfigured()) {
         setState(NotConfigured, tr("Nicht eingerichtet"));
     } else if (m_settings.paused) {
@@ -62,6 +67,8 @@ void SyncController::stop()
 {
     if (!m_thread) return;
     m_timer.stop();
+    m_debounce.stop();
+    m_watcher.watch(QString());
     CoreWorker::requestStop();
     QMetaObject::invokeMethod(m_worker, &CoreWorker::shutdown, Qt::QueuedConnection);
     m_thread->quit();
@@ -112,6 +119,7 @@ void SyncController::syncNow()
     if (!readyToRun()) return;
     if (m_running) { m_again = true; return; }
     m_timer.stop();
+    m_debounce.stop();
     m_running = true;
     m_again = false;
 
@@ -203,6 +211,26 @@ void SyncController::applyPending()
              m_state == Error || m_state == Offline)
         setState(Idle, tr("Bereit"));
     if (!m_settings.paused) CoreWorker::allowRuns();
+    updateWatch();
+}
+
+// the local folder only exists after the first run: (re)watch whenever
+// it may have changed
+void SyncController::updateWatch()
+{
+    QString want = m_settings.isConfigured() ? m_settings.localFolder : QString();
+    if (want.isEmpty()) { if (m_watcher.active()) m_watcher.watch(QString()); return; }
+    if (!m_watcher.active() || m_watchedPath != want) {
+        m_watcher.watch(want);
+        m_watchedPath = m_watcher.active() ? want : QString();
+    }
+}
+
+void SyncController::onLocalChange()
+{
+    if (!readyToRun() || m_state == AuthError) return;
+    if (m_running) { m_localDirty = true; return; }   // one more run after this one
+    m_debounce.start();
 }
 
 void SyncController::onTimer()
@@ -288,8 +316,17 @@ void SyncController::onSyncFinished(const SyncResult &res)
     }
 
     applyPending();
-    if ((m_again || hadPending) && readyToRun() && m_state != AuthError) syncNow();
-    else scheduleNext();
+    updateWatch();
+    if ((m_again || hadPending) && readyToRun() && m_state != AuthError) {
+        m_localDirty = false;
+        syncNow();
+    } else {
+        scheduleNext();
+        // changes during the run (also our own writes): one follow-up run,
+        // which then finds nothing to do and stays quiet
+        if (m_localDirty && readyToRun() && m_state != AuthError) m_debounce.start();
+        m_localDirty = false;
+    }
 }
 
 void SyncController::onMessage(int level, const QString &msg)

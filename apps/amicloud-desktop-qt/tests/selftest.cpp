@@ -246,6 +246,38 @@ int main(int argc, char **argv)
         std::printf("    %s\n", qPrintable(ctl.statusText()));
     }
 
+    std::printf("FSEvents: lokale Aenderung loest einen Abgleich aus, danach Ruhe\n");
+    {
+        int runs = 0;
+        auto c = QObject::connect(&ctl, &SyncController::stateChanged, &ctl, [&] {
+            if (ctl.state() == SyncController::Syncing) runs++;
+        });
+        waitFor([] { return false; }, 2500);   // let the watcher settle after the last run
+        int before = runs;
+        writeFile(c1 + "/watched.txt", "fsevents");
+        CHECK(waitFor([&] { return runs > before && ctl.state() != SyncController::Syncing; }, 30000));
+        bool uploaded = false;
+        for (const LogEntry &e : ctl.log())
+            if (e.text.contains("watched.txt") && e.text.startsWith("Uploaded")) uploaded = true;
+        CHECK(uploaded);
+        int after = runs;
+        waitFor([] { return false; }, 15000);   // own writes: at most one quiet follow-up
+        std::printf("    Laeufe durch die Aenderung: %d, danach: %d\n", after - before, runs - after);
+        CHECK(runs - after <= 1);
+        QObject::disconnect(c);
+    }
+
+    std::printf("Papierkorb: auf dem Server geloeschte Datei verschwindet lokal ohne Fehler\n");
+    {
+        CHECK(waitRun(&ctl, [&] { ctl.applySettings(base(server, user, c2, remote), QString(), {}); }));
+        CHECK(QFile::remove(c2 + "/A/a.txt"));
+        CHECK(waitRun(&ctl, [&] { ctl.syncNow(); }));
+        CHECK(waitRun(&ctl, [&] { ctl.applySettings(base(server, user, c1, remote), QString(), {}); }));
+        CHECK(!QFileInfo::exists(c1 + "/A/a.txt"));
+        CHECK(ctl.state() == SyncController::Idle);
+        std::printf("    %s\n", qPrintable(ctl.statusText()));
+    }
+
     std::printf("App-Passwort falsch: AuthError, keine weiteren Laeufe\n");
     {
         AppSettings s = ctl.settings();
