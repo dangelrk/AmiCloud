@@ -294,8 +294,28 @@ void TransferJob::run()
     int okCount = 0, errCount = 0;
     bool cancelled = false;
 
-    for (const Item &it : m_items) {
+    /* Cloud -> local: server names that would be one file at the
+     * destination (case, umlauts on macOS/Windows) are not fetched -- the
+     * second would overwrite the first, and a move would then delete
+     * both on the server. Counted as errors. */
+    QVector<unsigned char> skip(m_items.size(), 0);
+    if ((m_op == CopyCloudToLocal || m_op == MoveCloudToLocal) && m_items.size() > 1) {
+        QVector<QByteArray> names;
+        QVector<const char *> un;
+        for (const Item &it : m_items) names.append(it.src.section('/', -1).toUtf8());
+        for (const QByteArray &n : names) un.append(n.constData());
+        QByteArray dir = QFileInfo(m_items.first().dst).absolutePath().toUtf8();
+        int k = panel_local_clashes(un.constData(), int(un.size()), dir.constData(), skip.data());
+        if (k > 0) {
+            if (m_usesCopyCtx) m_ctx.pr.err += k;
+            else               errCount += k;
+        }
+    }
+
+    for (int i = 0; i < m_items.size(); i++) {
+        const Item &it = m_items.at(i);
         if (m_cancelRequested.load() || m_ctx.cancelled) { cancelled = true; break; }
+        if (skip.at(i)) continue;
         if (m_usesCopyCtx) {
             runOne(it); /* ok/err/skip already tallied in m_ctx.pr, see below */
         } else if (runOne(it)) {

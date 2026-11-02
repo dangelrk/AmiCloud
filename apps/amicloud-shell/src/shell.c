@@ -573,6 +573,7 @@ static void do_get_pattern(const AcConfig *eff,
     AcEntry *entries;
     int      i, ne, matches = 0;
     CopyCtx  c; /* ask = !force: prompts via ui_overwrite() on conflicts */
+    unsigned char *skip;
 
     cmd_resolve_path(eff, dirpart, rdir, sizeof(rdir));
     strncpy(ldestdir, (local_arg && *local_arg) ? local_arg : ".",
@@ -588,13 +589,40 @@ static void do_get_pattern(const AcConfig *eff,
         return;
     }
     localfs_mkdir_p(ldestdir);
+    copyctx_init(&c, !force);
+
+    /* Names that would be one file in ldestdir (case, umlauts): neither
+     * is fetched -- the second would overwrite the first, with -f even
+     * without asking. */
+    skip = ne > 1 ? (unsigned char *)calloc((size_t)ne, 1) : NULL;
+    if (ne > 1) {
+        const char **un = (const char **)malloc(sizeof(char *) * (size_t)ne);
+        int k, nm = 0, *at = (int *)malloc(sizeof(int) * (size_t)ne);
+        unsigned char *sk = (unsigned char *)calloc((size_t)ne, 1);
+        k = -1;
+        if (skip && un && at && sk) {
+            for (i = 0; i < ne; i++)
+                if (pattern_match(p, entries[i].name)) { at[nm] = i; un[nm++] = entries[i].name; }
+            k = panel_local_clashes(un, nm, ldestdir, sk);
+            for (i = 0; i < nm; i++) if (sk[i]) skip[at[i]] = 1;
+        }
+        free(un); free(at); free(sk);
+        if (k < 0) {
+            fprintf(stderr, "amicloud: get: kein Speicher\n");
+            free(skip);
+            cmd_entries_free(entries);
+            pattern_free(p);
+            return;
+        }
+        c.pr.err += k;
+    }
 
     /* Pass 1: count matches (+ recurse-count matched directories) so y
      * and total_bytes are known before the first transfer (plan §17.1). */
-    copyctx_init(&c, !force);
     for (i = 0; i < ne; i++) {
         if (!pattern_match(p, entries[i].name)) continue;
         matches++;
+        if (skip && skip[i]) continue;
         if (entries[i].is_dir) {
             if (recursive) {
                 char rchild[AC_MAX_PATH];
@@ -611,7 +639,7 @@ static void do_get_pattern(const AcConfig *eff,
     for (i = 0; i < ne; i++) {
         char rchild[AC_MAX_PATH], lchild[AC_MAX_PATH];
         const char *lname;
-        if (!pattern_match(p, entries[i].name)) continue;
+        if (!pattern_match(p, entries[i].name) || (skip && skip[i])) continue;
         lname = L(entries[i].name);
         snprintf(rchild, sizeof(rchild), "%s/%s", rdir, entries[i].name);
         localfs_join(lchild, sizeof(lchild), ldestdir, lname);
@@ -629,6 +657,7 @@ static void do_get_pattern(const AcConfig *eff,
         }
         if (c.cancelled) { printf("Abgebrochen.\n"); break; }
     }
+    free(skip);
     cmd_entries_free(entries);
     pattern_free(p);
 

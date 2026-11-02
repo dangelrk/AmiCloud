@@ -474,6 +474,47 @@ static int find_dst_meta(const AmigaPanel *p, const char *name, FileMeta *out)
  * quick byte/file-count scan up front (no network beyond what listing
  * already did for uploads; the same `list` round-trips downloads need
  * anyway) feeds the progress gauge's x/y from the very first file. */
+/* Cloud -> local: selected server names that would be one file in
+ * local_dir (case, umlauts, lossy names) are not copied at all -- the
+ * second would overwrite the first, and a move would then delete both
+ * on the server. *skip gets one byte per selected entry (selection
+ * order), NULL if nothing clashes; the clashes count as errors in c.
+ * 0 if out of memory (reported; do nothing then). */
+static int selection_clashes(const AmigaPanel *src, const char *local_dir,
+                             unsigned char **skip, CopyCtx *c)
+{
+    LONG cookie = MUIV_List_NextSelected_Start;
+    PanelEntry e;
+    char **un = NULL;
+    int n = 0, cap = 0, i, k, ok = 1;
+
+    *skip = NULL;
+    while (panel_mui_next_selected(src, &cookie, &e)) {
+        if (n == cap) {
+            char **t = (char **)realloc(un, sizeof(char *) * (size_t)(cap ? cap * 2 : 16));
+            if (!t) { ok = 0; break; }
+            un = t; cap = cap ? cap * 2 : 16;
+        }
+        if (!(un[n] = (char *)malloc(strlen(e.uname[0] ? e.uname : e.name) + 1))) { ok = 0; break; }
+        strcpy(un[n++], e.uname[0] ? e.uname : e.name);
+    }
+    if (ok && n > 1) {
+        *skip = (unsigned char *)calloc((size_t)n, 1);
+        k = *skip ? panel_local_clashes((const char *const *)un, n, local_dir, *skip) : -1;
+        if (k < 0) ok = 0;
+        else if (k == 0) { free(*skip); *skip = NULL; }
+        else c->pr.err += k;
+    }
+    for (i = 0; i < n; i++) free(un[i]);
+    free(un);
+    if (!ok) {
+        free(*skip);
+        *skip = NULL;
+        mui_notify(UI_ERROR, "Nicht genug Speicher.");
+    }
+    return ok;
+}
+
 static void do_copy(void)
 {
     AmigaPanel *src = g_active;
@@ -482,6 +523,8 @@ static void do_copy(void)
     PanelEntry e;
     CopyCtx ctx;
     char    result_msg[64];
+    unsigned char *skip = NULL;   /* per selected entry, in selection order */
+    int     ord;
 
     if (src->source == PANEL_CLOUD && dst->source == PANEL_CLOUD) {
         MUI_Request(g_app, NULL, 0, "Kopieren", "_OK",
@@ -493,12 +536,15 @@ static void do_copy(void)
     if (!panel_mui_next_selected(src, &cookie, &e)) return; /* nothing to copy */
 
     copyctx_init(&ctx, 1);
+    if (src->source == PANEL_CLOUD && dst->source == PANEL_LOCAL &&
+        !selection_clashes(src, dst->path, &skip, &ctx)) return;
     begin_operation();
     g_op = &ctx;
 
     set(g_progress_text, MUIA_Text_Contents, "Ermittle Dateien...");
     cookie = MUIV_List_NextSelected_Start;
-    while (panel_mui_next_selected(src, &cookie, &e)) {
+    for (ord = 0; panel_mui_next_selected(src, &cookie, &e); ord++) {
+        if (skip && skip[ord]) continue;
         if (e.is_dir) {
             char srcPath[AC_MAX_PATH];
             panel_mui_child_path(src, &e, srcPath, sizeof(srcPath));
@@ -511,10 +557,11 @@ static void do_copy(void)
     }
 
     cookie = MUIV_List_NextSelected_Start;
-    while (panel_mui_next_selected(src, &cookie, &e)) {
+    for (ord = 0; panel_mui_next_selected(src, &cookie, &e); ord++) {
         char srcPath[AC_MAX_PATH], dstPath[AC_MAX_PATH];
 
         if (ctx.cancelled || g_cancel_requested) break;
+        if (skip && skip[ord]) continue;
 
         panel_mui_child_path(src, &e, srcPath, sizeof(srcPath));
         panel_mui_child_path(dst, &e, dstPath, sizeof(dstPath));
@@ -555,6 +602,7 @@ static void do_copy(void)
         }
     }
 
+    free(skip);
     g_op = NULL;
     end_operation();
 
@@ -607,8 +655,11 @@ static void do_move(void)
              * copy succeeded, but the source directory stays put. */
             mui_notify(UI_WARN, "Kopiert, aber lokales Verzeichnis nicht geloescht (v1-Einschraenkung).");
         } else {
-            cmd_put(&dst->cfg, srcPath, dstPath);
-            DeleteFile((CONST_STRPTR)srcPath);
+            /* the source goes only once the copy is there */
+            if (cmd_put(&dst->cfg, srcPath, dstPath) == 0)
+                DeleteFile((CONST_STRPTR)srcPath);
+            else
+                mui_notify(UI_ERROR, "Hochladen fehlgeschlagen -- Datei nicht verschoben.");
         }
     } else {
         if (e.is_dir) {
@@ -616,10 +667,17 @@ static void do_move(void)
             copyctx_init(&c, 0);
             count_remote_tree(&src->cfg, srcPath, &c.pr);
             panel_get_dir(&src->cfg, srcPath, dstPath, &c);
-            cmd_del_recursive(&src->cfg, srcPath);
+            /* any error (also a name skipped as one file here) keeps the
+             * whole directory on the server */
+            if (c.pr.err == 0 && !c.cancelled)
+                cmd_del_recursive(&src->cfg, srcPath);
+            else
+                mui_notify(UI_WARN, "Nicht alles kopiert -- Verzeichnis bleibt auf dem Server.");
         } else {
-            cmd_get(&src->cfg, srcPath, dstPath);
-            cmd_del(&src->cfg, srcPath);
+            if (cmd_get(&src->cfg, srcPath, dstPath) == 0)
+                cmd_del(&src->cfg, srcPath);
+            else
+                mui_notify(UI_ERROR, "Herunterladen fehlgeschlagen -- Datei nicht verschoben.");
         }
     }
     end_operation();
