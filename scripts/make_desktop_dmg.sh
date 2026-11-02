@@ -1,7 +1,7 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Ronny Krueger
-# AmiCloud Desktop als .dmg (macOS, Apple Silicon, ab macOS 15):
+# AmiCloud Desktop als .dmg (macOS, Apple Silicon, ab macOS 26):
 # Release-Build, macdeployqt (Qt-Frameworks ins Bundle), Ad-hoc-Signatur
 # (ohne sie startet ein arm64-Programm nicht; keine Developer-ID, Plan
 # 11 Nr. 4), Image mit Verweis auf /Applications.

@@ -18,9 +18,10 @@ set(CMAKE_AUTOMOC ON)
 # no AUTOUIC: it would take ui_hooks.h for a generated .ui header
 
 if(APPLE)
-    # decided 31.10.2026: Apple Silicon only, macOS 15 and later
+    # decided 31.10.2026: Apple Silicon only; since 02.11.2026 macOS 26 and
+    # later (the bundled Homebrew libraries need 26 anyway)
     set(CMAKE_OSX_ARCHITECTURES arm64)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.0)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 26.0)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)

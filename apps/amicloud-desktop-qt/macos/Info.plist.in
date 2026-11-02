@@ -23,7 +23,7 @@
     <key>CFBundleVersion</key>
     <string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
     <key>LSMinimumSystemVersion</key>
-    <string>15.0</string>
+    <string>26.0</string>
     <!-- status menu only, no Dock icon (plan 6.6) -->
     <key>LSUIElement</key>
     <true/>

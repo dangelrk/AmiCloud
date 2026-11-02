@@ -537,7 +537,7 @@ spätestens vor dem Mac-Release nötig.
 | 2 | Entfernt gelöscht, lokal geändert | wieder hochladen |
 | 3 | Schwelle der Massenlöschung | 20 Dateien / 50 % als Startwerte, als Optionen einstellbar, wird eventuell später geändert |
 | 4 | Signatur | keine, vorerst nur für den Eigenbedarf |
-| 5 | macOS | nur Apple Silicon, ab macOS 15 Sequoia |
+| 5 | macOS | nur Apple Silicon, ab macOS 15 Sequoia (seit 02.11.2026: ab macOS 26, weil die Homebrew-Bibliotheken es verlangen) |
 | 6 | Passwortspeicher | noch kein Schlüsselbund und kein QtKeychain: Konfigurationsdatei mit Rechten 0600, hinter `CredentialStore` |
 | 7 | Programmname | „AmiCloud Desktop“ (`amicloud-desktop`) |
 | 8 | Konfliktkopien gegen Umlaute | beides; Reihenfolge egal, also wie geplant (Phase 3, dann 4) |

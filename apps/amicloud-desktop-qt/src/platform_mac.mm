@@ -7,7 +7,7 @@
 
 void platformActivate()
 {
-    [NSApp activate];   // macOS 14+, the app targets 15
+    [NSApp activate];   // macOS 14+, the app targets 26
 }
 
 bool platformAutostartSupported()
