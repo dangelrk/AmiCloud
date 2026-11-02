@@ -1046,6 +1046,15 @@ Verwandte Projekte desselben Autors:
 
 VERSIONSGESCHICHTE
 
+Programme 0.7 (02.11.2026)
+  - Namen, die sich nur in Groß-/Kleinschreibung unterscheiden
+    (auch Umlaute): AMICLOUD: zeigt den zweiten als "name_2",
+    jeder führt zu seiner Datei; Abgleich, get -r/get mit Muster
+    und Commander holen solche Namen nicht, sondern melden sie.
+  - Commander: Verschieben löscht die Quelle nur noch nach
+    erfolgreicher Kopie.
+  - AmiCloud Desktop: ab macOS 26.
+
 Programme 0.6 (02.11.2026)
   - Keine Änderungen an den Programmen; die Versionsnummer
     folgt dem gemeinsamen Release mit AmiOwnCloud und AmiVCS.
