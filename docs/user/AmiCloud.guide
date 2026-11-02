@@ -1036,6 +1036,10 @@ Verwandte Projekte desselben Autors:
 
 VERSIONSGESCHICHTE
 
+Programme 0.6 (02.11.2026)
+  - Keine Änderungen an den Programmen; die Versionsnummer
+    folgt dem gemeinsamen Release mit AmiOwnCloud und AmiVCS.
+
 Programme 0.5 (01.11.2026)
   - Wird eine Anmeldung abgelehnt (falsches Passwort), versuchen
     es die Programme mit denselben Zugangsdaten 15 Minuten lang
