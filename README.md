@@ -6,6 +6,10 @@ a one-shot folder sync, a two-pane file manager (MUI on the Amiga, Qt 6 on
 macOS/Linux/Windows) and an AmigaOS DOS handler that mounts the cloud as the
 drive `AMICLOUD:`. The documentation is in German.*
 
+> **Status:** experimental. Developed with the help of Claude (an AI assistant
+> by Anthropic), primarily for the author's own use. Try it with copies of
+> your data first; use at your own risk.
+
 AmiCloud ist ein eigener Cloud-Speicher für den Amiga. Ein schlanker
 PHP-Server hält die Dateien, die Programme greifen über HTTPS darauf zu –
 auf dem Amiga (AmigaOS 3.x, bsdsocket + AmiSSL 5) ebenso wie auf dem PC

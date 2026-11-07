@@ -127,7 +127,9 @@
 <div class="wrap">
 
 <h1>AmiCloud</h1>
-<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Stand 07.11.2026 (Programmversion 0.8)</p>
+<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Stand 07.11.2026 (Programmversion 0.9)</p>
+
+<div class="callout"><strong>Hinweis:</strong> Experimentelle Software, entwickelt mit Hilfe von Claude (KI-Assistent von Anthropic) und in erster Linie für den Eigengebrauch des Autors geschrieben. Bitte zuerst mit Kopien der Daten ausprobieren; Benutzung auf eigene Gefahr.</div>
 
 <p>AmiCloud verbindet den Amiga über HTTPS mit einem eigenen AmiCloud-Server.
 Die Dateien darauf lassen sich per Kommandozeile, in einer interaktiven
@@ -1021,6 +1023,8 @@ AmiVCS (Versionsverwaltung).</p>
 <h2 id="historie">20. Versionsgeschichte</h2>
 
 <dl>
+<dt><strong>Programme 0.9 (07.11.2026)</strong></dt>
+<dd><code>AMICLOUD:</code> legt leere Dateien jetzt auch auf dem Server an: <code>Copy</code> einer leeren Datei erzeugte vorher gar nichts, und eine mit <code>MODE_NEWFILE</code> geleerte Datei behielt auf dem Server ihren alten Inhalt. Wird eine Datei mit <code>SetFileSize</code> verlängert, sind die neuen Bytes Nullen. <code>amicloud-commander</code> rechnet lokale Dateizeiten mit <code>gmt_offset</code> und <code>dst</code> um. Server: Löschen und gleichzeitiges Hochladen derselben Datei kommen sich nicht mehr in die Quere; Hochladen unterhalb einer Datei ergibt 409, eine ungültige Range wird ignoriert, das Web meldet ein volles Kontingent mit 507. Hinweis auf den experimentellen Status ergänzt.</dd>
 <dt><strong>Programme 0.8 (07.11.2026)</strong></dt>
 <dd>Handbuch überarbeitet. Der Installer meldet es jetzt, wenn er nicht aus seiner Schublade gestartet wird, statt mit „object in use“ abzubrechen.</dd>
 <dt><strong>Programme 0.7 (02.11.2026)</strong></dt>

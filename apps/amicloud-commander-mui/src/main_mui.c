@@ -21,6 +21,7 @@
 #include "config.h"
 #include "charset.h"
 #include "http.h"
+#include "localfs.h"
 #include "gui.h"
 #include "mui_stubs.h"
 #include "progress.h"
@@ -143,6 +144,9 @@ int main(int argc, char *argv[])
     if (!config_load("ENV:amicloud.cfg", &cfg))
         config_load("amicloud.cfg", &cfg);
     cs_open(cfg.charset);   /* Phase 4: file names via codesets.library */
+    /* Local file dates in local time, like the shell and amicloud-sync
+     * (gmt_offset/dst from the config, see TODO.md history). */
+    localfs_set_tz(cfg.gmt_offset, cfg.dst);
 
     if (!cfg.server[0] || !cfg.username[0] || !cfg.password[0]) {
         /* No MUI window yet at this point -- OpenLibrary first so

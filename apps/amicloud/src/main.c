@@ -114,6 +114,8 @@ int main(int argc, char **argv)
     }
 #ifdef PLATFORM_AMIGA
     if (opt_verbose) ac_verbose = 1;
+#else
+    (void)opt_verbose;   /* -v only switches the Amiga HTTP log on */
 #endif
 
     /* Load config file (command-line args override) */

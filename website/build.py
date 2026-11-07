@@ -23,7 +23,7 @@ DIST = WEB / "dist"
 
 # Fuer welche Programmversion die Bilder aufgenommen wurden. Nach neuen
 # Aufnahmen hier nachziehen; solange die Zahl abweicht, warnt der Bau.
-BILDER_VERSION = {"amicloud": "0.8", "amivcs": "0.8", "amiowncloud": "0.8", "amidevide": "0.3"}
+BILDER_VERSION = {"amicloud": "0.9", "amivcs": "0.9", "amiowncloud": "0.9", "amidevide": "0.4"}
 
 PROJEKTE = {
     "amicloud": ("AmiCloud", "Eigener Cloud-Speicher"),
@@ -31,6 +31,10 @@ PROJEKTE = {
     "amiowncloud": ("AmiOwnCloud", "ownCloud und Nextcloud"),
     "amidevide": ("AmiDevIDE", "Entwicklungsumgebung"),
 }
+
+# Vorerst nicht in Suchmaschinen: nur per Direktlink erreichbar. Zum Freischalten
+# auf False setzen, neu bauen und hochladen.
+NOINDEX = True
 
 # Woher die Programme kommen. Eine Stelle, damit der spaetere Wechsel oder die
 # Ergaenzung um GitHub einfach bleibt. Die Namen auf Aminet tragen keine Version.
@@ -116,13 +120,6 @@ def lies_versionen():
     if not mi:
         sys.exit("aide_version.h: keine AMIGAIDE_VERSION_STRING gefunden")
     return {"amicloud": kern, "amivcs": kern, "amiowncloud": kern, "amidevide": mi.group(1)}
-
-
-def letzter_tag(projekt_ordner, version):
-    """Datum des Release-Tags, sonst leer."""
-    r = subprocess.run(["git", "-C", str(DEV / projekt_ordner), "log", "-1", "--format=%cd",
-                        "--date=format:%d.%m.%Y", f"v{version}"], capture_output=True, text=True)
-    return r.stdout.strip()
 
 
 def bild_html(name, unterschrift, prefix=""):
@@ -375,6 +372,8 @@ def baue_ide_handbuch(versionen):
     v = versionen["amidevide"]
     body = (f'<main class="wrap"><h1>AmiDevIDE</h1><p class="lead">Handbuch – Entwicklungsumgebung für AmigaOS '
             f'und den PC · Version {v}</p>'
+            f'<p class="hinweis"><strong>Hinweis:</strong> Experimentelle Software, entwickelt mit Hilfe von Claude '
+            f'(KI-Assistent von Anthropic) und in erster Linie für den Eigengebrauch des Autors geschrieben.</p>'
             f'<nav class="inhalt"><strong>Inhalt</strong><ol><li><a href="#teil-bedienung">Bedienung von AmigaIDE</a>'
             f'<ol>{"".join(inhalt)}</ol></li><li><a href="#teil-installation">Installation</a></li></ol></nav>'
             f'<h2 id="teil-bedienung">Bedienung von AmigaIDE</h2>{teil}'
@@ -407,6 +406,15 @@ def main():
     baue_html_handbuch("amivcs", "AmiVCS/docs/user/AmiVCS-Handbuch.html", versionen)
     baue_html_handbuch("amiowncloud", "AmiOwnCloud/docs/user/AmiOwnCloud-Handbuch.html", versionen)
     baue_ide_handbuch(versionen)
+
+    if NOINDEX:
+        for seite in DIST.glob("*.html"):
+            text = seite.read_text(encoding="utf-8")
+            if "</head>" not in text:
+                sys.exit(f"{seite.name}: kein </head>")
+            seite.write_text(text.replace("</head>", '<meta name="robots" content="noindex, nofollow">\n</head>', 1), encoding="utf-8")
+        with open(DIST / ".htaccess", "a", encoding="utf-8") as f:
+            f.write('<IfModule mod_headers.c>\n  Header set X-Robots-Tag "noindex, nofollow"\n</IfModule>\n')
 
     # Bilder: Amiga-Aufnahmen bleiben verlustfreie PNGs (klein und pixelgenau),
     # Mac und Browser werden WebP.

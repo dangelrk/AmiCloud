@@ -348,13 +348,17 @@ class FileStore
             && preg_match('/^bytes=(\d+)-(\d*)$/', trim($_SERVER['HTTP_RANGE'] ?? ''), $m)) {
             $size  = (int)filesize($file);
             $start = (int)$m[1];
-            if ($start >= $size) {
-                header('Content-Range: bytes */' . $size);
-                Response::error(416, 'Range not satisfiable');
+            /* bytes=5-3 ist syntaktisch ungueltig (RFC 9110 14.1.1) und
+             * wird wie ein fehlender Range-Header behandelt: volle Datei. */
+            if ($m[2] === '' || (int)$m[2] >= $start) {
+                if ($start >= $size) {
+                    header('Content-Range: bytes */' . $size);
+                    Response::error(416, 'Range not satisfiable');
+                }
+                $offset  = $start;
+                $length  = $m[2] !== '' ? (int)$m[2] - $start + 1 : -1;
+                $partial = true;
             }
-            $offset  = $start;
-            $length  = $m[2] !== '' ? max(0, (int)$m[2] - $start + 1) : -1;
-            $partial = true;
         }
 
         /* X-AmiCloud-MD5 gilt immer fuer die Gesamtdatei — bei Teil-
@@ -425,8 +429,12 @@ class FileStore
             return [409, 'A directory with this name exists'];
         }
         $dir = dirname($file);
-        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-            return [500, 'Cannot create parent directory'];
+        /* Liegt auf dem Weg eine Datei (Upload nach /datei.txt/neu), kann
+         * kein Ordner entstehen: 409 statt PHP-Warnung und 500. */
+        for ($d = $dir; !is_dir($d); $d = dirname($d)) {
+            if (file_exists($d) || dirname($d) === $d) {
+                return [409, 'A parent of this path is a file'];
+            }
         }
 
         $dbP = dbPath($path);
@@ -465,6 +473,14 @@ class FileStore
                     $db->rollBack();
                     return [507, 'Quota exceeded'];
                 }
+            }
+
+            /* Fehlende Elternordner erst hier anlegen, nach allen
+             * Bedingungen: ein 412/507 hinterliess sonst leere Ordner ohne
+             * DB-Zeile. */
+            if (!is_dir($dir) && !@mkdir($dir, 0755, true)) {
+                $db->rollBack();
+                return [500, 'Cannot create parent directory'];
             }
 
             /* Erst in eine Temp-Datei daneben schreiben und erst nach dem
@@ -617,25 +633,32 @@ class FileStore
             return [400, 'Cannot delete root'];
         }
         $target = storagePath($path);
-        $wasDir = is_dir($target);
-
-        if (is_dir($target)) {
-            if ($recursive) {
-                self::deleteTree($target);
-            } elseif (!@rmdir($target)) {
-                return [409, 'Directory not empty or cannot be removed'];
-            }
-        } elseif (is_file($target)) {
-            if (!unlink($target)) {
-                return [500, 'Cannot delete file'];
-            }
-        } else {
-            return [404, 'Not found'];
-        }
-
         $dbPath = dbPath($path);
-        self::inTransaction(function () use ($dbPath, $recursive, $wasDir) {
-            $db        = DB::get();
+
+        /* Dateisystem und Grabstein unter derselben Sperre der users-Zeile
+         * wie uploadImpl(): sonst konnte ein gleichzeitiger Upload zwischen
+         * unlink() und dem Grabstein die Datei neu anlegen -- danach lag
+         * sie auf der Platte, changes meldete sie aber als geloescht, und
+         * die Clients loeschten ihre Kopie. */
+        return self::inTransaction(function () use ($target, $dbPath, $recursive) {
+            $db = DB::get();
+            $db->prepare('SELECT id FROM users WHERE id = ? FOR UPDATE')->execute([Auth::$user_id]);
+
+            $wasDir = is_dir($target);
+            if ($wasDir) {
+                if ($recursive) {
+                    self::deleteTree($target);
+                } elseif (!@rmdir($target)) {
+                    return [409, 'Directory not empty or cannot be removed'];
+                }
+            } elseif (is_file($target)) {
+                if (!unlink($target)) {
+                    return [500, 'Cannot delete file'];
+                }
+            } else {
+                return [404, 'Not found'];
+            }
+
             $changeSeq = self::bumpGlobalRevision();
             /* Grabstein auch dann, wenn der Pfad nie eine Zeile hatte (Ordner,
              * die nur durch einen Upload darunter entstanden): sonst sieht
@@ -653,9 +676,9 @@ class FileStore
                    ->execute([$changeSeq, Auth::$user_id, self::likeEscape($dbPath) . '/%']);
             }
             Shares::onDelete(Auth::$user_id, $dbPath);
-        });
 
-        return true;
+            return true;
+        });
     }
 
     /* Datei-/Ordner-Anzahl + Gesamtgroesse von $path selbst plus allem
@@ -1275,9 +1298,10 @@ class FileStore
 
     /* Web-Upload: derselbe Schreibweg wie die API. Rueckgabe null bei
      * Erfolg, sonst die Fehlermeldung (507 -> Kontingent). */
-    public static function uploadRaw(string $path, string $tmpFile): ?string
+    public static function uploadRaw(string $path, string $tmpFile, ?int &$code = null): ?string
     {
         $r = self::uploadImpl($path, null, $tmpFile, null);
+        $code = $r[0];
         if ($r[0] === 0) {
             return null;
         }

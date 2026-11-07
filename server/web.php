@@ -180,9 +180,9 @@ if ($isPost) {
         if ($f['error'] !== UPLOAD_ERR_OK || $rel === '') {
             Response::error(400, $rel . ': Hochladen fehlgeschlagen.');
         }
-        $err = FileStore::uploadRaw(sanitizePath($dir . '/' . $rel), (string)$f['tmp_name']);
+        $err = FileStore::uploadRaw(sanitizePath($dir . '/' . $rel), (string)$f['tmp_name'], $code);
         if ($err !== null) {
-            Response::error(400, $rel . ': ' . $err);
+            Response::error(in_array($code, [409, 413, 507], true) ? $code : 400, $rel . ': ' . $err);
         }
         Response::ok(['name' => $rel]);
 

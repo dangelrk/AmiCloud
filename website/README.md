@@ -23,6 +23,12 @@ python3 website/build.py    # erzeugt website/dist/, braucht cwebp
 3. `src/*.html` auf neue oder geänderte Funktionen durchsehen.
 4. Hochladen wie unten.
 
+## Suchmaschinen
+
+Die Seite ist vorerst nur per Direktlink gedacht: `NOINDEX = True` in `build.py` setzt
+`noindex` in jede Seite und als `X-Robots-Tag`. Zum Freischalten auf `False` setzen,
+neu bauen und hochladen.
+
 ## Hochladen
 
 Zuerst die Archive auf Aminet hochladen, sonst laufen die Download-Links ins Leere.
@@ -40,6 +46,9 @@ tar -C website/dist --no-xattrs -czf - . | ssh planetrk 'cd /var/www/html/ami &&
 Danach prüfen: `https://planet-rk.de/ami/` lädt, der Zähler zeigt eine Zahl, und
 `https://planet-rk.de/ami/data/counter.txt` antwortet mit 403. Antwortet es mit
 200, wertet Apache die `.htaccess` dort nicht aus (`AllowOverride`).
+Solange `NOINDEX` gilt, muss `curl -sI https://planet-rk.de/ami/ | grep -i x-robots-tag`
+die Zeile `X-Robots-Tag: noindex, nofollow` zeigen. Fehlt sie, ist `mod_headers` aus;
+die HTML-Seiten sperrt dann nur noch ihr Meta-Tag, die Bilder nicht.
 
 ## Bilder neu aufnehmen
 

@@ -7,6 +7,13 @@ in einer interaktiven Shell, mit einem Dateimanager (MUI) oder als
 ganz normales Laufwerk AMICLOUD: benutzen. Kommandozeilenprogramme und
 Dateimanager gibt es auch für macOS, Linux und Windows.
 
+Hinweis
+-------
+Experimentelle Software, entwickelt mit Hilfe von Claude (KI-Assistent
+von Anthropic) und in erster Linie für den Eigengebrauch des Autors
+geschrieben. Bitte zuerst mit Kopien der Daten ausprobieren; Benutzung
+auf eigene Gefahr.
+
 Inhalt dieser Schublade
 -----------------------
   Install-AmiCloud      Installationsskript (Commodore-Installer, Icon)
