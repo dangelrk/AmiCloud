@@ -30,9 +30,11 @@ Die Adressen stehen in `DOWNLOADS` in `build.py`, dort kommt später auch GitHub
 
 Der Zählerstand liegt nur auf dem Server und darf nicht überschrieben werden:
 
+Auf dem Server gibt es kein rsync, deshalb per tar. Vorher lokal bauen; `dist/data`
+enthält nach dem Bau keine `counter.txt`:
+
 ```sh
-rsync -av --delete --exclude data/counter.txt website/dist/ planetrk:/var/www/html/ami/
-ssh planetrk 'touch /var/www/html/ami/data/counter.txt; chown apache:apache /var/www/html/ami/data /var/www/html/ami/data/counter.txt; chcon -R -t httpd_sys_rw_content_t /var/www/html/ami/data'
+tar -C website/dist --no-xattrs -czf - . | ssh planetrk 'cd /var/www/html/ami && tar --no-same-owner -xzf - && chown -R root:root . && find . -type d -exec chmod 755 {} + && find . -type f -exec chmod 644 {} + && touch data/counter.txt && chown apache:apache data data/counter.txt && chmod 750 data && chmod 640 data/counter.txt'
 ```
 
 Danach prüfen: `https://planet-rk.de/ami/` lädt, der Zähler zeigt eine Zahl, und
