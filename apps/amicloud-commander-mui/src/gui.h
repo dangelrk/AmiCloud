@@ -38,6 +38,7 @@ typedef struct {
     int         show_up;                    /* ".." synthetic row 0 in the list? */
 
     Object *group;         /* outer VGroup — what MainWindow adds as a Child */
+    Object *header;        /* source/path/up row — coloured when active */
     Object *source_cycle;
     Object *path_string;
     Object *up_button;

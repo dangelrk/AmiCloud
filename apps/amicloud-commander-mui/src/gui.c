@@ -372,16 +372,23 @@ static int ask_string(const char *title, const char *initial, char *out, size_t 
 /* ------------------------------------------------------------------ */
 static AmigaPanel *other_panel(void) { return g_active == &g_left ? &g_right : &g_left; }
 
+static void mark_panel(AmigaPanel *p, int active)
+{
+    LONG bg = active ? MUII_SelectedBack : MUII_GroupBack;
+    set(p->header,      MUIA_Background, bg);
+    set(p->status_text, MUIA_Background, bg);
+}
+
 static void set_active(AmigaPanel *p)
 {
     g_active = p;
-    /* Persistent visual marker on the active panel itself, not just the
-     * easy-to-miss status line below: MUIA_Background is one of the few
-     * Group attributes still settable after realization (MUIA_Frame is
-     * init-only, "i.." in the SDK docs) — MUII_SelectedBack is MUI's own
-     * "this is selected" image, MUII_GroupBack the plain default look. */
-    set(g_left.group,  MUIA_Background, (p == &g_left)  ? MUII_SelectedBack : MUII_GroupBack);
-    set(g_right.group, MUIA_Background, (p == &g_right) ? MUII_SelectedBack : MUII_GroupBack);
+    /* Persistent visual marker on the active panel: its header row and
+     * status line get MUI's "selected" background (MUIA_Background is
+     * still settable after realization; MUIA_Frame is init-only). Not the
+     * whole panel group — the list would inherit it under MUI 3.8 and its
+     * selected rows, drawn with the same image, would disappear. */
+    mark_panel(&g_left,  p == &g_left);
+    mark_panel(&g_right, p == &g_right);
     mui_notify(UI_INFO, p == &g_left ? "Aktiv: links" : "Aktiv: rechts");
 }
 

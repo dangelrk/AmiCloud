@@ -102,12 +102,23 @@ void panel_mui_build(AmigaPanel *p, const AcConfig *cfg, Object *app)
                   End;
     p->status_text = TextObject, MUIA_Text_Contents, "", End;
 
+    /* Header and status line are what set_active() colours to mark the
+     * active panel — never the whole group: under MUI 3.8 the list then
+     * inherits that background and selected rows (MUII_SelectedBack too)
+     * all but vanish. The inner spacing gives the header a visible rim
+     * around its gadgets for the colour to show in. */
+    p->header = HGroup,
+                    MUIA_InnerLeft,   3,
+                    MUIA_InnerRight,  3,
+                    MUIA_InnerTop,    3,
+                    MUIA_InnerBottom, 3,
+                    Child, p->source_cycle,
+                    Child, p->path_string,
+                    Child, p->up_button,
+                End;
+
     p->group = VGroup,
-                   Child, HGroup,
-                       Child, p->source_cycle,
-                       Child, p->path_string,
-                       Child, p->up_button,
-                   End,
+                   Child, p->header,
                    Child, p->listview,
                    Child, p->status_text,
                End;
