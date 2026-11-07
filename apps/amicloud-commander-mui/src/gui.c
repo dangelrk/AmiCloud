@@ -318,6 +318,7 @@ static void build_input_dialog(void)
     g_input_cancel = SimpleButton("_Abbrechen");
 
     g_input_window = WindowObject,
+        MUIA_Window_ID,    MAKE_ID('I','N','P','T'),
         MUIA_Window_Title, "Eingabe",
         MUIA_Window_Menu,  MUIV_Window_Menu_NoMenu,
         WindowContents, VGroup,
@@ -1081,6 +1082,7 @@ int gui_run(const AcConfig *cfg)
     search_goto_button  = SimpleButton("_Gehe zu");
     search_close_button = SimpleButton("_Schliessen");
     g_search_window = WindowObject,
+        MUIA_Window_ID,    MAKE_ID('S','R','C','H'),
         MUIA_Window_Title, "Suchergebnisse",
         MUIA_Window_Width, MUIV_Window_Width_Screen(50),
         MUIA_Window_Height, MUIV_Window_Height_Screen(50),
@@ -1106,6 +1108,7 @@ int gui_run(const AcConfig *cfg)
                        MUIA_Gauge_InfoText, "", End;
     g_cancel_button  = SimpleButton("_Abbrechen");
     g_progress_window = WindowObject,
+        MUIA_Window_ID,    MAKE_ID('P','R','O','G'),
         MUIA_Window_Title, "Uebertrage...",
         MUIA_Window_CloseGadget, FALSE,
         MUIA_Window_Menu, MUIV_Window_Menu_NoMenu,
@@ -1180,6 +1183,12 @@ int gui_run(const AcConfig *cfg)
      * above: only ever opened/closed via set(MUIA_Window_Open), reused
      * across searches, never rebuilt (docs/design/search-plan.md). */
     DoMethod(g_app, OM_ADDMEMBER, g_search_window);
+
+    /* every window reopens where it was left, also after a reboot */
+    mui_remember_window(window);
+    mui_remember_window(g_input_window);
+    mui_remember_window(g_progress_window);
+    mui_remember_window(g_search_window);
     DoMethod(g_search_window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
             g_search_window, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     DoMethod(search_close_button, MUIM_Notify, MUIA_Pressed, FALSE,
