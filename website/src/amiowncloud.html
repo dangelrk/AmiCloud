@@ -1,0 +1,51 @@
+<!-- titel:AmiOwnCloud {{v:amiowncloud}} – Anleitung
+beschreibung:Schritt für Schritt zu AmiOwnCloud {{v:amiowncloud}}: ownCloud oder Nextcloud als Amiga-Laufwerk und Ordnerabgleich im Hintergrund. -->
+<h1>AmiOwnCloud</h1>
+<p><span class="versionsmarke">Version {{v:amiowncloud}}</span><span class="platforms">Amiga</span> <a class="download" href="{{dl:amiowncloud}}">AmiOwnCloud auf Aminet</a></p>
+<p class="lead">Verbindet AmigaOS 3.x über WebDAV mit einem ownCloud- oder Nextcloud-Server. Du brauchst nur ein Konto auf dem Server.</p>
+
+<nav class="inhalt"><strong>In dieser Anleitung</strong><ol>
+<li><a href="#wege">Zwei Wege zum Server</a></li>
+<li><a href="#amiga">Installieren</a></li>
+<li><a href="#laufwerk">Laufwerk OWNCLOUD: einrichten</a></li>
+<li><a href="#sync">Ordner abgleichen</a></li>
+<li><a href="#weiter">Mehr erfahren</a></li>
+</ol></nav>
+
+<h2 id="wege">Zwei Wege zum Server</h2>
+<div class="tabelle"><table>
+<tr><th>Werkzeug</th><th>So arbeitet es</th><th>Passt für</th></tr>
+<tr><td><strong>Laufwerk <code>OWNCLOUD:</code></strong></td><td>Jeder Zugriff geht direkt an den Server. Es gibt keine lokale Kopie, ohne Netz geht also nichts.</td><td>schnellen Zugriff auf den ganzen Server</td></tr>
+<tr><td><strong>AmiOwnCloudSync</strong></td><td>Gleicht Ordnerpaare im Hintergrund ab. Die Dateien liegen lokal und sind auch offline da.</td><td>Ordner, mit denen du regelmäßig arbeitest</td></tr>
+</table></div>
+<p>Beide Wege lassen sich gleichzeitig nutzen und haben getrennte Einstellungen.</p>
+
+<h2 id="amiga">Installieren</h2>
+<ol class="schritte">
+<li>Du brauchst AmigaOS 3.x, mindestens einen 68020, einen TCP/IP-Stack und AmiSSL&nbsp;5.</li>
+<li>Lade <code>AmiOwnCloud.lha</code> <a href="{{dl:amiowncloud}}">von Aminet</a>, packe es aus und starte <strong>Install-AmiOwnCloud</strong>.
+{{fig:oc-install|Der Installer von AmiOwnCloud.}}</li>
+</ol>
+
+<h2 id="laufwerk">Laufwerk OWNCLOUD: einrichten</h2>
+<ol class="schritte">
+<li>Starte <strong>AmiOwnCloudPrefs</strong> aus <code>SYS:Prefs</code>. Trage die Adresse deines Servers, den Benutzer und das Passwort ein und klicke auf <strong>Speichern</strong>.
+{{fig:oc-prefs|AmiOwnCloudPrefs. Änderungen wirken in der Praxis nach einem Neustart des Amiga.}}</li>
+<li>Danach ist der Server ein Laufwerk wie jedes andere, in der Shell und auf der Workbench:
+<pre><code>Dir OWNCLOUD:
+Copy OWNCLOUD:Dokumente/Notizen.txt RAM:</code></pre>
+{{fig:oc-handler|OWNCLOUD: auf der Workbench.}}</li>
+</ol>
+
+<h2 id="sync">Ordner abgleichen</h2>
+<ol class="schritte">
+<li>Starte <strong>AmiOwnCloudSyncPrefs</strong> und trage dein Konto ein. Lege dann ein oder mehrere Paare aus einem lokalen Ordner und einem Server-Ordner an.
+{{fig:oc-syncprefs|AmiOwnCloudSyncPrefs: Konto, Intervall und Ordnerpaare.}}</li>
+<li>Starte <strong>AmiOwnCloudSync</strong> aus <code>SYS:Tools/Commodities</code>. Das Programm läuft ohne Fenster im Hintergrund und gleicht in dem eingestellten Intervall ab; der erste Abgleich kommt nach Ablauf des ersten Intervalls.</li>
+<li>Mit <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> blendest du das Fenster ein. <strong>Jetzt syncen</strong> gleicht das gewählte Paar sofort ab, <strong>Alle syncen</strong> alle aktiven Paare.
+{{fig:oc-sync-fenster|Das Ordnerpaar-Fenster. Die Statuszeile zeigt das Ergebnis.}}</li>
+</ol>
+<p class="hinweis">Das Schließsymbol blendet nur das Fenster aus, die Commodity läuft weiter. Ganz beendest du sie über <strong>Exchange</strong>. Während eines Abgleichs reagiert das Fenster nicht auf Knöpfe; bei großen Ordnern kann das dauern.</p>
+
+<h2 id="weiter">Mehr erfahren</h2>
+<p>Alle Einstellungen, der Ablauf des Abgleichs und die Shell-Befehle <code>amiowncloud-sync</code> und <code>amiowncloud-synctest</code> stehen im <a href="amiowncloud-handbuch.html">vollständigen Handbuch zu AmiOwnCloud {{v:amiowncloud}}</a>.</p>

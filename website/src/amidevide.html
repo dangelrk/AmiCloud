@@ -1,0 +1,54 @@
+<!-- titel:AmiDevIDE {{v:amidevide}} – Anleitung
+beschreibung:Schritt für Schritt zu AmiDevIDE {{v:amidevide}}: AmigaIDE einrichten, Projekt anlegen, bauen, starten und mit AmiVCS versionieren. -->
+<h1>AmiDevIDE</h1>
+<p><span class="versionsmarke">Version {{v:amidevide}}</span><span class="platforms">Amiga · Mac und PC folgen</span> <a class="download" href="{{dl:amidevide}}">AmiDevIDE auf Aminet</a></p>
+<p class="lead">Amiga-Software in C, Assembler oder ACE BASIC entwickeln, auf dem Amiga oder am PC. Beide Fassungen von AmigaIDE teilen sich dieselben Projektdateien.</p>
+
+<nav class="inhalt"><strong>In dieser Anleitung</strong><ol>
+<li><a href="#einrichten">Einrichten</a></li>
+<li><a href="#projekt">Ein Projekt anlegen</a></li>
+<li><a href="#bauen">Bauen und starten</a></li>
+<li><a href="#vcs">Versionsverwaltung</a></li>
+<li><a href="#weiter">Mehr erfahren</a></li>
+</ol></nav>
+
+<h2 id="einrichten">Einrichten</h2>
+<h3>Auf dem Amiga</h3>
+<ol class="schritte">
+<li>Lade <code>AmiDevIDE.lha</code> <a href="{{dl:amidevide}}">von Aminet</a>, packe es aus und starte <strong>Install-AmiDevIDE</strong>. AmigaIDE braucht MUI und vbcc; welche Bibliotheken dazukommen, steht im <a href="amidevide-handbuch.html#node-voraussetzungen">Handbuch</a>.</li>
+<li>Trage die Pfade zum Compiler und zu den SDKs in <code>S:User-Startup</code> ein und passe sie an dein System an:
+<pre><code>Assign vbcc: Work:vbcc
+Path vbcc:bin ADD
+Assign SDK: Work:SDK
+Stack 65536</code></pre></li>
+<li>Starte AmigaIDE per Doppelklick. Die Titelzeile zeigt, wann die Version gebaut wurde.</li>
+</ol>
+<h3>Am Mac und PC</h3>
+<p>Die Fassung für Mac, Linux und Windows folgt mit der Veröffentlichung auf GitHub. Die Bilder aus der Mac-Fassung auf dieser Seite zeigen, wie sie aussieht; die Bedienung entspricht weitgehend der Amiga-Fassung.</p>
+
+<h2 id="projekt">Ein Projekt anlegen</h2>
+<p>Die Bilder in diesem Abschnitt stammen aus der kommenden Mac-Fassung. Die Menünamen hier gelten für das Amiga-Programm.</p>
+<ol class="schritte">
+<li>Wähle <strong>Projekt › Neu…</strong>, dann Ordner, Sprache und Art des Programms.</li>
+<li>Füge über <strong>Projekt › Neue Datei</strong> Quelltexte hinzu. Sie erscheinen im Projektbaum links und öffnen sich mit einem Doppelklick im Editor.
+{{fig:ide-qt-haupt|Projektbaum, Editor und Ausgabe in der kommenden Mac-Fassung nach einem erfolgreichen Build.}}</li>
+<li>Unter <strong>Projekt › Projekteinstellungen…</strong> stellst du Compiler, Linker, SDKs und das Startverhalten ein.
+{{fig:ide-qt-projekt|Die Projekteinstellungen in der kommenden Mac-Fassung.}}</li>
+</ol>
+<p class="hinweis">Liegen Compiler oder SDKs woanders oder heißt <code>make</code> anders, änderst du das unter <strong>Projekt › Einstellungen…</strong>.</p>
+
+<h2 id="bauen">Bauen und starten</h2>
+<ol class="schritte">
+<li><strong>Build › Build</strong> (<kbd>Amiga</kbd>+<kbd>B</kbd>) speichert, erzeugt ein Makefile und baut im Hintergrund. Die Ausgabe läuft unter <strong>Ausgabe</strong>, Fehler stehen unter <strong>Issues</strong>.
+{{fig:ide-mui|AmigaIDE auf dem Amiga nach einem erfolgreichen Build.}}</li>
+<li><strong>Memory Map</strong> zeigt danach die Hunks des Programms.
+{{fig:ide-qt-speicher|Die Memory Map in der kommenden Mac-Fassung.}}</li>
+<li><strong>Build › Run</strong> (<kbd>Amiga</kbd>+<kbd>R</kbd>) startet das Programm.</li>
+</ol>
+
+<h2 id="vcs">Versionsverwaltung</h2>
+<p>AmigaIDE benutzt AmiVCS als eigenes Programm. Ist <a href="amivcs.html">AmiVCS</a> installiert, zeigt das Register <strong>Versionen</strong> Änderungen und Branches, und <strong>Verlauf</strong> zeigt die Historie. Geänderte Dateien sind im Projektbaum markiert.</p>
+{{fig:ide-qt-vcs|Änderungen, Commit und Historie in der kommenden Mac-Fassung.}}
+
+<h2 id="weiter">Mehr erfahren</h2>
+<p>Alle Menüs, Tastenkürzel, der Disassembler und die vollständige Installation stehen im <a href="amidevide-handbuch.html">vollständigen Handbuch zu AmiDevIDE {{v:amidevide}}</a>.</p>

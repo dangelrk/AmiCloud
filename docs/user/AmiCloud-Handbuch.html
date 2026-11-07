@@ -127,7 +127,7 @@
 <div class="wrap">
 
 <h1>AmiCloud</h1>
-<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Version 1.2 (23.10.2026)</p>
+<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Stand 07.11.2026 (Programmversion 0.8)</p>
 
 <p>AmiCloud verbindet den Amiga über HTTPS mit einem eigenen AmiCloud-Server.
 Die Dateien darauf lassen sich per Kommandozeile, in einer interaktiven
@@ -239,6 +239,8 @@ Ohne Installer gibt es dasselbe als Shell-Skript:</p>
 <pre>CD AmiCloud
 Execute Install-AmiCloud.shell</pre>
 
+<p>Wer den Installer aus der Shell startet, wechselt vorher mit <code>CD</code> in die Schublade: Das Skript sucht seine Dateien relativ zum aktuellen Verzeichnis. Von einem anderen Verzeichnis aus bricht es mit einem Hinweis ab.</p>
+
 <p><strong>Aktualisieren:</strong> Eine neuere Version installiert man genauso –
 Archiv auspacken, Installer erneut starten. Er vergleicht bei jedem Programm
 die installierte Version mit der im Archiv. Als Einsteiger oder Geübter
@@ -320,12 +322,12 @@ amicloud list /</pre>
 
 <h2 id="server">6. Den Server einrichten</h2>
 
-<p>Der Server liegt im Quellcode unter <code>server/</code> und läuft auf
+<p>Der Server liegt dem Archiv als Schublade <code>Server</code> bei und läuft auf
 Linux mit Apache&nbsp;2.4, PHP&nbsp;7.4 oder neuer (Erweiterungen
 <code>pdo_mysql</code>, <code>fileinfo</code> und <code>mbstring</code>, für
 ZIP-Downloads <code>zip</code>) und MariaDB/MySQL. HTTPS
 ist Pflicht: die API lehnt Klartext-HTTP mit 403 ab. Die vollständige
-Anleitung mit allen Befehlen steht in <code>docs/INSTALL.md</code>; hier
+Anleitung mit allen Befehlen steht in <code>INSTALL.md</code> im Server-Paket; hier
 die Kurzfassung für <code>amicloud.example.com</code>:</p>
 
 <ol>
@@ -699,11 +701,13 @@ Fehler mit dem Namen des Virus gemeldet. Ohne die Bibliothek wird nicht geprüft
 amicloud-sync Work:Texte /texte         ; dann abgleichen</pre>
 
 <h3 id="desktop">AmiCloud Desktop – Abgleich im Hintergrund <span class="platform-tag">macOS</span></h3>
-<p><strong>In Arbeit (ab 0.3):</strong> AmiCloud Desktop gleicht wie der
+<p>AmiCloud Desktop gleicht wie der
 ownCloud-Client einen Ordner im Hintergrund ab. Es sitzt als Wolke in der
 Menüleiste und nutzt denselben Abgleich wie <code>amicloud-sync</code>, mit allen
-Schutzregeln oben (Konfliktkopien, Rückfrage bei vielen Löschungen). Vorerst
-nur für Mac mit Apple-Chip ab macOS&nbsp;26; Windows und Linux folgen.</p>
+Schutzregeln oben (Konfliktkopien, Rückfrage bei vielen Löschungen). Es
+läuft auf Macs mit Apple-Chip ab macOS&nbsp;26. Das Programm gehört nicht zum
+Aminet-Archiv; ein öffentlicher Download folgt mit der Veröffentlichung auf
+GitHub, Windows und Linux später.</p>
 <ul>
 <li><strong>Einrichten:</strong> Beim ersten Start fragt ein Assistent nach
 Server-Adresse, Benutzer und App-Passwort (die Schaltfläche „App-Passwort im
@@ -749,7 +753,7 @@ wählen.</li>
 
 <p>Ein Dateimanager mit zwei Panels nebeneinander. Jedes Panel zeigt über
 seinen Umschalter entweder lokale Dateien (<em>Local</em>) oder die Cloud
-(<em>Cloud</em>). Das zuletzt angeklickte Panel ist das aktive.</p>
+(<em>AmiCloud</em>). Das zuletzt angeklickte Panel ist das aktive.</p>
 
 <h3>MUI-Fassung <span class="platform-tag">Amiga</span></h3>
 
@@ -766,7 +770,7 @@ Verzeichnis, rechts der Basis-Pfad in der Cloud.</p>
 <tr><td>F3</td><td>Info zum gewählten Eintrag</td></tr>
 <tr><td>F4</td><td>Suchen: Muster (<code>*</code> <code>?</code> <code>#?</code>), rekursiv ab dem Pfad des aktiven Panels; Treffer in eigenem Fenster, Doppelklick oder „Gehe zu“ springt hin</td></tr>
 <tr><td>F5</td><td>Kopieren ins andere Panel (Mehrfachauswahl möglich)</td></tr>
-<tr><td>F6</td><td>Verschieben des gewählten Eintrags ins andere Panel – nur zwischen Local und Cloud, mit Rückfrage</td></tr>
+<tr><td>F6</td><td>Verschieben des gewählten Eintrags ins andere Panel – nur zwischen Local und AmiCloud, mit Rückfrage</td></tr>
 <tr><td>F7</td><td>Verzeichnis anlegen</td></tr>
 <tr><td>F8</td><td>Löschen des gewählten Eintrags, mit Rückfrage; Verzeichnisse in der Cloud samt Inhalt, lokale nur, wenn sie leer sind</td></tr>
 <tr><td>F10</td><td>Beenden</td></tr>
@@ -786,7 +790,7 @@ danach (ohne zu speichern). Gleiche Funktionstasten F2–F10 (zusätzlich
 <kbd>Tab</kbd> wechselt das Panel, <kbd>Entf</kbd> löscht, <kbd>Esc</kbd>
 beendet). Unterschiede:</p>
 <ul>
-<li><strong>F6</strong> verschiebt zwischen Local und Cloud (mit Rückfrage)
+<li><strong>F6</strong> verschiebt zwischen Local und AmiCloud (mit Rückfrage)
 und benennt um, wenn beide Panels dieselbe Quelle zeigen.</li>
 <li><strong>F4</strong> fragt zusätzlich nach dem Suchbereich (aktueller
 Ordner oder alles) und ob Ordner mitgesucht werden.</li>
@@ -897,7 +901,7 @@ reserviert, siehe <a href="#fehlersuche">Fehlersuche</a>).</li>
 <tr><td><code>Mount AMICLOUD:</code> schlägt fehl</td><td>Liegt <code>amicloud-worker</code> in <code>L:</code>? Der Handler wartet bis zu 30&nbsp;Sekunden auf den Worker.</td></tr>
 <tr><td><code>AMICLOUD:</code> reagiert nicht wie erwartet</td><td>In <code>ENV:amicloud.cfg</code> z.&nbsp;B. <code>debug=T:amicloud.log</code> eintragen, neu starten, Fehler auslösen und das Protokoll ansehen – der Worker protokolliert jeden Schritt vom Öffnen der Bibliotheken bis zur HTTP-Anfrage. Zusätzlich zeigt <code>Type AMICLOUD:debuglog</code> das Protokoll der Handler-Seite.</td></tr>
 <tr><td>Commander startet nicht</td><td>MUI&nbsp;3.8 installiert? Konfiguration vollständig? Zur Fehlersuche mit <code>-v</code> aus der Shell starten.</td></tr>
-<tr><td>Langsame Verbindung (Modem), Übertragungen brechen ab</td><td>Alle Timeouts greifen nur, wenn gar keine Daten fließen. Bricht es trotzdem ab, <code>timeout=300</code> in <code>amicloud.cfg</code> setzen. Abgebrochene Downloads werden an der Abbruchstelle fortgesetzt, nicht neu begonnen. <kbd>Ctrl-C</kbd> bricht eine laufende Übertragung in <code>amicloud</code>, <code>amicloud-shell</code> und <code>amicloud-sync</code> ab. Für <code>AMICLOUD:</code> lohnt <code>cache_ttl=300</code>. Serverseitig: <code>docs/INSTALL.md</code>, Abschnitt „Langsame Clients“.</td></tr>
+<tr><td>Langsame Verbindung (Modem), Übertragungen brechen ab</td><td>Alle Timeouts greifen nur, wenn gar keine Daten fließen. Bricht es trotzdem ab, <code>timeout=300</code> in <code>amicloud.cfg</code> setzen. Abgebrochene Downloads werden an der Abbruchstelle fortgesetzt, nicht neu begonnen. <kbd>Ctrl-C</kbd> bricht eine laufende Übertragung in <code>amicloud</code>, <code>amicloud-shell</code> und <code>amicloud-sync</code> ab. Für <code>AMICLOUD:</code> lohnt <code>cache_ttl=300</code>. Serverseitig: <code>INSTALL.md</code> im Server-Paket, Abschnitt „Langsame Clients“.</td></tr>
 <tr><td>Pfeiltasten in <code>amicloud-shell</code> wirken nicht</td><td>Die Shell braucht ein interaktives Konsolenfenster; bei Eingabe aus Datei oder Pipe gibt es keine Zeilenbearbeitung.</td></tr>
 </table>
 
@@ -922,8 +926,8 @@ Installationsverzeichnis und ggf. <code>~/.amicloudrc</code> löschen.</p>
 
 <h2 id="bauen">16. Bauen aus den Quellen</h2>
 
-<p>Die gemeinsamen Bibliotheken stecken im Projekt
-<a href="https://github.com/dangelrk/AmiCloudCore">AmiCloudCore</a>, das als
+<p>Die Quellen werden später auf GitHub veröffentlicht. Bis dahin gibt es die Amiga-Programme als Archiv auf Aminet. Die gemeinsamen Bibliotheken stecken im Projekt
+AmiCloudCore, das als
 Git-Submodul <code>core/</code> eingebunden ist. Alle Einzelheiten stehen in
 <code>docs/BUILD.md</code>.</p>
 
@@ -944,7 +948,7 @@ echter Hardware noch ungetestet.</p>
 
 <h2 id="api">17. API-Kurzreferenz und Sicherheit</h2>
 
-<p>Vollständige Referenz: <code>docs/api/API.md</code>. Basis-URL
+<p>Vollständige Referenz: <code>api/API.md</code> im Server-Paket. Basis-URL
 <code>https://amicloud.example.com/api.php</code>, HTTP Basic Auth bei jeder
 Anfrage. Antworten: <code>{"status":"ok",…}</code> bzw.
 <code>{"status":"error","code":N,"message":"…"}</code>;
@@ -1007,16 +1011,18 @@ steht unter der MIT-Lizenz; ihr Wortlaut liegt als
 
 <h2 id="autor">19. Autor und Kontakt</h2>
 
-<p>AmiCloud wurde geschrieben von Ronny Krueger. Quellcode, Fehlermeldungen
-und Vorschläge: <a href="https://github.com/dangelrk/AmiCloud">github.com/dangelrk/AmiCloud</a>.</p>
+<p>AmiCloud wurde geschrieben von Ronny Krueger. Fehlermeldungen
+und Vorschläge: <a href="mailto:amitools@planet-rk.de">amitools@planet-rk.de</a>.</p>
 <p>Verwandte Projekte:
-<a href="https://github.com/dangelrk/AmiCloudCore">AmiCloudCore</a> (gemeinsame Bibliotheken),
-<a href="https://github.com/dangelrk/AmiOwnCloud">AmiOwnCloud</a> (OwnCloud/Nextcloud per WebDAV),
-<a href="https://github.com/dangelrk/AmiVCS">AmiVCS</a> (Versionsverwaltung).</p>
+AmiCloudCore (gemeinsame Bibliotheken),
+AmiOwnCloud (OwnCloud/Nextcloud per WebDAV),
+AmiVCS (Versionsverwaltung).</p>
 
 <h2 id="historie">20. Versionsgeschichte</h2>
 
 <dl>
+<dt><strong>Programme 0.8 (07.11.2026)</strong></dt>
+<dd>Handbuch überarbeitet. Der Installer meldet es jetzt, wenn er nicht aus seiner Schublade gestartet wird, statt mit „object in use“ abzubrechen.</dd>
 <dt><strong>Programme 0.7 (02.11.2026)</strong></dt>
 <dd>Namen, die sich nur in Groß-/Kleinschreibung unterscheiden (auch Umlaute):
 <code>AMICLOUD:</code> zeigt den zweiten als <code>name_2</code>, jeder führt zu seiner
@@ -1062,6 +1068,8 @@ Commander-Statuszeilen und bei <code>Info AMICLOUD:</code>. Für langsame
 Verbindungen: Timeouts nur bei Stillstand (<code>timeout</code>), Fortsetzen
 abgebrochener Downloads, <kbd>Ctrl-C</kbd> bricht ab, <code>AMICLOUD:</code>
 bleibt während einer Übertragung bedienbar.</dd>
+<dt><strong>Handbuch 1.3 (07.11.2026)</strong></dt>
+<dd>Mindestprozessor 68020 überall genannt, Archivnamen wie auf Aminet, Quellen folgen später auf GitHub, neue Kontaktadresse, Hinweis zum Start des Installers aus der Shell.</dd>
 <dt><strong>Handbuch 1.2 (23.10.2026)</strong></dt>
 <dd>Langsame Verbindungen: <code>timeout</code>, <code>cache_ttl</code>,
 <kbd>Ctrl-C</kbd>, Fortsetzen von Downloads,
@@ -1074,9 +1082,8 @@ Installationsschublade, Install-AmiCloud und Uninstall-AmiCloud.</dd>
 </dl>
 
 <footer>
-AmiCloud-Handbuch 1.2 · Amiga-Fassung: <code>docs/user/AmiCloud.guide</code>
-(AmigaGuide) · Installation: <code>docs/INSTALL.md</code> · Bauen:
-<code>docs/BUILD.md</code>
+AmiCloud-Handbuch 1.3 · Amiga-Fassung: <code>docs/user/AmiCloud.guide</code>
+(AmigaGuide) · Server: <code>INSTALL.md</code> im Server-Paket
 </footer>
 
 </div>

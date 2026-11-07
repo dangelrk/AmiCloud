@@ -29,3 +29,4 @@ server/config.php
 .idea/
 .cache/
 __pycache__/
+website/dist/

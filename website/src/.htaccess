@@ -1,0 +1,9 @@
+# AmiCloud-Anleitung: planet-rk.de/ami/
+Options -Indexes
+DirectoryIndex index.html
+AddDefaultCharset utf-8
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+</IfModule>

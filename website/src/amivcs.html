@@ -1,0 +1,73 @@
+<!-- titel:AmiVCS {{v:amivcs}} – Anleitung
+beschreibung:Schritt für Schritt zu AmiVCS {{v:amivcs}}: Installation, erstes Repository, Oberfläche, Server und Weboberfläche. -->
+<h1>AmiVCS</h1>
+<p><span class="versionsmarke">Version {{v:amivcs}}</span><span class="platforms">Amiga · Browser · Mac und PC folgen</span> <a class="download" href="{{dl:amivcs}}">AmiVCS auf Aminet</a></p>
+<p class="lead">Versionsverwaltung für den Amiga und den PC: Commits, Branches und Merges, dazu ein eigener Server mit Weboberfläche.</p>
+
+<nav class="inhalt"><strong>In dieser Anleitung</strong><ol>
+<li><a href="#amiga">Installieren</a></li>
+<li><a href="#erstes">Das erste Repository</a></li>
+<li><a href="#gui">Die Oberfläche</a></li>
+<li><a href="#server">Mit dem Server arbeiten</a></li>
+<li><a href="#web">Die Weboberfläche</a></li>
+<li><a href="#weiter">Mehr erfahren</a></li>
+</ol></nav>
+
+<h2 id="amiga">Installieren</h2>
+<ol class="schritte">
+<li>Lade <code>AmiVCS.lha</code> <a href="{{dl:amivcs}}">von Aminet</a>, packe es aus und starte <strong>Install-AmiVCS</strong>. Du brauchst AmigaOS 3.x und mindestens einen 68020; für den Server-Betrieb außerdem einen TCP/IP-Stack und AmiSSL&nbsp;5, für die Oberfläche MUI.
+{{fig:vc-install|Der Installer von AmiVCS.}}</li>
+<li>Wenn du einen Server nutzt, trage ihn in <strong>AMIVCSPrefs</strong> ein. Der Benutzername ist zugleich der Autor deiner Commits.
+{{fig:vc-prefs|AMIVCSPrefs auf der Workbench.}}</li>
+</ol>
+<p>Die Fassung für Mac und PC folgt mit der Veröffentlichung auf GitHub. Die Einzelheiten stehen im <a href="amivcs-handbuch.html#installation-pc">Handbuch</a>.</p>
+
+<h2 id="erstes">Das erste Repository</h2>
+<p>Öffne eine Shell im Projektordner. AmiVCS arbeitet immer im Wurzelverzeichnis des Repositorys.</p>
+<pre><code>amivcs init
+amivcs add -A
+amivcs commit -m "Erster Stand"
+amivcs log</code></pre>
+<p>Für einen Versuch legst du einen Branch an und führst ihn später wieder zusammen:</p>
+<pre><code>amivcs branch experiment
+amivcs switch experiment
+amivcs add -A
+amivcs commit -m "Experiment"
+amivcs switch main
+amivcs merge experiment</code></pre>
+
+<h2 id="gui">Die Oberfläche</h2>
+<p>Dasselbe geht mit <strong>amivcs-gui</strong>. Links stehen die geänderten Dateien, rechts das, was in den nächsten Commit kommt, darunter die Historie aller Branches.</p>
+{{fig:vc-mui|amivcs-gui auf dem Amiga.}}
+{{fig:vc-qt-haupt|amivcs-gui in der kommenden Fassung für den Mac, hier mit gezeichnetem Commit-Graphen.}}
+<ol class="schritte">
+<li>Merke Dateien mit <strong>Stage</strong> oder alle mit <strong>Stage All</strong> vor.
+{{fig:vc-qt-staged|Beide Dateien sind für den Commit vorgemerkt.}}</li>
+<li>Schreibe eine Nachricht und klicke auf <strong>Commit</strong>.</li>
+<li>Branches legst du über das Menü <strong>Repository</strong> an, wechselst sie dort und führst sie zusammen. Clone, Push und Pull stehen unter <strong>Remote</strong>.</li>
+</ol>
+
+<h2 id="server">Mit dem Server arbeiten</h2>
+<p>Ein Server hält deine Repositories zentral vor, damit Amiga und PC denselben Stand haben. Der erste Push legt das Repository auf dem Server an:</p>
+<pre><code>amivcs push projekt-x     ; auf dem ersten Rechner
+amivcs clone projekt-x    ; auf dem zweiten Rechner
+amivcs pull               ; Stand der Gegenseite holen
+amivcs push               ; eigene Commits senden</code></pre>
+<p>Der Server liegt dem Archiv als Schublade <code>Server</code> bei, die Einrichtung steht im <a href="amivcs-handbuch.html#server">Handbuch</a>.</p>
+
+<h2 id="web">Die Weboberfläche</h2>
+<p>Im Browser siehst du Code, Historie und Änderungen. Neue Commits entstehen nur auf dem Client, im Browser änderst du lediglich die Einstellungen eines Repositorys.</p>
+<ol class="schritte">
+<li><strong>Meine Repositories</strong> zeigt alles, was dir gehört. Über die Einstellungen eines Repositorys machst du es öffentlich oder privat.
+{{fig:vc-web-repos|Die eigenen Repositories.}}</li>
+<li><strong>Code</strong> zeigt die Dateien je Branch und das README.
+{{fig:vc-web-code|Dateibaum und README.}}</li>
+<li><strong>Historie</strong> zeigt alle Commits mit Graph.
+{{fig:vc-web-history|Die Historie mit Commit-Graph.}}</li>
+<li>Ein Klick auf einen Commit zeigt, was sich Zeile für Zeile geändert hat.
+{{fig:vc-web-diff|Ein Commit mit seinen Änderungen.}}</li>
+</ol>
+<p class="hinweis">Trage auf deinen Geräten nicht dein Kontopasswort ein, sondern ein App-Passwort. Du legst es in der Weboberfläche unter <strong>Einstellungen</strong> an und kannst es einzeln widerrufen.</p>
+
+<h2 id="weiter">Mehr erfahren</h2>
+<p>Alle Befehle, Konflikte, <code>.amivcsignore</code> und die Server-API stehen im <a href="amivcs-handbuch.html">vollständigen Handbuch zu AmiVCS {{v:amivcs}}</a>.</p>

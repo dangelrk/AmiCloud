@@ -99,7 +99,9 @@
              "Version neuer ist als die im Archiv:\n\n" #behalten
              (all))))
 
-(if (= 0 (exists "C/amicloud" (noreq)))
+; Das Skript selbst muss hier liegen: Aus SYS: heraus gaebe es "C/amicloud"
+; sonst auch, und Quelle und Ziel waeren dieselbe Datei ("object in use").
+(if (OR (= 0 (exists "C/amicloud" (noreq))) (= 0 (exists "Install-AmiCloud" (noreq))))
   (abort "Die AmiCloud-Programme wurden nicht gefunden.\n\n"
          "Bitte den Installer aus der ausgepackten AmiCloud-Schublade "
          "starten (Icon Install-AmiCloud).")

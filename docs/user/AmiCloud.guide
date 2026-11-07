@@ -1,5 +1,5 @@
 @database "AmiCloud.guide"
-@$VER: AmiCloud.guide 1.2 (23.10.2026)
+@$VER: AmiCloud.guide 1.3 (07.11.2026)
 @author "Ronny Krueger"
 @(c) "2026 Ronny Krueger, GPL-3.0-or-later"
 @wordwrap
@@ -82,7 +82,7 @@ VORAUSSETZUNGEN
 
 Amiga:
 
-  - AmigaOS 3.x, Prozessor 68000 oder besser
+  - AmigaOS 3.x, Prozessor 68020 oder besser
   - ein TCP/IP-Stack mit bsdsocket.library (Version 4 oder neuer),
     zum Beispiel Roadshow, AmiTCP oder Miami
   - AmiSSL 5 (amisslmaster.library) mit den CA-Zertifikaten der
@@ -156,6 +156,11 @@ n beantworten; der DOSDriver kommt dort immer nach DEVS:DOSDrivers):
 
   CD AmiCloud
   Execute Install-AmiCloud.shell
+
+Wer den Installer aus der Shell startet, wechselt vorher mit CD in die
+Schublade: Das Skript sucht seine Dateien relativ zum aktuellen
+Verzeichnis. Von einem anderen Verzeichnis aus bricht es mit einem
+Hinweis ab.
 
 Aktualisieren: eine neuere Version installiert man genauso - Archiv
 auspacken, Installer erneut starten. Er vergleicht bei jedem Programm
@@ -239,7 +244,8 @@ aktuellen Verzeichnis). Der Qt-Commander liest ~/.amicloudrc und fragt
 fehlende Angaben in einem Dialog ab, speichert sie aber nicht.
 
 Die Bedienung ist auf allen Systemen gleich; Unterschiede sind in den
-Kapiteln der Programme vermerkt. Ausführlich: docs/INSTALL.md.
+Kapiteln der Programme vermerkt. Ausführlich: docs/INSTALL.md in den
+Quellen.
 
 @endnode
 
@@ -250,7 +256,7 @@ Kapiteln der Programme vermerkt. Ausführlich: docs/INSTALL.md.
 
 DEN SERVER EINRICHTEN
 
-Der Server liegt im Quellcode unter server/ und läuft auf einem
+Der Server liegt dem Archiv als Schublade Server bei und läuft auf einem
 Linux-Rechner mit Apache 2.4, PHP 7.4 oder neuer (Erweiterungen
 pdo_mysql, fileinfo und mbstring, für ZIP-Downloads zip) und
 MariaDB/MySQL. HTTPS ist Pflicht: die API
@@ -278,7 +284,7 @@ Kurzfassung (Beispielname amicloud.example.com):
      https://amicloud.example.com/web.php
 
 Die vollständige Anleitung mit allen Befehlen steht in
-docs/INSTALL.md, die REST-API in docs/api/API.md.
+INSTALL.md im Server-Paket, die REST-API in api/API.md.
 
 DIE WEBOBERFLÄCHE
 
@@ -717,7 +723,7 @@ Aufruf: amicloud-commander [-v]   (braucht MUI 3.8)
 
 Ein Dateimanager mit zwei Panels nebeneinander. Jedes Panel zeigt über
 seinen Umschalter entweder die lokalen Laufwerke (Local) oder die Cloud
-(Cloud). Beim Start zeigt links das aktuelle Verzeichnis, rechts der
+(AmiCloud). Beim Start zeigt links das aktuelle Verzeichnis, rechts der
 Basis-Pfad in der Cloud. Das zuletzt angeklickte Panel ist das aktive.
 
 Server und Zugangsdaten kommen aus ENV:amicloud.cfg (sonst
@@ -733,7 +739,7 @@ Tasten und Knöpfe:
        Fenster; Doppelklick oder "Gehe zu" springt hin.
   F5   Kopieren ins andere Panel (Mehrfachauswahl möglich)
   F6   Verschieben des gewählten Eintrags ins andere Panel, nur
-       zwischen Local und Cloud, mit Rückfrage
+       zwischen Local und AmiCloud, mit Rückfrage
   F7   Verzeichnis anlegen
   F8   Löschen des gewählten Eintrags, mit Rückfrage. Verzeichnisse
        in der Cloud samt Inhalt, lokale nur, wenn sie leer sind.
@@ -878,7 +884,7 @@ Zertifikatsfehler / keine Verbindung über HTTPS
 
 Anmeldung wird abgelehnt (401)
   Benutzername/Passwort prüfen. Wurde das App-Passwort widerrufen
-  oder das Konto gesperrt? Serverseitig: siehe docs/INSTALL.md,
+  oder das Konto gesperrt? Serverseitig: siehe INSTALL.md im Server-Paket,
   Abschnitt Fehlersuche (z.B. CGIPassAuth bei PHP-FPM). AMICLOUD:
   meldet in diesem Fall "Disk not validated".
 
@@ -916,7 +922,7 @@ Langsame Verbindung (Modem), Übertragungen brechen ab
   Downloads werden an der Abbruchstelle fortgesetzt, nicht neu
   begonnen. Ctrl-C bricht eine laufende Übertragung in amicloud,
   amicloud-shell und amicloud-sync ab. Für AMICLOUD: lohnt cache_ttl=300.
-  Serverseitig: docs/INSTALL.md, Abschnitt "Langsame Clients".
+  Serverseitig: INSTALL.md im Server-Paket, Abschnitt "Langsame Clients".
 
 Pfeiltasten in amicloud-shell wirken nicht
   Die Shell braucht ein interaktives Konsolenfenster. Kommen die
@@ -960,7 +966,8 @@ Von Hand:
 
 BAUEN AUS DEN QUELLEN
 
-Die Quellen liegen auf GitHub (siehe @{" Autor " link Autor}). Die
+Die Quellen werden später auf GitHub veröffentlicht. Bis dahin gibt
+es die Amiga-Programme als Archiv auf Aminet. Die
 gemeinsamen Bibliotheken stecken im Projekt AmiCloudCore, das als
 Submodul core/ eingebunden ist:
 
@@ -1028,15 +1035,15 @@ AUTOR UND KONTAKT
 
 AmiCloud wurde geschrieben von Ronny Krueger.
 
-Quellcode, Fehlermeldungen und Vorschläge:
+Fehlermeldungen und Vorschläge:
 
-  https://github.com/dangelrk/AmiCloud
+  amitools@planet-rk.de
 
 Verwandte Projekte desselben Autors:
 
-  https://github.com/dangelrk/AmiCloudCore  gemeinsame Bibliotheken
-  https://github.com/dangelrk/AmiOwnCloud   OwnCloud/Nextcloud (WebDAV)
-  https://github.com/dangelrk/AmiVCS        Versionsverwaltung
+  AmiCloudCore  gemeinsame Bibliotheken
+  AmiOwnCloud   OwnCloud/Nextcloud (WebDAV)
+  AmiVCS        Versionsverwaltung
 
 @endnode
 
@@ -1045,6 +1052,11 @@ Verwandte Projekte desselben Autors:
 @prev Autor
 
 VERSIONSGESCHICHTE
+
+Programme 0.8 (07.11.2026)
+  - Handbuch überarbeitet.
+  - Der Installer meldet es jetzt, wenn er nicht aus seiner Schublade
+    gestartet wird, statt mit "object in use" abzubrechen.
 
 Programme 0.7 (02.11.2026)
   - Namen, die sich nur in Groß-/Kleinschreibung unterscheiden
@@ -1104,6 +1116,11 @@ Programme 0.1 (2026)
   - Für langsame Verbindungen: Timeouts nur bei Stillstand
     (timeout=), Fortsetzen abgebrochener Downloads, Ctrl-C bricht
     ab, AMICLOUD: bleibt während einer Übertragung bedienbar.
+
+Handbuch 1.3 (07.11.2026)
+  - Mindestprozessor 68020 überall genannt, Quellen folgen später auf
+    GitHub, neue Kontaktadresse, Hinweis zum Start des Installers
+    aus der Shell.
 
 Handbuch 1.2 (23.10.2026)
   - Langsame Verbindungen: timeout, cache_ttl, Ctrl-C, Fortsetzen

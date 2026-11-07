@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright (C) 2026 Ronny Krueger */
 /* AMICLOUD: -- AmiCloud DOS handler (DOSDriver). Installation (automatisch
- * per Install-AmiCloud, Details in docs/INSTALL.md und
- * handler/cloudhandler/README.md):
+ * per Install-AmiCloud, Details in AmiCloud.guide):
  *   Copy amicloud-handler L:
  *   Copy amicloud-worker  L:        <- backend_init() startet ihn beim
  *                                      Mount aus L: (SystemTags)

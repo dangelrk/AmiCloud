@@ -1,0 +1,101 @@
+<!-- titel:AmiCloud {{v:amicloud}} – Anleitung
+beschreibung:Schritt für Schritt zu AmiCloud {{v:amicloud}}: Server, Amiga-Installation, Laufwerk AMICLOUD:, Commander, Abgleich und AmiCloud Desktop. -->
+<h1>AmiCloud</h1>
+<p><span class="versionsmarke">Version {{v:amicloud}}</span><span class="platforms">Amiga · Browser · Mac und PC folgen</span> <a class="download" href="{{dl:amicloud}}">AmiCloud auf Aminet</a></p>
+<p class="lead">Dein eigener Cloud-Speicher auf deinem Server, nutzbar als Amiga-Laufwerk, im Dateimanager, im Browser und mit Abgleich auf dem Mac.</p>
+
+<nav class="inhalt"><strong>In dieser Anleitung</strong><ol>
+<li><a href="#voraussetzungen">Das brauchst du</a></li>
+<li><a href="#web">Im Browser anmelden</a></li>
+<li><a href="#amiga">Auf dem Amiga installieren</a></li>
+<li><a href="#laufwerk">Die Cloud als Laufwerk</a></li>
+<li><a href="#commander">Dateien im Commander</a></li>
+<li><a href="#shell">Shell und Abgleich</a></li>
+<li><a href="#desktop">AmiCloud Desktop am Mac</a></li>
+<li><a href="#weiter">Mehr erfahren</a></li>
+</ol></nav>
+
+<h2 id="voraussetzungen">Das brauchst du</h2>
+<ul>
+<li><strong>Einen AmiCloud-Server</strong> mit PHP und MariaDB. Er liegt dem Archiv als Schublade <code>Server</code> bei; die Einrichtung steht im <a href="amicloud-handbuch.html#server">Handbuch</a>.</li>
+<li><strong>Auf dem Amiga:</strong> AmigaOS 3.x, mindestens einen 68020, einen TCP/IP-Stack und AmiSSL&nbsp;5. Der Dateimanager braucht außerdem MUI&nbsp;3.8, für Umlaute wird die <code>codesets.library</code> empfohlen.</li>
+<li><strong>AmiCloud Desktop:</strong> einen Mac mit Apple-Prozessor und macOS&nbsp;26.</li>
+</ul>
+
+<h2 id="web">Im Browser anmelden</h2>
+<p>Die Weboberfläche ist der einfachste Einstieg. Hier verwaltest du Dateien und Freigaben und legst die App-Passwörter für deine Geräte an.</p>
+<ol class="schritte">
+<li>Öffne die Adresse deines Servers und melde dich an.
+{{fig:ac-web-login|Die Anmeldung der Weboberfläche.}}</li>
+<li>Unter <strong>Alle Dateien</strong> lädst du Dateien hoch und legst über <strong>Neu</strong> Ordner an.
+{{fig:ac-web-dateien|Deine Dateien und Ordner in der Weboberfläche.}}</li>
+<li>Öffne <strong>Einstellungen</strong> und lege unter <strong>Geräte &amp; App-Passwörter</strong> für jedes Gerät ein eigenes Passwort an, zum Beispiel „A1200“. Dieses Passwort trägst du später auf dem Gerät ein. Geht ein Gerät verloren, widerrufst du nur sein Passwort.
+{{fig:ac-web-einstellungen|Profil, Passwort und App-Passwörter.}}</li>
+</ol>
+
+<h2 id="amiga">Auf dem Amiga installieren</h2>
+<ol class="schritte">
+<li>Lade <code>AmiCloud.lha</code> <a href="{{dl:amicloud}}">von Aminet</a>, packe es aus und starte in der Schublade das Icon <strong>Install-AmiCloud</strong>.</li>
+<li>Wähle den Modus. Als <strong>Einsteiger</strong> installiert der Installer alles automatisch, als <strong>Geübter Benutzer</strong> wählst du die Teile selbst.
+{{fig:ac-install-modus|Der Installationsmodus.}}
+{{fig:ac-install-teile|Die Teile von AmiCloud im Modus „Geübter Benutzer“.}}</li>
+<li>Am Ende bietet der Installer an, <strong>AmiCloudPrefs</strong> zu starten. Trage Server, Benutzer und dein App-Passwort ein und klicke auf <strong>Speichern</strong>.
+{{fig:ac-prefs|AmiCloudPrefs. „Speichern“ gilt dauerhaft, „Benutzen“ nur bis zum Neustart.}}</li>
+</ol>
+<p class="hinweis"><strong>Aktualisieren:</strong> Neues Archiv auspacken und den Installer erneut starten. Deine Einstellungen bleiben erhalten. Ein schon eingebundenes <code>AMICLOUD:</code> arbeitet bis zum nächsten Neustart mit der alten Version weiter.</p>
+
+<h2 id="laufwerk">Die Cloud als Laufwerk</h2>
+<p>Nach der Installation erscheint deine Cloud als Laufwerk <code>AMICLOUD:</code> und auf der Workbench als Datenträger <strong>AmiCloud</strong>. Du arbeitest damit wie mit einer Festplatte, zum Beispiel in der Shell:</p>
+<pre><code>Dir AMICLOUD:
+Copy DH0:bericht.txt AMICLOUD:Dokumente/
+Copy AMICLOUD:Dokumente/bericht.txt RAM:</code></pre>
+{{fig:ac-handler|AMICLOUD: auf der Workbench.}}
+<p class="hinweis">Das Laufwerk lässt sich nicht abmelden. Es bleibt bis zum nächsten Neustart eingebunden, und geänderte Einstellungen wirken ebenfalls erst danach.</p>
+
+<h2 id="commander">Dateien im Commander</h2>
+<p>Der <strong>amicloud-commander</strong> zeigt zwei Bereiche nebeneinander, jeder wahlweise lokal oder in der Cloud. Du findest ihn nach der Installation in <code>SYS:Tools</code>. Eine Fassung für Mac und PC folgt mit der Veröffentlichung auf GitHub.</p>
+{{fig:ac-cmd-mui|Der Commander auf dem Amiga.}}
+{{fig:ac-qt-commander|Der Commander in der kommenden Fassung für den Mac.}}
+<div class="tabelle"><table>
+<tr><th>Taste</th><th>Aktion</th></tr>
+<tr><td><kbd>F2</kbd></td><td>Neu laden</td></tr>
+<tr><td><kbd>F3</kbd></td><td>Info zum gewählten Eintrag</td></tr>
+<tr><td><kbd>F4</kbd></td><td>Suchen, mit Mustern wie <code>*.txt</code> oder <code>#?.info</code></td></tr>
+<tr><td><kbd>F5</kbd></td><td>In den anderen Bereich kopieren</td></tr>
+<tr><td><kbd>F6</kbd></td><td>Verschieben, mit Rückfrage</td></tr>
+<tr><td><kbd>F7</kbd></td><td>Verzeichnis anlegen</td></tr>
+<tr><td><kbd>F8</kbd></td><td>Löschen, mit Rückfrage</td></tr>
+<tr><td><kbd>F10</kbd></td><td>Beenden</td></tr>
+</table></div>
+
+<h2 id="shell">Shell und Abgleich</h2>
+<p>In der Shell gibt es drei Werkzeuge:</p>
+<ul>
+<li><code>amicloud</code> führt je Aufruf einen Befehl aus, etwa <code>amicloud list /</code> oder <code>amicloud put brief.txt /Dokumente/brief.txt</code>.</li>
+<li><code>amicloud-shell</code> arbeitet interaktiv mit <code>cd</code>, <code>ls</code>, <code>get</code> und <code>put</code>.</li>
+<li><code>amicloud-sync</code> gleicht einen lokalen Ordner einmal mit der Cloud ab.</li>
+</ul>
+{{fig:ac-shell|amicloud-shell auf dem Amiga.}}
+<p class="hinweis"><strong>Konflikte:</strong> Wurde eine Datei auf beiden Seiten geändert, bleiben beide Fassungen erhalten; die zweite bekommt einen Namen wie <code>Name_K261031-1402.ext</code>. Sollen auf einmal besonders viele Dateien verschwinden, fragt der Abgleich vorher nach. Die Einzelheiten stehen im <a href="amicloud-handbuch.html#amicloud-sync">Handbuch</a>.</p>
+
+<h2 id="desktop">AmiCloud Desktop am Mac</h2>
+<p>AmiCloud Desktop hält einen Ordner auf dem Mac mit deinem Server abgeglichen und läuft unauffällig in der Menüleiste.</p>
+<p class="hinweis">AmiCloud Desktop liegt nicht auf Aminet. Der öffentliche Download folgt mit der Veröffentlichung auf GitHub.</p>
+<ol class="schritte">
+<li>Öffne die <code>.dmg</code>-Datei und ziehe das Programm nach <strong>Programme</strong>. Es ist nicht signiert, deshalb blockiert macOS den ersten Start. Gib es danach unter <strong>Systemeinstellungen › Datenschutz &amp; Sicherheit</strong> mit <strong>Dennoch öffnen</strong> frei.</li>
+<li>Der Assistent fragt nach der Adresse deines Servers.
+{{fig:ac-desk-1-server|Schritt 1: die Server-Adresse.}}</li>
+<li>Trage Benutzer und ein App-Passwort ein.
+{{fig:ac-desk-2-login|Schritt 2: die Anmeldung.}}</li>
+<li>Wähle den lokalen Ordner.
+{{fig:ac-desk-3-ordner|Schritt 3: der lokale Ordner.}}</li>
+<li>Lege fest, welche Server-Ordner abgeglichen werden, und klicke auf <strong>Fertig</strong>.
+{{fig:ac-desk-4-auswahl|Schritt 4: die Ordnerauswahl.}}</li>
+<li>Über das Symbol in der Menüleiste gleichst du sofort ab, pausierst oder öffnest die Einstellungen.
+{{fig:ac-desk-menue|Das Menü in der Menüleiste.}}
+{{fig:ac-desk-einst-abgleich|Abgleich-Einstellungen: Intervall und Rückfrage vor Massenlöschungen.}}
+{{fig:ac-desk-aktivitaet|Das Aktivitätsfenster zeigt, was beim Abgleich passiert ist.}}</li>
+</ol>
+
+<h2 id="weiter">Mehr erfahren</h2>
+<p>Alle Befehle, Einstellungen und die Einrichtung des Servers stehen im <a href="amicloud-handbuch.html">vollständigen Handbuch zu AmiCloud {{v:amicloud}}</a>.</p>

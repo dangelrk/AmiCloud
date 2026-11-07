@@ -42,7 +42,6 @@ if (isset($_COOKIE[session_name()])) {
     <p class="hero-tagline">Der eigene Cloud-Speicher für den Amiga – und den PC.</p>
     <div class="hero-actions">
       <a href="/web.php" class="btn-hero"><?= $loggedIn ? 'Zu meinen Dateien' : 'Anmelden' ?></a>
-      <a href="https://github.com/dangelrk/AmiCloud" class="btn-hero-alt">Projekt auf GitHub</a>
     </div>
   </header>
 

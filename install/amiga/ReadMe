@@ -48,11 +48,11 @@ Vorhandene Icons, Einstellungen und DOSDriver bleiben erhalten.
 
 Voraussetzungen
 ---------------
-  - AmigaOS 3.x, 68000 oder besser
+  - AmigaOS 3.x, 68020 oder besser
   - TCP/IP-Stack mit bsdsocket.library (z.B. Roadshow, AmiTCP, Miami)
   - AmiSSL 5
   - MUI 3.8 oder neuer (nur für amicloud-commander)
-  - ein AmiCloud-Server (Einrichtung: docs/INSTALL.md im Quellcode)
+  - ein AmiCloud-Server (Server und Anleitung: Schublade Server)
 
 Lizenz
 ------
@@ -61,4 +61,5 @@ Version 3 oder neuer (siehe LICENSE). Enthält den JSON-Parser Parson
 (MIT-Lizenz, siehe THIRD-PARTY-NOTICES). Keine Garantie.
 
 Autor: Ronny Krueger
-Quellcode: https://github.com/dangelrk/AmiCloud
+Fehlermeldungen und Vorschläge: amitools@planet-rk.de
+Die Quellen werden später auf GitHub veröffentlicht.
