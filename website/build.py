@@ -177,7 +177,7 @@ def kopf(titel, aktiv, beschreibung):
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-<nav class="ami-bar" aria-label="Hauptnavigation"><div class="ami-bar-in"><a class="ami-home" href="index.html">Ami-Programme · Anleitung</a>{links}</div></nav>
+<nav class="ami-bar" aria-label="Hauptnavigation"><div class="ami-bar-in"><span class="ami-home"><a href="/">planet-RK</a> › <a href="index.html">AMIGA-Tools · Anleitung</a></span>{links}</div></nav>
 """
 
 
