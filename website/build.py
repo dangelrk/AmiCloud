@@ -34,7 +34,7 @@ PROJEKTE = {
 
 # Vorerst nicht in Suchmaschinen: nur per Direktlink erreichbar. Zum Freischalten
 # auf False setzen, neu bauen und hochladen.
-NOINDEX = True
+NOINDEX = False
 
 # Woher die Programme kommen. Eine Stelle, damit der spaetere Wechsel oder die
 # Ergaenzung um GitHub einfach bleibt. Die Namen auf Aminet tragen keine Version.

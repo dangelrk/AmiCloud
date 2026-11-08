@@ -25,14 +25,14 @@ python3 website/build.py    # erzeugt website/dist/, braucht cwebp
 
 ## Suchmaschinen
 
-Die Seite ist vorerst nur per Direktlink gedacht: `NOINDEX = True` in `build.py` setzt
-`noindex` in jede Seite und als `X-Robots-Tag`. Zum Freischalten auf `False` setzen,
-neu bauen und hochladen.
+Seit 08.11.2026 für Suchmaschinen freigegeben (`NOINDEX = False` in `build.py`).
+`NOINDEX = True` setzt `noindex` in jede Seite und als `X-Robots-Tag`, falls die
+Seite einmal wieder nur per Direktlink erreichbar sein soll.
 
 ## Hochladen
 
 Zuerst die Archive auf Aminet hochladen, sonst laufen die Download-Links ins Leere.
-Die Adressen stehen in `DOWNLOADS` in `build.py`, dort kommt später auch GitHub dazu.
+Die Adressen stehen in `DOWNLOADS` (Aminet) und `GITHUB` in `build.py`.
 
 Der Zählerstand liegt nur auf dem Server und darf nicht überschrieben werden:
 
@@ -46,7 +46,7 @@ tar -C website/dist --no-xattrs -czf - . | ssh planetrk 'cd /var/www/html/ami &&
 Danach prüfen: `https://planet-rk.de/ami/` lädt, der Zähler zeigt eine Zahl, und
 `https://planet-rk.de/ami/data/counter.txt` antwortet mit 403. Antwortet es mit
 200, wertet Apache die `.htaccess` dort nicht aus (`AllowOverride`).
-Solange `NOINDEX` gilt, muss `curl -sI https://planet-rk.de/ami/ | grep -i x-robots-tag`
+Gilt `NOINDEX`, muss `curl -sI https://planet-rk.de/ami/ | grep -i x-robots-tag`
 die Zeile `X-Robots-Tag: noindex, nofollow` zeigen. Fehlt sie, ist `mod_headers` aus;
 die HTML-Seiten sperrt dann nur noch ihr Meta-Tag, die Bilder nicht.
 
