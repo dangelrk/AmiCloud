@@ -1,7 +1,7 @@
 <!-- titel:AmiVCS {{v:amivcs}} – Anleitung
 beschreibung:Schritt für Schritt zu AmiVCS {{v:amivcs}}: Installation, erstes Repository, Oberfläche, Server und Weboberfläche. -->
 <h1>AmiVCS</h1>
-<p><span class="versionsmarke">Version {{v:amivcs}}</span><span class="platforms">Amiga · Browser · Mac und PC folgen</span> <a class="download" href="{{dl:amivcs}}">AmiVCS auf Aminet</a></p>
+<p><span class="versionsmarke">Version {{v:amivcs}}</span><span class="platforms">Amiga · Browser · Mac und PC</span> <a class="download" href="{{dl:amivcs}}">AmiVCS auf Aminet</a> <a class="download" href="{{gh:amivcs}}">Quellen und Releases auf GitHub</a></p>
 <p class="lead">Versionsverwaltung für den Amiga und den PC: Commits, Branches und Merges, dazu ein eigener Server mit Weboberfläche.</p>
 <p class="hinweis"><strong>Experimentell:</strong> Mit Hilfe von Claude (KI-Assistent von Anthropic) entwickelt, in erster Linie für den Eigengebrauch des Autors. Probiere es zuerst mit Kopien deiner Daten aus.</p>
 
@@ -18,14 +18,16 @@ beschreibung:Schritt für Schritt zu AmiVCS {{v:amivcs}}: Installation, erstes R
 <ol class="schritte">
 <li>Lade <code>AmiVCS.lha</code> <a href="{{dl:amivcs}}">von Aminet</a>, packe es aus und starte <strong>Install-AmiVCS</strong>. Du brauchst AmigaOS 3.x und mindestens einen 68020; für den Server-Betrieb außerdem einen TCP/IP-Stack und AmiSSL&nbsp;5, für die Oberfläche MUI.
 {{fig:vc-install|Der Installer von AmiVCS.}}</li>
-<li>Wenn du einen Server nutzt, trage ihn in <strong>AMIVCSPrefs</strong> ein. Der Benutzername ist zugleich der Autor deiner Commits.
-{{fig:vc-prefs|AMIVCSPrefs auf der Workbench.}}</li>
+<li>Trage in <strong>AmiVCSConfig</strong> (in <code>SYS:Prefs</code>) deinen Namen und deine E-Mail ein. Sie stehen in jedem Commit, wie bei git. Gestartet in einem Repository, zeigt AmiVCSConfig auch dessen Remote-URL und Benutzer.
+{{fig:vc-config|AmiVCSConfig auf der Workbench.}}</li>
 </ol>
-<p>Die Fassung für Mac und PC folgt mit der Veröffentlichung auf GitHub. Die Einzelheiten stehen im <a href="amivcs-handbuch.html#installation-pc">Handbuch</a>.</p>
+<p>Die Fassung für Mac und PC baust du aus den <a href="{{gh:amivcs}}">Quellen auf GitHub</a>. Die Einzelheiten stehen im <a href="amivcs-handbuch.html#installation-pc">Handbuch</a>.</p>
 
 <h2 id="erstes">Das erste Repository</h2>
-<p>Öffne eine Shell im Projektordner. AmiVCS arbeitet immer im Wurzelverzeichnis des Repositorys.</p>
-<pre><code>amivcs init
+<p>Öffne eine Shell im Projektordner. AmiVCS arbeitet immer im Wurzelverzeichnis des Repositorys. Ohne Namen lehnt <code>commit</code> ab; den setzt du einmal in AmiVCSConfig oder so:</p>
+<pre><code>amivcs config --global name "Vorname Nachname"
+amivcs config --global email name@example.org
+amivcs init
 amivcs add -A
 amivcs commit -m "Erster Stand"
 amivcs log</code></pre>
@@ -38,22 +40,22 @@ amivcs switch main
 amivcs merge experiment</code></pre>
 
 <h2 id="gui">Die Oberfläche</h2>
-<p>Dasselbe geht mit <strong>amivcs-gui</strong>. Links stehen die geänderten Dateien, rechts das, was in den nächsten Commit kommt, darunter die Historie aller Branches.</p>
+<p>Dasselbe geht mit <strong>amivcs-gui</strong>. Links stehen die geänderten Dateien und darunter das, was in den nächsten Commit kommt, rechts der Inhalt der angeklickten Datei. Der Reiter <strong>History</strong> zeigt die Historie aller Branches. Oben stehen Branch, Repository und Remote-URL.</p>
 {{fig:vc-mui|amivcs-gui auf dem Amiga.}}
-{{fig:vc-qt-haupt|amivcs-gui in der kommenden Fassung für den Mac, hier mit gezeichnetem Commit-Graphen.}}
+{{fig:vc-qt-haupt|amivcs-gui in der Fassung für den Mac, hier mit gezeichnetem Commit-Graphen.}}
 <ol class="schritte">
 <li>Merke Dateien mit <strong>Stage</strong> oder alle mit <strong>Stage All</strong> vor.
 {{fig:vc-qt-staged|Beide Dateien sind für den Commit vorgemerkt.}}</li>
 <li>Schreibe eine Nachricht und klicke auf <strong>Commit</strong>.</li>
-<li>Branches legst du über das Menü <strong>Repository</strong> an, wechselst sie dort und führst sie zusammen. Clone, Push und Pull stehen unter <strong>Remote</strong>.</li>
+<li>Branches legst du über das Menü <strong>Repository</strong> an, wechselst sie dort und führst sie zusammen. Clone, Push und Pull stehen unter <strong>Remote</strong>; fehlt das Passwort, fragt ein Login-Fenster danach und merkt es sich auf Wunsch.</li>
 </ol>
 
 <h2 id="server">Mit dem Server arbeiten</h2>
-<p>Ein Server hält deine Repositories zentral vor, damit Amiga und PC denselben Stand haben. Der erste Push legt das Repository auf dem Server an:</p>
-<pre><code>amivcs push projekt-x     ; auf dem ersten Rechner
-amivcs clone projekt-x    ; auf dem zweiten Rechner
-amivcs pull               ; Stand der Gegenseite holen
-amivcs push               ; eigene Commits senden</code></pre>
+<p>Ein Server hält deine Repositories zentral vor, damit Amiga und PC denselben Stand haben. Jedes Repository hat eine Adresse wie bei git, zum Beispiel <code>https://amivcs.example.com/projekt-x</code>; jedes kann auf einen anderen Server zeigen. Der erste Push legt das Repository auf dem Server an. Benutzer und Passwort fragt AmiVCS beim ersten Mal und merkt sie sich auf Wunsch im Repository:</p>
+<pre><code>amivcs push https://amivcs.example.com/projekt-x    ; auf dem ersten Rechner
+amivcs clone https://amivcs.example.com/projekt-x   ; auf dem zweiten Rechner
+amivcs pull                                         ; Stand der Gegenseite holen
+amivcs push                                         ; eigene Commits senden</code></pre>
 <p>Der Server liegt dem Archiv als Schublade <code>Server</code> bei, die Einrichtung steht im <a href="amivcs-handbuch.html#server">Handbuch</a>.</p>
 
 <h2 id="web">Die Weboberfläche</h2>
@@ -68,7 +70,7 @@ amivcs push               ; eigene Commits senden</code></pre>
 <li>Ein Klick auf einen Commit zeigt, was sich Zeile für Zeile geändert hat.
 {{fig:vc-web-diff|Ein Commit mit seinen Änderungen.}}</li>
 </ol>
-<p class="hinweis">Trage auf deinen Geräten nicht dein Kontopasswort ein, sondern ein App-Passwort. Du legst es in der Weboberfläche unter <strong>Einstellungen</strong> an und kannst es einzeln widerrufen.</p>
+<p class="hinweis">Gib auf deinen Geräten nicht dein Kontopasswort ein, sondern ein App-Passwort. Du legst es in der Weboberfläche unter <strong>Einstellungen</strong> an und kannst es einzeln widerrufen.</p>
 
 <h2 id="weiter">Mehr erfahren</h2>
 <p>Alle Befehle, Konflikte, <code>.amivcsignore</code> und die Server-API stehen im <a href="amivcs-handbuch.html">vollständigen Handbuch zu AmiVCS {{v:amivcs}}</a>.</p>

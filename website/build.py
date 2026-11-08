@@ -23,7 +23,7 @@ DIST = WEB / "dist"
 
 # Fuer welche Programmversion die Bilder aufgenommen wurden. Nach neuen
 # Aufnahmen hier nachziehen; solange die Zahl abweicht, warnt der Bau.
-BILDER_VERSION = {"amicloud": "0.9", "amivcs": "0.9", "amiowncloud": "0.9", "amidevide": "0.4"}
+BILDER_VERSION = {"amicloud": "0.10", "amivcs": "0.10", "amiowncloud": "0.10", "amidevide": "0.5"}
 
 PROJEKTE = {
     "amicloud": ("AmiCloud", "Eigener Cloud-Speicher"),
@@ -43,6 +43,14 @@ DOWNLOADS = {
     "amivcs": "https://aminet.net/package/dev/misc/AmiVCS",
     "amiowncloud": "https://aminet.net/package/comm/net/AmiOwnCloud",
     "amidevide": "https://aminet.net/package/dev/misc/AmiDevIDE",
+}
+# Quellen und Releases (auch die Fassungen fuer Mac und PC) auf GitHub;
+# {{gh:projekt}} in den Seiten.
+GITHUB = {
+    "amicloud": "https://github.com/dangelrk/AmiCloud",
+    "amivcs": "https://github.com/dangelrk/AmiVCS",
+    "amiowncloud": "https://github.com/dangelrk/AmiOwnCloud",
+    "amidevide": "https://github.com/dangelrk/AmiDevIDE",
 }
 
 # Handbuch: Anker -> [(Bild, Bildunterschrift)]. Das Bild steht hinter dem
@@ -72,7 +80,7 @@ HANDBUCH_BILDER = {
     },
     "amivcs": {
         "installation": [("vc-install", "Der Installer von AmiVCS.")],
-        "prefs": [("vc-prefs", "AMIVCSPrefs auf der Workbench.")],
+        "prefs": [("vc-config", "AmiVCSConfig: Name und E-Mail für alle Repositories, Remote-URL und Benutzer für dieses.")],
         "gui-mui": [("vc-mui", "amivcs-gui auf dem Amiga (MUI).")],
         "gui-qt": [("vc-qt-haupt", "amivcs-gui auf dem Mac (Qt) mit grafischem Commit-Graphen."),
                    ("vc-qt-branch", "Einen neuen Branch anlegen.")],
@@ -190,6 +198,7 @@ def ersetze(text, versionen):
         return bild_html(m.group(1).strip(), m.group(2).strip())
     text = re.sub(r"\{\{fig:([^|}]+)\|([^}]*)\}\}", fig, text)
     text = re.sub(r"\{\{dl:(\w+)\}\}", lambda m: DOWNLOADS[m.group(1)], text)
+    text = re.sub(r"\{\{gh:(\w+)\}\}", lambda m: GITHUB[m.group(1)], text)
     return re.sub(r"\{\{v:(\w+)\}\}", lambda m: versionen[m.group(1)], text)
 
 

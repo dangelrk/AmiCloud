@@ -127,7 +127,7 @@
 <div class="wrap">
 
 <h1>AmiCloud</h1>
-<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Stand 07.11.2026 (Programmversion 0.9)</p>
+<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Stand 08.11.2026 (Programmversion 0.10)</p>
 
 <div class="callout"><strong>Hinweis:</strong> Experimentelle Software, entwickelt mit Hilfe von Claude (KI-Assistent von Anthropic) und in erster Linie für den Eigengebrauch des Autors geschrieben. Bitte zuerst mit Kopien der Daten ausprobieren; Benutzung auf eigene Gefahr.</div>
 
@@ -928,7 +928,7 @@ Installationsverzeichnis und ggf. <code>~/.amicloudrc</code> löschen.</p>
 
 <h2 id="bauen">16. Bauen aus den Quellen</h2>
 
-<p>Die Quellen werden später auf GitHub veröffentlicht. Bis dahin gibt es die Amiga-Programme als Archiv auf Aminet. Die gemeinsamen Bibliotheken stecken im Projekt
+<p>Die Quellen liegen auf GitHub: <a href="https://github.com/dangelrk/AmiCloud">github.com/dangelrk/AmiCloud</a>; die Amiga-Programme gibt es auch als Archiv auf Aminet. Die gemeinsamen Bibliotheken stecken im Projekt
 AmiCloudCore, das als
 Git-Submodul <code>core/</code> eingebunden ist. Alle Einzelheiten stehen in
 <code>docs/BUILD.md</code>.</p>
@@ -1014,7 +1014,7 @@ steht unter der MIT-Lizenz; ihr Wortlaut liegt als
 <h2 id="autor">19. Autor und Kontakt</h2>
 
 <p>AmiCloud wurde geschrieben von Ronny Krueger. Fehlermeldungen
-und Vorschläge: <a href="mailto:amitools@planet-rk.de">amitools@planet-rk.de</a>.</p>
+und Vorschläge: <a href="mailto:amitools@planet-rk.de">amitools@planet-rk.de</a>. Quellen und Fehlerberichte: <a href="https://github.com/dangelrk/AmiCloud">github.com/dangelrk/AmiCloud</a>.</p>
 <p>Verwandte Projekte:
 AmiCloudCore (gemeinsame Bibliotheken),
 AmiOwnCloud (OwnCloud/Nextcloud per WebDAV),
@@ -1023,6 +1023,8 @@ AmiVCS (Versionsverwaltung).</p>
 <h2 id="historie">20. Versionsgeschichte</h2>
 
 <dl>
+<dt><strong>Programme 0.10 (08.11.2026)</strong></dt>
+<dd>Alle Fenster der Amiga-Programme (Commander, AmiCloudPrefs) merken ihre Position. Commander (MUI): die Auswahl im aktiven Panel ist wieder gut zu sehen. Scheitert TLS an einer falschen Amiga-Uhr (z.&nbsp;B. leere RTC-Batterie), nennt die Meldung die Uhrzeit und bittet, sie zu prüfen.</dd>
 <dt><strong>Programme 0.9 (07.11.2026)</strong></dt>
 <dd><code>AMICLOUD:</code> legt leere Dateien jetzt auch auf dem Server an: <code>Copy</code> einer leeren Datei erzeugte vorher gar nichts, und eine mit <code>MODE_NEWFILE</code> geleerte Datei behielt auf dem Server ihren alten Inhalt. Wird eine Datei mit <code>SetFileSize</code> verlängert, sind die neuen Bytes Nullen. <code>amicloud-commander</code> rechnet lokale Dateizeiten mit <code>gmt_offset</code> und <code>dst</code> um. Server: Löschen und gleichzeitiges Hochladen derselben Datei kommen sich nicht mehr in die Quere; Hochladen unterhalb einer Datei ergibt 409, eine ungültige Range wird ignoriert, das Web meldet ein volles Kontingent mit 507. Hinweis auf den experimentellen Status ergänzt.</dd>
 <dt><strong>Programme 0.8 (07.11.2026)</strong></dt>
@@ -1072,6 +1074,8 @@ Commander-Statuszeilen und bei <code>Info AMICLOUD:</code>. Für langsame
 Verbindungen: Timeouts nur bei Stillstand (<code>timeout</code>), Fortsetzen
 abgebrochener Downloads, <kbd>Ctrl-C</kbd> bricht ab, <code>AMICLOUD:</code>
 bleibt während einer Übertragung bedienbar.</dd>
+<dt><strong>Handbuch 1.5 (08.11.2026)</strong></dt>
+<dd>Quellen und Fehlerberichte auf GitHub verlinkt.</dd>
 <dt><strong>Handbuch 1.3 (07.11.2026)</strong></dt>
 <dd>Mindestprozessor 68020 überall genannt, Archivnamen wie auf Aminet, Quellen folgen später auf GitHub, neue Kontaktadresse, Hinweis zum Start des Installers aus der Shell.</dd>
 <dt><strong>Handbuch 1.2 (23.10.2026)</strong></dt>
@@ -1086,7 +1090,7 @@ Installationsschublade, Install-AmiCloud und Uninstall-AmiCloud.</dd>
 </dl>
 
 <footer>
-AmiCloud-Handbuch 1.3 · Amiga-Fassung: <code>docs/user/AmiCloud.guide</code>
+AmiCloud-Handbuch 1.5 · Amiga-Fassung: <code>docs/user/AmiCloud.guide</code>
 (AmigaGuide) · Server: <code>INSTALL.md</code> im Server-Paket
 </footer>
 

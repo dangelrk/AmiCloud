@@ -1,5 +1,5 @@
 @database "AmiCloud.guide"
-@$VER: AmiCloud.guide 1.4 (07.11.2026)
+@$VER: AmiCloud.guide 1.5 (08.11.2026)
 @author "Ronny Krueger"
 @(c) "2026 Ronny Krueger, GPL-3.0-or-later"
 @wordwrap
@@ -970,8 +970,8 @@ Von Hand:
 
 BAUEN AUS DEN QUELLEN
 
-Die Quellen werden später auf GitHub veröffentlicht. Bis dahin gibt
-es die Amiga-Programme als Archiv auf Aminet. Die
+Die Quellen liegen auf GitHub, https://github.com/dangelrk/AmiCloud;
+die Amiga-Programme gibt es auch als Archiv auf Aminet. Die
 gemeinsamen Bibliotheken stecken im Projekt AmiCloudCore, das als
 Submodul core/ eingebunden ist:
 
@@ -1043,6 +1043,10 @@ Fehlermeldungen und Vorschläge:
 
   amitools@planet-rk.de
 
+Quellen und Fehlerberichte (Issues) auf GitHub:
+
+  https://github.com/dangelrk/AmiCloud
+
 Verwandte Projekte desselben Autors:
 
   AmiCloudCore  gemeinsame Bibliotheken
@@ -1056,6 +1060,15 @@ Verwandte Projekte desselben Autors:
 @prev Autor
 
 VERSIONSGESCHICHTE
+
+Programme 0.10 (08.11.2026)
+  - Alle Fenster der Amiga-Programme (Commander, AmiCloudPrefs)
+    merken ihre Position.
+  - Commander (MUI): die Auswahl im aktiven Panel ist wieder gut
+    zu sehen.
+  - Scheitert TLS an einer falschen Amiga-Uhr (z.B. leere
+    RTC-Batterie), nennt die Meldung die Uhrzeit und bittet, sie
+    zu prüfen.
 
 Programme 0.9 (07.11.2026)
   - AMICLOUD: legt leere Dateien jetzt auch auf dem Server an. Copy
@@ -1135,6 +1148,9 @@ Programme 0.1 (2026)
   - Für langsame Verbindungen: Timeouts nur bei Stillstand
     (timeout=), Fortsetzen abgebrochener Downloads, Ctrl-C bricht
     ab, AMICLOUD: bleibt während einer Übertragung bedienbar.
+
+Handbuch 1.5 (08.11.2026)
+  - Quellen und Fehlerberichte auf GitHub verlinkt.
 
 Handbuch 1.3 (07.11.2026)
   - Mindestprozessor 68020 überall genannt, Quellen folgen später auf

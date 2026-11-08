@@ -77,7 +77,8 @@ pass=…</pre>
   </main>
 
   <footer class="landing-footer">
-    AmiCloud v<?= AMICLOUD_VERSION ?> · GPL-3.0 · AmigaOS 3.x, bsdsocket + AmiSSL
+    AmiCloud v<?= AMICLOUD_VERSION ?> · GPL-3.0 · AmigaOS 3.x, bsdsocket + AmiSSL ·
+    <a href="https://github.com/dangelrk/AmiCloud">Quellen auf GitHub</a>
   </footer>
 </body>
 </html>
