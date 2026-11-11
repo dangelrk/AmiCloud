@@ -14,6 +14,11 @@
 #include <stdio.h>
 #include <string.h>
 
+/* lineedit.h/history.h do not pull in amicloud.h, which sets PLATFORM_WIN */
+#if defined(_WIN32) && !defined(PLATFORM_WIN)
+#define PLATFORM_WIN 1
+#endif
+
 #ifdef PLATFORM_WIN
 #include <conio.h>
 #include <io.h>

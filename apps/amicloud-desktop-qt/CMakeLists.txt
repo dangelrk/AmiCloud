@@ -34,6 +34,11 @@ if(APPLE)
         set(CURL_LIBRARIES curl)
     endif()
     set(CURL_INCLUDE_DIRS "")
+elseif(WIN32)
+    # libcurl's own CMake package (-DCMAKE_PREFIX_PATH=<curl install dir>)
+    find_package(CURL REQUIRED CONFIG)
+    set(CURL_LIBRARIES CURL::libcurl)
+    set(CURL_INCLUDE_DIRS "")
 else()
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(CURL REQUIRED libcurl)
@@ -126,6 +131,7 @@ endif()
 
 set_target_properties(amicloud-desktop PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${ROOT_DIR}/bin/pc
+    WIN32_EXECUTABLE ON
 )
 
 # Headless integration test against a real server (not part of the app):

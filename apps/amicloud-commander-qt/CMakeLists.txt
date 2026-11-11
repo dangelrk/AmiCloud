@@ -28,7 +28,14 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 # libcurl — prefer pkg-config when available, otherwise fall back to the
-# same Homebrew paths core/libcloudhttp/Makefile.pc uses.
+# same Homebrew paths core/libcloudhttp/Makefile.pc uses. On Windows
+# libcurl's own CMake package (-DCMAKE_PREFIX_PATH=<curl install dir>).
+if(WIN32)
+    find_package(CURL REQUIRED CONFIG)
+    set(CURL_INCLUDE_DIRS "")
+    set(CURL_LIBRARIES CURL::libcurl)
+    set(CURL_CFLAGS_OTHER "")
+else()
 find_package(PkgConfig)
 if(PkgConfig_FOUND)
     pkg_check_modules(CURL libcurl)
@@ -38,6 +45,7 @@ if(NOT CURL_FOUND)
     set(CURL_LIBRARIES curl)
     set(CURL_CFLAGS_OTHER "")
     link_directories(/opt/homebrew/lib /usr/local/lib)
+endif()
 endif()
 
 set(APPS_DIR   ${CMAKE_CURRENT_SOURCE_DIR}/..)
@@ -91,4 +99,5 @@ target_compile_options(amicloud-commander PRIVATE ${CURL_CFLAGS_OTHER})
 
 set_target_properties(amicloud-commander PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../bin/pc
+    WIN32_EXECUTABLE ON
 )

@@ -112,24 +112,65 @@ make qt          # amicloud-commander (Qt 6)            -> bin/pc/
 sudo make install                 # optional: nach /usr/local/bin
 ```
 
-Getestet wurde der PC-Build auf macOS (Apple Silicon). Linux ist
-strukturell vorgesehen (reines C99/POSIX + libcurl bzw. Qt 6), wurde aber
-im Rahmen dieses Projekts nicht gebaut.
+Getestet wurde der PC-Build auf macOS (Apple Silicon) und Windows 11
+(siehe unten). Linux ist strukturell vorgesehen (reines C99/POSIX + libcurl
+bzw. Qt 6), wurde aber im Rahmen dieses Projekts nicht gebaut.
 
-### Windows (MSYS2) – ungetestet
+### Windows (nativ mit Qt/MinGW)
 
-Windows wird über [MSYS2](https://www.msys2.org/) unterstützt, dieser Weg
-ist aber **nicht getestet**:
+Gebaut unter Windows 11 mit Qt 6.12.0 und dessen MinGW 15.1 (64 Bit). Es
+entstehen native Windows-Programme; MSYS2 wird nicht gebraucht.
 
-- Die Kommandozeilenprogramme brauchen POSIX (`amicloud-shell` benutzt
-  `termios` in `apps/amicloud-shell/src/lineedit_pc.c`). Deshalb in der
-  MSYS2-Umgebung **„MSYS“** bauen:
-  `pacman -S gcc make pkgconf libcurl-devel`, dann `make pc`.
-  In dieser Umgebung suchen die Programme ihre Konfiguration wie unter
-  Linux in `~/.amicloudrc`.
-- Den Qt-Commander in der Umgebung **„MINGW64“** oder **„UCRT64“** bauen,
-  mit den Paketen `mingw-w64-x86_64-qt6-base`, `mingw-w64-x86_64-cmake`,
-  `mingw-w64-x86_64-curl` (bzw. `mingw-w64-ucrt-x86_64-…`), dann `make qt`.
+Voraussetzungen:
+
+- **Qt** über den Qt Online Installer, mit „Qt 6.12 → MinGW 15.1.0 64-bit“
+  sowie unter „Build Tools“ „MinGW 15.1.0 64-bit“, „CMake“ und „Ninja“
+- **Git for Windows**: gebaut wird in der Git-Bash (die Makefiles brauchen
+  `sh`, `sed` und `date`)
+- **libcurl**, einmal aus dem Quelltext (https://curl.se/download/) mit
+  demselben MinGW übersetzt: statisch und mit der Windows-eigenen TLS
+  (Schannel, Zertifikate aus dem Windows-Zertifikatspeicher). Die Programme
+  brauchen dann keine zusätzlichen DLLs. In der Git-Bash, mit dem `PATH`
+  wie unten:
+
+  ```sh
+  cmake -S curl-8.23.0 -B build-curl -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=C:/winbuild/curl \
+    -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_CURL_EXE=OFF \
+    -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DBUILD_LIBCURL_DOCS=OFF \
+    -DBUILD_MISC_DOCS=OFF -DENABLE_CURL_MANUAL=OFF \
+    -DCURL_USE_SCHANNEL=ON -DCURL_USE_OPENSSL=OFF -DCURL_USE_LIBPSL=OFF \
+    -DCURL_USE_LIBSSH2=OFF -DUSE_LIBIDN2=OFF -DUSE_WIN32_IDN=ON \
+    -DUSE_NGHTTP2=OFF -DCURL_ZLIB=OFF -DCURL_BROTLI=OFF -DCURL_ZSTD=OFF \
+    -DCURL_DISABLE_LDAP=ON -DCURL_USE_PKGCONFIG=OFF
+  cmake --build build-curl && cmake --install build-curl
+  ```
+
+Bauen in der Git-Bash:
+
+```sh
+export PATH="/c/Qt/Tools/mingw1510_64/bin:/c/Qt/6.12.0/mingw_64/bin:/c/Qt/Tools/CMake_64/bin:/c/Qt/Tools/Ninja:$PATH"
+export CMAKE_GENERATOR=Ninja
+export CMAKE_PREFIX_PATH="C:/Qt/6.12.0/mingw_64;C:/winbuild/curl"
+CURL=C:/winbuild/curl
+mingw32-make pc PKG_CF="-I$CURL/include -DCURL_STATICLIB" \
+  PKG_LF="-L$CURL/lib -lcurl -lnormaliz -lbcrypt -ladvapi32 -lcrypt32 -lsecur32 -lws2_32 -liphlpapi"
+mingw32-make qt
+```
+
+`CMAKE_PREFIX_PATH` steht in der Umgebung statt in `QT_CMAKE_FLAGS`, weil
+die Shell das Semikolon dort als Befehlstrenner lesen würde. Ergebnis:
+`bin/pc/*.exe`. Die Kommandozeilenprogramme brauchen nur Windows-eigene
+DLLs. Für die Qt-Programme legt `windeployqt` die Qt- und MinGW-DLLs neben
+die `.exe` (am besten nach dem Kopieren in einen eigenen Ordner):
+
+```sh
+windeployqt --release --no-translations amicloud-commander.exe
+```
+
+Unter Windows suchen `amicloud`, `amicloud-shell` und `amicloud-sync` ihre
+Konfiguration als `amicloud.cfg` im aktuellen Verzeichnis (oder per
+`-c <datei>`).
 
 ## Amiga: Cross-Compile mit vbcc
 
