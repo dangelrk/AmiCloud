@@ -202,6 +202,9 @@ außer für die, die schon Namen über 30 Zeichen haben; deren bisherige
 Arbeitsweise (z. B. ein Desktop-Abgleich am PC) läuft unverändert weiter.
 Vorhandene Dateien bleiben immer unberührt. Ohne diese Migration
 verhält sich der Server wie bisher (keine Grenze).
+Die vollständige Anleitung zum Aktualisieren – welche Migrationen von
+welcher Fassung aus nötig sind, Sicherung, Prüfen, Zurück – liegt jedem
+Server-Paket als **`UPDATE.md`** bei.
 
 Für die Clients empfiehlt sich je Gerät ein **App-Passwort** statt des
 Kontopassworts (Weboberfläche → *Persönliche Einstellungen → Geräte &
