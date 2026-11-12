@@ -34,10 +34,10 @@ Probedatei.
 - Handler (AMICLOUD:, OWNCLOUD:): Namen über 106 Zeichen werden nicht mehr
   still gekürzt (neue: `ERROR_INVALID_COMPONENT_NAME`, Servernamen: nicht
   gelistet).
-- Nicht umgesetzt: der Sync-Probelauf (`-n`) rechnet weiter mit 255 statt
-  mit der Grenze des Laufwerks (die Probe schreibt eine Datei, das darf ein
-  Probelauf nicht). Er zeigt also auf FFS nicht an, was der echte Lauf
-  wegen zu langer Namen überspringt.
+- Sync-Probelauf (`-n`): schätzt die Grenze ohne Probedatei aus dem
+  Disktyp (`localfs_name_max_guess()`, `Info()`: `DOS\0`–`DOS\5` → 30,
+  sonst 255; RAM: meldet `DOS\0` und wird daher vorsichtig mit 30
+  geschätzt). Vorher rechnete er immer mit 255.
 
 **B – Amiga-Modus als Standard**
 - AmiCloud-Server, pro Konto (`users.long_names`, `migrate_007.sql`): neue
@@ -91,5 +91,10 @@ ersten Schreiben die Namenslänge des Arbeitsverzeichnisses
   `amicloud get` alt überschreibt, neu überspringt; `amicloud-sync` von
   LNFS lädt im Amiga-Modus nicht hoch; `amivcs switch` auf FFS lehnt ab;
   AmiVCSConfig-Häkchen.
-- Nicht im Emulator getestet: Handler über 106 Zeichen, MUI-Dialoge der
-  IDE und des Commanders (nur cross-kompiliert).
+- Nachgeprüft: OWNCLOUD:-Handler gegen die ownCloud-Testinstanz (106
+  Zeichen gehen, 107 abgelehnt ohne Datei auf dem Server, 108 nicht
+  gelistet); AmigaIDE MUI (Projektname 24/25, „Lange Namen“ schreibt
+  `.amivcsproject`, „Neue Datei“ mit 31 Zeichen abgelehnt, `.auser` auf
+  FFS); Commander MUI (F5 und F6 auf FFS: übersprungen, vorhandene Datei
+  und Serverdatei unberührt); Sync-Probelauf auf FFS vs. LNFS;
+  Groß/Klein-Prüfung beim Commit auf einem case-sensitiven APFS-Image.
