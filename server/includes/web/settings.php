@@ -104,6 +104,22 @@ function renderSettings(?array $newToken): string
   </section>
 
   <section class="card">
+    <h2>Dateinamen</h2>
+    <?php $amigaMax = Users::nameMax(Auth::$user_id); ?>
+    <form method="post" action="/web.php" class="form-grid">
+      <?= csrfField() ?><input type="hidden" name="do" value="longnames">
+      <span></span><label class="check"><input type="checkbox" name="long_names" value="1"<?= $amigaMax === 0 ? ' checked' : '' ?>> Lange Dateinamen erlauben</label>
+      <p class="form-hint">Ohne Häkchen (Amiga-Modus) lassen sich keine neuen Datei- oder Ordnernamen
+        mit mehr als <?= Users::AMIGA_NAME_MAX ?> Zeichen anlegen. Das klassische Amiga-Dateisystem
+        (FFS/OFS) speichert nicht mehr und kürzt längere Namen ohne Warnung – zwei Dateien mit gleichem
+        Anfang würden dort zu einer. Vorhandene Dateien bleiben unberührt. Erlauben Sie lange Namen nur,
+        wenn Ihre Amigas ein Dateisystem mit langen Namen nutzen (FFS mit DOS\7, SFS oder PFS3) oder
+        diese Dateien nie auf einen Amiga kommen.</p>
+      <div class="form-actions"><button type="submit" class="btn btn-primary">Speichern</button></div>
+    </form>
+  </section>
+
+  <section class="card">
     <h2>Clients einrichten</h2>
     <p class="form-hint">Server-Adresse für AmiCloudPrefs, <code>amicloud</code>, die Shell und den Commander:</p>
     <pre data-copy-src><?= h($server) ?></pre>

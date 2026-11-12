@@ -402,6 +402,30 @@ class FileStore
      * behaelt die Revision, wechselt aber die ID); $createOnly -- die Datei darf noch nicht
      * existieren. Geprueft innerhalb der Transaktion, also atomar gegen
      * andere Uploads desselben Benutzers. */
+    /* Amiga-Modus (Users::nameMax()): null, wenn jeder Name auf $path,
+     * der noch nicht existiert, hoechstens so viele Zeichen hat; sonst die
+     * Fehlermeldung. Vorhandene Namen werden nie beanstandet -- die Grenze
+     * gilt nur fuer Neues. */
+    private static function newNameError(string $path): ?string
+    {
+        $max = Users::nameMax(Auth::$user_id);
+        if ($max <= 0) {
+            return null;
+        }
+        $prefix = '';
+        foreach (explode('/', trim($path, '/')) as $part) {
+            $prefix .= '/' . $part;
+            if (file_exists(storagePath($prefix))) {
+                continue;
+            }
+            if (mb_strlen($part, 'UTF-8') > $max) {
+                return "Name longer than $max characters (Amiga mode -- classic FFS keeps no more; "
+                     . "long names can be allowed in the personal settings): $part";
+            }
+        }
+        return null;
+    }
+
     private static function uploadImpl(string $path, ?string $data, ?string $tmpFile, ?string $expectedMd5,
                                        ?int $ifRevision = null, bool $createOnly = false,
                                        ?int $ifId = null): array
@@ -427,6 +451,9 @@ class FileStore
         $file = storagePath($path);
         if (is_dir($file)) {
             return [409, 'A directory with this name exists'];
+        }
+        if (!is_file($file) && ($err = self::newNameError($path)) !== null) {
+            return [400, $err];
         }
         $dir = dirname($file);
         /* Liegt auf dem Weg eine Datei (Upload nach /datei.txt/neu), kann
@@ -1061,6 +1088,9 @@ class FileStore
         if (is_dir($dir)) {
             Response::error(409, 'Directory already exists');
         }
+        if (($err = self::newNameError($path)) !== null) {
+            Response::error(400, $err);
+        }
         if (!mkdir($dir, 0755, true)) {
             Response::error(500, 'Cannot create directory');
         }
@@ -1108,6 +1138,10 @@ class FileStore
         }
         if (!is_dir(dirname($dst))) {
             return [404, 'Target parent directory not found'];
+        }
+        /* Verschieben behaelt den Namen -- nur ein neuer Name zaehlt */
+        if (basename($from) !== basename($to) && ($err = self::newNameError($to)) !== null) {
+            return [400, $err];
         }
 
         $isDir = is_dir($src);
@@ -1305,13 +1339,34 @@ class FileStore
         if ($r[0] === 0) {
             return null;
         }
-        return $r[0] === 507 ? 'Speicherkontingent überschritten' : $r[1];
+        if ($r[0] === 507) {
+            return 'Speicherkontingent überschritten';
+        }
+        if ($r[0] === 400 && strncmp($r[1], 'Name longer', 11) === 0) {
+            return self::nameTooLongDe();
+        }
+        return $r[1];
+    }
+
+    /* Web-Meldung zum Amiga-Modus */
+    public static function nameTooLongDe(): string
+    {
+        return 'Name länger als ' . Users::nameMax(Auth::$user_id) . ' Zeichen – im Amiga-Modus nicht '
+             . 'erlaubt (klassisches FFS speichert nicht mehr). Lange Namen lassen sich in den '
+             . 'persönlichen Einstellungen erlauben.';
+    }
+
+    /* Web: true, wenn $name als NEUER Name zu lang ist (Amiga-Modus) */
+    public static function nameTooLong(string $name): bool
+    {
+        $max = Users::nameMax(Auth::$user_id);
+        return $max > 0 && mb_strlen($name, 'UTF-8') > $max;
     }
 
     public static function mkdirRaw(string $path): bool
     {
         $dir = storagePath($path);
-        if (is_dir($dir)) {
+        if (is_dir($dir) || self::newNameError($path) !== null) {
             return false;
         }
         if (!mkdir($dir, 0755, true)) {

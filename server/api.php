@@ -58,6 +58,9 @@ switch ($action) {
                          ],
                          'quota'           => Users::quotaInfo(Auth::$user),
                          'max_upload'      => MAX_UPLOAD,
+                         /* laengster NEUER Name (Zeichen): 30 im Amiga-Modus,
+                          * 255 wenn lange Namen erlaubt sind (migrate_007) */
+                         'name_max'        => Users::nameMax(Auth::$user_id) ?: 255,
                      ]); break;
     case 'changes':  FileStore::changes(
                          (int)($_GET['since'] ?? 0),

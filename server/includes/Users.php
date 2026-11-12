@@ -52,6 +52,42 @@ class Users
         )->fetchAll();
     }
 
+    /* Amiga-Modus (migrate_007): laengster NEUER Name in Zeichen, den das
+     * Konto anlegen darf -- 30 (klassisches FFS), oder 0 = keine Grenze
+     * (long_names = 1). Fehlt die Spalte noch (Migration nicht
+     * eingespielt), gilt keine Grenze: ein vergessener Schritt blockiert
+     * nichts. Pro Request einmal gelesen. */
+    const AMIGA_NAME_MAX = 30;
+    private static array $nameMax = [];
+
+    public static function nameMax(int $id): int
+    {
+        if (!array_key_exists($id, self::$nameMax)) {
+            try {
+                $q = DB::get()->prepare('SELECT long_names FROM users WHERE id = ?');
+                $q->execute([$id]);
+                $v = $q->fetchColumn();
+                self::$nameMax[$id] = ($v === false || (int)$v === 1) ? 0 : self::AMIGA_NAME_MAX;
+            } catch (PDOException $e) {
+                self::$nameMax[$id] = 0;
+            }
+        }
+        return self::$nameMax[$id];
+    }
+
+    /* null bei Erfolg, sonst Fehlermeldung (auch ohne migrate_007) */
+    public static function setLongNames(int $id, bool $on): ?string
+    {
+        try {
+            DB::get()->prepare('UPDATE users SET long_names = ? WHERE id = ?')
+                ->execute([$on ? 1 : 0, $id]);
+        } catch (PDOException $e) {
+            return 'Die Datenbank kennt die Einstellung noch nicht (migrate_007.sql einspielen).';
+        }
+        unset(self::$nameMax[$id]);
+        return null;
+    }
+
     public static function displayName(array $row): string
     {
         return $row['display_name'] !== '' ? $row['display_name'] : $row['username'];

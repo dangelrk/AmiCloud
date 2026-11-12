@@ -42,6 +42,7 @@ AmiCloud v{$GLOBALS['ver']} – Verwaltung
   user:revoke-tokens <name>                alle App-Passwörter widerrufen
   user:admin <name> on|off
   user:quota <name> <größe|unbegrenzt>      z. B. 500M, 5G
+  user:longnames <name> on|off             lange Dateinamen erlauben (off = Amiga-Modus, max. 30 Zeichen)
   user:disable <name>
   user:enable <name>
   user:delete [--yes] <name>               löscht auch alle Dateien
@@ -177,6 +178,15 @@ case 'user:enable':
     $err = Users::updateAdmin((int)$u['id'], $quota, $admin, $active);
     if ($err !== null) fail($err);
     echo "Benutzer {$u['username']} geändert.\n";
+    break;
+
+case 'user:longnames':
+    if (count($pos) !== 2) { usage(); exit(1); }
+    $u = userOrFail($pos[0]);
+    if (!in_array($pos[1], ['on', 'off'], true)) fail('Erwartet: on oder off');
+    $err = Users::setLongNames((int)$u['id'], $pos[1] === 'on');
+    if ($err !== null) fail($err);
+    echo "Benutzer {$u['username']}: " . ($pos[1] === 'on' ? 'lange Dateinamen erlaubt' : 'Amiga-Modus') . ".\n";
     break;
 
 case 'user:delete':

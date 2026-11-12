@@ -224,6 +224,31 @@ req DELETE "action=delete&path=$TDIR/loop" >/dev/null
 code=$(curl -sS -o /dev/null -w '%{http_code}' "$API?action=list&path=/")
 check_raw "ohne Auth -> 401" "$code" "401"
 
+# --- Amiga-Modus (migrate_007): neue Namen <= 30 Zeichen --------------------
+N30=abcdefghijklmnopqrstuvwxyz_1.c     # 30 Zeichen
+N31=abcdefghijklmnopqrstuvwxyz_12.c    # 31 Zeichen
+NMAX=$(req GET "action=status" | python3 -c "import json,sys; print(json.load(sys.stdin).get('name_max', 0))")
+if [ "$NMAX" = 30 ]; then
+    out=$(req POST "action=upload&path=$TDIR/$N31" --data-binary 'x')
+    check "Amiga-Modus: upload 31 Zeichen -> 400" "$out" "j['status']=='error' and j['code']==400"
+    out=$(req POST "action=upload&path=$TDIR/$N30" --data-binary 'x')
+    check "Amiga-Modus: upload 30 Zeichen ok" "$out" "j['status']=='ok'"
+    out=$(req POST "action=upload&path=$TDIR/$N30" --data-binary 'y')
+    check "Amiga-Modus: vorhandene Datei ueberschreiben ok" "$out" "j['status']=='ok'"
+    out=$(req POST "action=mkdir&path=$TDIR/$N31")
+    check "Amiga-Modus: mkdir 31 Zeichen -> 400" "$out" "j['status']=='error' and j['code']==400"
+    out=$(req POST "action=upload&path=$TDIR/$N31/in.txt" --data-binary 'x')
+    check "Amiga-Modus: neuer langer Ordner per upload -> 400" "$out" "j['status']=='error' and j['code']==400"
+    out=$(req POST "action=rename&path=$TDIR/$N30&to=$TDIR/$N31")
+    check "Amiga-Modus: rename auf 31 Zeichen -> 400" "$out" "j['status']=='error' and j['code']==400"
+    req POST "action=mkdir&path=$TDIR/ziel" >/dev/null
+    out=$(req POST "action=rename&path=$TDIR/$N30&to=$TDIR/ziel/$N30")
+    check "Amiga-Modus: verschieben behaelt Namen ok" "$out" "j['status']=='ok'"
+    req DELETE "action=delete&path=$TDIR/ziel&recursive=1" >/dev/null
+else
+    echo "--    Amiga-Modus-Tests uebersprungen (name_max=$NMAX: lange Namen erlaubt oder alter Server)"
+fi
+
 # --- Aufraeumen --------------------------------------------------------------
 req DELETE "action=delete&path=$TDIR/renamed.txt" >/dev/null
 req DELETE "action=delete&path=$TDIR/sub2/child.txt" >/dev/null

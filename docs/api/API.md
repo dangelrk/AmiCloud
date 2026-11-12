@@ -24,6 +24,16 @@ Header nie. Pfade dürfen nur gültiges UTF-8 enthalten, jedes Segment
 höchstens 255 Byte, der ganze Pfad höchstens 1000 Byte (sonst 400), und
 werden exakt verglichen (Groß/Klein zählt).
 
+**Amiga-Modus** (Migration 007, Standard für jedes Konto): neue Namen –
+eine neue Datei bei `upload`, `mkdir`, das Ziel von `rename` und die
+Ordner, die ein `upload` dabei anlegt – dürfen höchstens 30 Zeichen haben
+(Zeichen, nicht Bytes), sonst 400. Klassisches FFS speichert nicht mehr
+und kürzt stillschweigend. Vorhandene Namen sind nie betroffen:
+Überschreiben, Lesen, Löschen und Verschieben unter gleichem Namen gehen
+weiter. Aufheben pro Konto in der Weboberfläche (*Persönliche
+Einstellungen → Dateinamen*) oder mit `amicloud-admin.php user:longnames`;
+`status` meldet die Grenze in `name_max`.
+
 Benutzer, Kontingente und öffentliche Links werden in der Weboberfläche
 bzw. mit `bin/amicloud-admin.php` verwaltet, nicht über diese API.
 
@@ -90,7 +100,7 @@ GET api.php?action=status
 { "status": "ok", "version": "0.1", "time": "2026-07-04 12:00:00", "global_revision": 42,
   "user":  { "name": "bob", "display_name": "Bob Beispiel" },
   "quota": { "used": 1234567, "total": 5368709120, "free": 5367474553, "unlimited": false },
-  "max_upload": 104857600 }
+  "max_upload": 104857600, "name_max": 30 }
 ```
 
 Erfordert wie alle Actions Basic Auth; dient als leichter Verbindungs-Check (z.&nbsp;B. Start-Banner
@@ -104,6 +114,9 @@ unbegrenztem Kontingent (`unlimited: true`) ist `free` der freie Plattenplatz de
 `total = used + free` – wie bei ownCloud, damit Clients immer eine sinnvolle Gesamtgröße anzeigen
 können (der `AMICLOUD:`-Handler meldet daraus die Laufwerksbelegung).
 `max_upload` (seit 0.2) ist die größte Datei in Bytes, die `upload` annimmt.
+`name_max` (Migration 007) ist der längste **neue** Name in Zeichen, den das Konto anlegen darf:
+30 im Amiga-Modus, 255 wenn lange Namen erlaubt sind. Fehlt das Feld (älterer Server), gilt keine
+Grenze; der Abgleich lädt dann neue lange Namen hoch wie bisher.
 
 ### list — Verzeichnis auflisten
 
@@ -296,7 +309,7 @@ Client keine Änderung, die nach seinem letzten `list` dazukam.
 Pfades belebt dessen Zeile wieder (inkl. Übernahme der bisherigen `revision`, sofern der Inhalt mit
 dem Stand vor der Löschung übereinstimmt).
 
-Fehler: 400 (`path=/`), 409 (an dem Pfad liegt ein Verzeichnis), 412
+Fehler: 400 (`path=/`, oder ein neuer Name über `name_max` im Amiga-Modus), 409 (an dem Pfad liegt ein Verzeichnis), 412
 (Bedingung `if_revision`/`create_only` nicht erfüllt), 413
 (größer als `MAX_UPLOAD`), 422 (`md5`-Parameter stimmt nicht mit dem
 empfangenen Body überein), **507** `Quota exceeded` (die Datei würde das
@@ -358,7 +371,7 @@ Fehler: 404.
 POST api.php?action=mkdir&path=/neu
 ```
 
-Fehler: 409 (existiert bereits), 500.
+Fehler: 400 (neuer Name über `name_max` im Amiga-Modus), 409 (existiert bereits), 500.
 
 ### rename — Umbenennen/Verschieben
 
@@ -371,7 +384,8 @@ enthaltenen Einträge ziehen mit um). Quelle und Ziel dürfen in
 verschiedenen Verzeichnissen liegen (= Verschieben). Das
 Elternverzeichnis des Ziels muss existieren. Öffentliche Links ziehen mit um.
 
-Fehler: 400 (Root, oder ein Verzeichnis soll in sich selbst verschoben werden),
+Fehler: 400 (Root, ein Verzeichnis soll in sich selbst verschoben werden, oder der neue Name ist
+im Amiga-Modus länger als `name_max` – Verschieben unter gleichem Namen ist immer erlaubt),
 404 (Quelle/Ziel-Parent fehlt), 409 (Ziel existiert), 500.
 
 ### setcomment — Amiga-Filecomment setzen

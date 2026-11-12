@@ -83,6 +83,29 @@ static int is_force_flag(const char *t)
            strcmp(t, "FORCE") == 0 || strcmp(t, "force") == 0;
 }
 
+/* Classic FFS keeps 30 characters and truncates silently: a longer
+ * target name would land on (or, failing, delete) a different file.
+ * Target as cmd_get() derives it: local, or the remote name here. */
+static int get_target_fits(const AcConfig *cfg, const char *remote, const char *local)
+{
+    char target[AC_MAX_PATH];
+    int name_max;
+    if (local && *local) {
+        strncpy(target, local, sizeof(target) - 1);
+        target[sizeof(target) - 1] = '\0';
+    } else {
+        char rfull[AC_MAX_PATH];
+        const char *slash;
+        cmd_resolve_path(cfg, remote, rfull, sizeof(rfull));
+        slash = strrchr(rfull, '/');
+        cs_from_utf8(slash ? slash + 1 : rfull, target, sizeof(target));
+    }
+    if (localfs_name_fits(target, &name_max)) return 1;
+    fprintf(stderr, "amicloud: %s: Name laenger als dieses Dateisystem erlaubt (%d Zeichen) "
+            "-- nicht heruntergeladen\n", target, name_max);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     AcConfig cfg;
@@ -168,7 +191,8 @@ int main(int argc, char **argv)
         else {
             const char *remote = argv[i++];
             const char *local  = (i < argc) ? argv[i] : NULL;
-            rc = cmd_get_checked(&cfg, U(remote), local, force);
+            if (!get_target_fits(&cfg, U(remote), local)) rc = 1;
+            else rc = cmd_get_checked(&cfg, U(remote), local, force);
             if (rc == 0) rc = virus_after_get(U(remote), local);
         }
 

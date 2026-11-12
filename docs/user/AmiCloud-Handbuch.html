@@ -907,6 +907,15 @@ reserviert, siehe <a href="#fehlersuche">Fehlersuche</a>).</li>
 <tr><td>Pfeiltasten in <code>amicloud-shell</code> wirken nicht</td><td>Die Shell braucht ein interaktives Konsolenfenster; bei Eingabe aus Datei oder Pipe gibt es keine Zeilenbearbeitung.</td></tr>
 </table>
 
+<h3 id="dateinamen">Lange Dateinamen (FFS: 30 Zeichen)</h3>
+<p>Das klassische Amiga-Dateisystem (FFS und OFS) speichert höchstens <strong>30&nbsp;Zeichen</strong> pro Datei- oder Ordnername. Längere Namen kürzt es ohne Warnung – beim Anlegen und beim Öffnen. Zwei Dateien mit gleichem Anfang landen so in derselben Datei, und die Endung geht verloren. Ein Icon braucht fünf Zeichen dazu (<code>.info</code>): eine Datei mit Icon sollte auf FFS höchstens 25&nbsp;Zeichen haben.</p>
+<ul>
+<li><code>amicloud get</code>, <code>amicloud-shell</code>, <code>amicloud-sync</code> und der Commander prüfen vorher, wie lange Namen das Ziellaufwerk speichert. Was nicht passt, wird übersprungen und gemeldet; vorhandene Dateien bleiben unberührt. Mit einem kurzen Zielnamen geht es trotzdem: <code>amicloud get /Ein_sehr_langer_Dateiname_2026.txt Kurz.txt</code></li>
+<li><code>AMICLOUD:</code> zeigt Namen bis 106&nbsp;Zeichen. Längere Servernamen erscheinen dort nicht, und ein neuer Name über 106&nbsp;Zeichen wird abgelehnt. Wer von <code>AMICLOUD:</code> mit <code>Copy</code> auf ein FFS-Laufwerk kopiert, bekommt die Kürzung von FFS.</li>
+</ul>
+<p><strong>Amiga-Modus auf dem Server:</strong> Ein Konto im Amiga-Modus legt keine neuen Namen über 30&nbsp;Zeichen an – auch nicht vom PC oder aus der Weboberfläche. Vorhandene Dateien bleiben, wie sie sind, und lassen sich weiter überschreiben, löschen und abgleichen. Neue Konten starten im Amiga-Modus. Wer lange Namen braucht, setzt in der Weboberfläche unter <em>Persönliche Einstellungen → Dateinamen</em> das Häkchen <em>Lange Dateinamen erlauben</em> (Administratoren: <code>amicloud-admin.php user:longnames &lt;name&gt; on</code>). Solange der Amiga-Modus an ist, lädt der Abgleich neue lange Namen nicht hoch, sondern meldet sie.</p>
+<p><strong>Lange Namen auf dem Amiga:</strong> Ab AmigaOS&nbsp;3.2 kann FFS lange Namen (bis 107&nbsp;Zeichen), wenn die Partition mit dem Dateisystemtyp <code>DOS\7</code> (oder <code>DOS\6</code>) formatiert ist. SFS und PFS3 können ebenfalls lange Namen. Die Programme erkennen das selbst und nutzen dann die volle Länge.</p>
+
 <h2 id="deinstallation">15. Deinstallation</h2>
 
 <p>Amiga: in der Installationsschublade <code>Execute Uninstall-AmiCloud</code>.

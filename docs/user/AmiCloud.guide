@@ -35,6 +35,7 @@ zuerst mit Kopien der Daten ausprobieren; Benutzung auf eigene Gefahr.
   @{" amicloud-sync            " link Cloudsync}  Ordner abgleichen
   @{" amicloud-commander   " link Commander}  Dateimanager (MUI)
   @{" AMICLOUD:-Handler       " link Handler}  Die Cloud als Laufwerk
+  @{" Lange Dateinamen        " link Dateinamen}  FFS speichert nur 30 Zeichen
 
   @{" Fehlersuche          " link Fehlersuche}  Wenn etwas nicht geht
   @{" Deinstallation       " link Deinstallation}  AmiCloud entfernen
@@ -782,7 +783,7 @@ Hinweis: Die MUI-Fassung ist auf echter Hardware noch wenig erprobt.
 @node Handler "AMICLOUD:-Handler - die Cloud als Laufwerk"
 @toc Main
 @prev Commander
-@next Fehlersuche
+@next Dateinamen
 
 AMICLOUD:-HANDLER - DIE AMICLOUD ALS LAUFWERK
 
@@ -865,9 +866,52 @@ Grenzen:
 
 @endnode
 
-@node Fehlersuche "Fehlersuche"
+@node Dateinamen "Lange Dateinamen (FFS: 30 Zeichen)"
 @toc Main
 @prev Handler
+@next Fehlersuche
+
+LANGE DATEINAMEN
+
+Das klassische Amiga-Dateisystem (FFS und OFS) speichert höchstens
+30 Zeichen pro Datei- oder Ordnername. Längere Namen kürzt es ohne
+Warnung - beim Anlegen und beim Öffnen. Zwei Dateien mit gleichem
+Anfang landen so in derselben Datei, und die Endung geht verloren.
+Ein Icon braucht fünf Zeichen dazu (".info"): eine Datei mit Icon
+sollte auf FFS höchstens 25 Zeichen haben.
+
+@{b}Was AmiCloud tut@{ub}
+  - amicloud get, amicloud-shell, amicloud-sync und der Commander
+    prüfen vorher, wie lange Namen das Ziellaufwerk speichert. Was
+    nicht passt, wird übersprungen und gemeldet; vorhandene Dateien
+    bleiben unberührt. Mit einem kurzen Zielnamen geht es trotzdem:
+      amicloud get /Ein_sehr_langer_Dateiname_2026.txt Kurz.txt
+  - AMICLOUD: zeigt Namen bis 106 Zeichen. Längere Servernamen
+    erscheinen dort nicht, und ein neuer Name über 106 Zeichen wird
+    abgelehnt. Wer von AMICLOUD: mit Copy auf ein FFS-Laufwerk
+    kopiert, bekommt die Kürzung von FFS.
+
+@{b}Amiga-Modus auf dem Server@{ub}
+Ein Konto im Amiga-Modus legt keine neuen Namen über 30 Zeichen an -
+auch nicht vom PC oder aus der Weboberfläche. Vorhandene Dateien
+bleiben, wie sie sind, und lassen sich weiter überschreiben, löschen
+und abgleichen. Neue Konten starten im Amiga-Modus. Wer lange Namen
+braucht: in der Weboberfläche unter "Persönliche Einstellungen",
+Abschnitt "Dateinamen", das Häkchen "Lange Dateinamen erlauben"
+setzen. Solange der Amiga-Modus an ist, lädt der Abgleich neue lange
+Namen nicht hoch, sondern meldet sie.
+
+@{b}Lange Namen auf dem Amiga@{ub}
+Ab AmigaOS 3.2 kann FFS lange Namen (bis 107 Zeichen), wenn die
+Partition mit dem Dateisystemtyp DOS\7 (oder DOS\6) formatiert ist.
+SFS und PFS3 können ebenfalls lange Namen. Die Programme erkennen das
+selbst und nutzen dann die volle Länge.
+
+@endnode
+
+@node Fehlersuche "Fehlersuche"
+@toc Main
+@prev Dateinamen
 @next Deinstallation
 
 FEHLERSUCHE

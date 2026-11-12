@@ -701,7 +701,8 @@ static void do_get(ShellSession *s, char **tok, int n)
         if (c.cancelled) printf("Abgebrochen.\n");
         printf("%d Datei(en) ok, %d Fehler\n", c.pr.ok, c.pr.err);
     } else {
-        cmd_get_checked(&eff, pa.pos[0], pa.npos > 1 ? pa.pos[1] : NULL, pa.force);
+        if (panel_get_target_fits(&eff, pa.pos[0], pa.npos > 1 ? pa.pos[1] : NULL))
+            cmd_get_checked(&eff, pa.pos[0], pa.npos > 1 ? pa.pos[1] : NULL, pa.force);
     }
 }
 

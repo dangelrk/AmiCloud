@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS users (
     quota_bytes     BIGINT UNSIGNED  NULL DEFAULT NULL,    -- NULL = unbegrenzt
     last_login      DATETIME         NULL DEFAULT NULL,
     session_epoch   INT UNSIGNED     NOT NULL DEFAULT 0,   -- ++ macht Web-Sessions ungueltig
-    tombstone_seq   BIGINT UNSIGNED  NOT NULL DEFAULT 0    -- aufgeraeumte Grabsteine bis hier (migrate_006)
+    tombstone_seq   BIGINT UNSIGNED  NOT NULL DEFAULT 0,   -- aufgeraeumte Grabsteine bis hier (migrate_006)
+    long_names      TINYINT(1)       NOT NULL DEFAULT 0    -- 0 = Amiga-Modus: neue Namen <= 30 Zeichen (migrate_007)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS files (

@@ -682,7 +682,8 @@ static void do_move(void)
             else
                 mui_notify(UI_WARN, "Nicht alles kopiert -- Verzeichnis bleibt auf dem Server.");
         } else {
-            if (cmd_get(&src->cfg, srcPath, dstPath) == 0)
+            if (panel_get_target_fits(&src->cfg, srcPath, dstPath)
+                && cmd_get(&src->cfg, srcPath, dstPath) == 0)
                 cmd_del(&src->cfg, srcPath);
             else
                 mui_notify(UI_ERROR, "Herunterladen fehlgeschlagen -- Datei nicht verschoben.");

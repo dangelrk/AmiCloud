@@ -191,6 +191,8 @@ if ($isPost) {
         $name = trim((string)($_POST['name'] ?? ''));
         if ($name === '' || strpos($name, '/') !== false || $name === '.' || $name === '..') {
             flash('Ungültiger Ordnername.', 'error');
+        } elseif (FileStore::nameTooLong($name)) {
+            flash(FileStore::nameTooLongDe(), 'error');
         } elseif (!FileStore::mkdirRaw(sanitizePath($dir . '/' . $name))) {
             flash("Ordner „{$name}“ konnte nicht angelegt werden (existiert er schon?).", 'error');
         }
@@ -201,6 +203,8 @@ if ($isPost) {
         $name = trim((string)($_POST['name'] ?? ''));
         if ($name === '' || strpos($name, '/') !== false || $name === '.' || $name === '..') {
             flash('Ungültiger Name.', 'error');
+        } elseif ($name !== basename($path) && FileStore::nameTooLong($name)) {
+            flash(FileStore::nameTooLongDe(), 'error');
         } elseif ($name !== basename($path)
                   && !FileStore::renameRaw($path, sanitizePath(joinPath(parentPath($path), $name)))) {
             flash("Umbenennen in „{$name}“ fehlgeschlagen (Name schon vergeben?).", 'error');
@@ -282,6 +286,14 @@ if ($isPost) {
     case 'profile':
         $err = Users::updateProfile($uid, trim((string)($_POST['display_name'] ?? '')), trim((string)($_POST['email'] ?? '')));
         flash($err ?? 'Profil gespeichert.', $err ? 'error' : 'info');
+        redirect(webUrl(['view' => 'settings']));
+
+    case 'longnames':
+        $on  = (string)($_POST['long_names'] ?? '') === '1';
+        $err = Users::setLongNames($uid, $on);
+        flash($err ?? ($on ? 'Lange Dateinamen sind jetzt erlaubt.'
+                           : 'Amiga-Modus: neue Namen höchstens ' . Users::AMIGA_NAME_MAX . ' Zeichen.'),
+              $err ? 'error' : 'info');
         redirect(webUrl(['view' => 'settings']));
 
     case 'password':
