@@ -40,11 +40,12 @@ amivcs switch main
 amivcs merge experiment</code></pre>
 
 <h2 id="gui">Die Oberfläche</h2>
-<p>Dasselbe geht mit <strong>amivcs-gui</strong>. Links stehen die geänderten Dateien und darunter das, was in den nächsten Commit kommt, rechts der Inhalt der angeklickten Datei. Der Reiter <strong>History</strong> zeigt die Historie aller Branches. Oben stehen Branch, Repository und Remote-URL.</p>
+<p>Dasselbe geht mit <strong>amivcs-gui</strong>. Links stehen die geänderten Dateien und darunter das, was in den nächsten Commit kommt, rechts, was sich an der angeklickten Datei geändert hat (Diff: grün hinzugefügt, „-“ entfernt). Der Reiter <strong>History</strong> zeigt die Historie aller Branches. Oben stehen Branch, Repository und Remote-URL.</p>
 {{fig:vc-mui|amivcs-gui auf dem Amiga.}}
-{{fig:vc-qt-haupt|amivcs-gui in der Fassung für den Mac, hier mit gezeichnetem Commit-Graphen.}}
+{{fig:vc-qt-haupt|amivcs-gui in der Fassung für den Mac: links die Änderungen, rechts der Diff von main.c.}}
+{{fig:vc-qt-history|Der Reiter History mit gezeichnetem Commit-Graphen und den Änderungen des gewählten Commits.}}
 <ol class="schritte">
-<li>Merke Dateien mit <strong>Stage</strong> oder alle mit <strong>Stage All</strong> vor.
+<li>Merke Dateien mit <strong>Stage selected</strong> oder alle mit <strong>Stage all</strong> vor. Bei vielen Dateien zeigt ein Fenster „Working...“, welche Datei gerade dran ist; <strong>Cancel</strong> hält an, was schon vorgemerkt ist, bleibt es.
 {{fig:vc-qt-staged|Beide Dateien sind für den Commit vorgemerkt.}}</li>
 <li>Schreibe eine Nachricht und klicke auf <strong>Commit</strong>.</li>
 <li>Branches legst du über das Menü <strong>Repository</strong> an, wechselst sie dort und führst sie zusammen. Clone, Push und Pull stehen unter <strong>Remote</strong>; fehlt das Passwort, fragt ein Login-Fenster danach und merkt es sich auf Wunsch.</li>

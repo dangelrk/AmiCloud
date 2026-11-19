@@ -23,7 +23,7 @@ DIST = WEB / "dist"
 
 # Fuer welche Programmversion die Bilder aufgenommen wurden. Nach neuen
 # Aufnahmen hier nachziehen; solange die Zahl abweicht, warnt der Bau.
-BILDER_VERSION = {"amicloud": "0.10", "amivcs": "0.10", "amiowncloud": "0.10", "amidevide": "0.5"}
+BILDER_VERSION = {"amicloud": "0.11", "amivcs": "0.11", "amiowncloud": "0.11", "amidevide": "0.6"}
 
 PROJEKTE = {
     "amicloud": ("AmiCloud", "Eigener Cloud-Speicher"),
@@ -92,7 +92,8 @@ HANDBUCH_BILDER = {
         "installation": [("vc-install", "Der Installer von AmiVCS.")],
         "prefs": [("vc-config", "AmiVCSConfig: Name und E-Mail für alle Repositories, Remote-URL und Benutzer für dieses.")],
         "gui-mui": [("vc-mui", "amivcs-gui auf dem Amiga (MUI).")],
-        "gui-qt": [("vc-qt-haupt", "amivcs-gui auf dem Mac (Qt) mit grafischem Commit-Graphen."),
+        "gui-qt": [("vc-qt-haupt", "amivcs-gui auf dem Mac (Qt): Änderungen mit Diff der angeklickten Datei."),
+                   ("vc-qt-history", "Reiter History mit grafischem Commit-Graphen."),
                    ("vc-qt-branch", "Einen neuen Branch anlegen.")],
         "webui": [("vc-web-repos", "Die eigenen Repositories in der Weboberfläche."),
                   ("vc-web-code", "Dateibaum und README eines Repositorys."),
@@ -114,7 +115,8 @@ HANDBUCH_BILDER = {
         "node-hauptfenster": [("ide-mui", "AmigaIDE auf dem Amiga (MUI)."),
                               ("ide-qt-haupt", "Die kommende Fassung für den Mac nach einem erfolgreichen Build.")],
         "node-projekteinstellungen": [("ide-qt-projekt", "Projekteinstellungen in der kommenden Fassung für den Mac.")],
-        "node-einstellungen": [("ide-qt-einstellungen", "Globale Einstellungen in der kommenden Fassung für den Mac.")],
+        "node-einstellungen": [("ide-qt-einstellungen", "Globale Einstellungen der Fassung für den Mac, Reiter General."),
+                               ("ide-qt-sdk", "Reiter SDKs: jedes SDK kann in einem eigenen Ordner liegen.")],
         "node-versionen": [("ide-qt-vcs", "Versionsverwaltung mit AmiVCS in der kommenden Fassung für den Mac.")],
     },
 }

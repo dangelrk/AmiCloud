@@ -28,28 +28,29 @@ Stack 65536</code></pre></li>
 <p>Die Fassung für den Mac gibt es fertig bei den <a href="{{gh:amidevide}}/releases">Releases auf GitHub</a>, für Linux und Windows baust du sie aus den <a href="{{gh:amidevide}}">Quellen</a>. Die Bilder aus der Mac-Fassung auf dieser Seite zeigen, wie sie aussieht; die Bedienung entspricht weitgehend der Amiga-Fassung.</p>
 
 <h2 id="projekt">Ein Projekt anlegen</h2>
-<p>Die Bilder in diesem Abschnitt stammen aus der kommenden Mac-Fassung. Die Menünamen hier gelten für das Amiga-Programm.</p>
+<p>Die Bilder in diesem Abschnitt stammen aus der Mac-Fassung. Die Menünamen hier gelten für das Amiga-Programm.</p>
 <ol class="schritte">
 <li>Wähle <strong>Projekt › Neu…</strong>, dann Ordner, Sprache und Art des Programms.</li>
 <li>Füge über <strong>Projekt › Neue Datei</strong> Quelltexte hinzu. Sie erscheinen im Projektbaum links und öffnen sich mit einem Doppelklick im Editor.
 {{fig:ide-qt-haupt|Projektbaum, Editor und Ausgabe in der Mac-Fassung nach einem erfolgreichen Build.}}</li>
 <li>Unter <strong>Projekt › Projekteinstellungen…</strong> stellst du Compiler, Linker, SDKs und das Startverhalten ein.
-{{fig:ide-qt-projekt|Die Projekteinstellungen in der kommenden Mac-Fassung.}}</li>
+{{fig:ide-qt-projekt|Die Projekteinstellungen in der Mac-Fassung.}}</li>
 </ol>
-<p class="hinweis">Liegen Compiler oder SDKs woanders oder heißt <code>make</code> anders, änderst du das unter <strong>Projekt › Einstellungen…</strong>.</p>
+<p class="hinweis">Liegen Compiler oder SDKs woanders oder heißt <code>make</code> anders, änderst du das unter <strong>Projekt › Einstellungen…</strong>. Seit Version 0.6 kann jedes SDK in einem eigenen Ordner liegen (Reiter <strong>SDK-Pfade</strong>, am Mac <strong>SDKs</strong>); leer bleibt der Standardordner. <strong>Projekt › Installation prüfen</strong> zeigt auf einen Blick, ob Werkzeuge, <code>make</code>, Libraries und SDKs gefunden werden.</p>
+{{fig:ide-qt-sdk|Eigene Ordner für einzelne SDKs in der Mac-Fassung.}}
 
 <h2 id="bauen">Bauen und starten</h2>
 <ol class="schritte">
 <li><strong>Build › Build</strong> (<kbd>Amiga</kbd>+<kbd>B</kbd>) speichert, erzeugt ein Makefile und baut im Hintergrund. Die Ausgabe läuft unter <strong>Ausgabe</strong>, Fehler stehen unter <strong>Issues</strong>.
 {{fig:ide-mui|AmigaIDE auf dem Amiga nach einem erfolgreichen Build.}}</li>
 <li><strong>Memory Map</strong> zeigt danach die Hunks des Programms.
-{{fig:ide-qt-speicher|Die Memory Map in der kommenden Mac-Fassung.}}</li>
+{{fig:ide-qt-speicher|Die Memory Map in der Mac-Fassung.}}</li>
 <li><strong>Build › Run</strong> (<kbd>Amiga</kbd>+<kbd>R</kbd>) startet das Programm.</li>
 </ol>
 
 <h2 id="vcs">Versionsverwaltung</h2>
 <p>AmigaIDE benutzt AmiVCS als eigenes Programm. Ist <a href="amivcs.html">AmiVCS</a> installiert, zeigt das Register <strong>Versionen</strong> Änderungen und Branches, und <strong>Verlauf</strong> zeigt die Historie. Geänderte Dateien sind im Projektbaum markiert.</p>
-{{fig:ide-qt-vcs|Änderungen, Commit und Historie in der kommenden Mac-Fassung.}}
+{{fig:ide-qt-vcs|Änderungen, Commit und Historie in der Mac-Fassung.}}
 
 <h2 id="weiter">Mehr erfahren</h2>
 <p>Alle Menüs, Tastenkürzel, der Disassembler und die vollständige Installation stehen im <a href="amidevide-handbuch.html">vollständigen Handbuch zu AmiDevIDE {{v:amidevide}}</a>.</p>
