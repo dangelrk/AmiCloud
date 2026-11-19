@@ -38,6 +38,20 @@ rm -f "$STAGE/$APPNAME.app/Contents/PlugIns/imageformats/libqsvg.dylib" \
       "$STAGE/$APPNAME.app/Contents/PlugIns/imageformats/libqpdf.dylib" \
       "$STAGE/$APPNAME.app/Contents/PlugIns/iconengines/libqsvgicon.dylib"
 rmdir "$STAGE/$APPNAME.app/Contents/PlugIns/iconengines" 2>/dev/null || true
+# Der Bau setzt einen Suchpfad (LC_RPATH) nach Homebrew; die Qt-Plugins
+# laden ihre Frameworks ueber @rpath, er muss also ins Bundle zeigen
+EXE="$STAGE/$APPNAME.app/Contents/MacOS/$APPNAME"
+for rp in $(otool -l "$EXE" | awk '/LC_RPATH/{f=1} f&&/ path /{print $2; f=0}'); do
+    case $rp in
+        /opt/homebrew/*|/usr/local/*) install_name_tool -delete_rpath "$rp" "$EXE" 2>/dev/null ;;
+    esac
+done
+otool -l "$EXE" | grep -q 'path @executable_path/../Frameworks' ||
+    install_name_tool -add_rpath @executable_path/../Frameworks "$EXE" 2>/dev/null
+if otool -l "$EXE" | grep -A2 LC_RPATH | grep -q '/opt/homebrew\|/usr/local'; then
+    echo "Suchpfad zeigt noch auf Homebrew" >&2
+    exit 1
+fi
 # nichts darf mehr auf Homebrew zeigen (auf einem Mac ohne Homebrew startet
 # das Programm sonst nicht)
 if find "$STAGE/$APPNAME.app" -type f \( -perm -u+x -o -name '*.dylib' \) -print0 |
