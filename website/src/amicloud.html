@@ -1,7 +1,7 @@
 <!-- titel:AmiCloud {{v:amicloud}} – Anleitung
 beschreibung:Schritt für Schritt zu AmiCloud {{v:amicloud}}: Server, Amiga-Installation, Laufwerk AMICLOUD:, Commander, Abgleich und AmiCloud Desktop. -->
 <h1>AmiCloud</h1>
-<p><span class="versionsmarke">Version {{v:amicloud}}</span><span class="platforms">Amiga · Browser · Mac und PC</span> <a class="download" href="{{dl:amicloud}}">AmiCloud auf Aminet</a> <a class="download" href="{{gh:amicloud}}">Quellen und Releases auf GitHub</a></p>
+<p><span class="versionsmarke">Version {{v:amicloud}}</span><span class="platforms">Amiga · Browser · Mac und PC</span> <a class="download" href="{{lha:amicloud}}">AmiCloud {{v:amicloud}} direkt laden (LHA)</a> <a class="download" href="{{dl:amicloud}}">AmiCloud auf Aminet</a> <a class="download" href="{{gh:amicloud}}">Quellen und Releases auf GitHub</a></p>
 <p class="lead">Dein eigener Cloud-Speicher auf deinem Server, nutzbar als Amiga-Laufwerk, im Dateimanager, im Browser und mit Abgleich auf dem Mac.</p>
 <p class="hinweis"><strong>Experimentell:</strong> Mit Hilfe von Claude (KI-Assistent von Anthropic) entwickelt, in erster Linie für den Eigengebrauch des Autors. Probiere es zuerst mit Kopien deiner Daten aus.</p>
 
@@ -19,7 +19,7 @@ beschreibung:Schritt für Schritt zu AmiCloud {{v:amicloud}}: Server, Amiga-Inst
 <h2 id="voraussetzungen">Das brauchst du</h2>
 <ul>
 <li><strong>Einen AmiCloud-Server</strong> mit PHP und MariaDB. Er liegt dem Archiv als Schublade <code>Server</code> bei; die Einrichtung steht im <a href="amicloud-handbuch.html#server">Handbuch</a>.</li>
-<li><strong>Auf dem Amiga:</strong> AmigaOS 3.x, mindestens einen 68020, einen TCP/IP-Stack und AmiSSL&nbsp;5. Der Dateimanager braucht außerdem MUI&nbsp;3.8, für Umlaute wird die <code>codesets.library</code> empfohlen.</li>
+<li><strong>Auf dem Amiga:</strong> AmigaOS 3.x, mindestens einen 68020, einen TCP/IP-Stack und AmiSSL&nbsp;5.27 oder neuer. Der Dateimanager braucht außerdem MUI&nbsp;3.8, für Umlaute wird die <code>codesets.library</code> empfohlen.</li>
 <li><strong>AmiCloud Desktop:</strong> einen Mac mit Apple-Prozessor und macOS&nbsp;26.</li>
 </ul>
 
@@ -36,7 +36,7 @@ beschreibung:Schritt für Schritt zu AmiCloud {{v:amicloud}}: Server, Amiga-Inst
 
 <h2 id="amiga">Auf dem Amiga installieren</h2>
 <ol class="schritte">
-<li>Lade <code>AmiCloud.lha</code> <a href="{{dl:amicloud}}">von Aminet</a>, packe es aus und starte in der Schublade das Icon <strong>Install-AmiCloud</strong>.</li>
+<li>Lade <code>AmiCloud.lha</code> <a href="{{lha:amicloud}}">direkt hier</a> oder <a href="{{dl:amicloud}}">von Aminet</a>, packe es aus und starte in der Schublade das Icon <strong>Install-AmiCloud</strong>.</li>
 <li>Wähle den Modus. Als <strong>Einsteiger</strong> installiert der Installer alles automatisch, als <strong>Geübter Benutzer</strong> wählst du die Teile selbst.
 {{fig:ac-install-modus|Der Installationsmodus.}}
 {{fig:ac-install-teile|Die Teile von AmiCloud im Modus „Geübter Benutzer“.}}</li>

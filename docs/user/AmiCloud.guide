@@ -1,5 +1,5 @@
 @database "AmiCloud.guide"
-@$VER: AmiCloud.guide 1.5 (08.11.2026)
+@$VER: AmiCloud.guide 1.6 (19.11.2026)
 @author "Ronny Krueger"
 @(c) "2026 Ronny Krueger, GPL-3.0-or-later"
 @wordwrap
@@ -1105,6 +1105,23 @@ Verwandte Projekte desselben Autors:
 
 VERSIONSGESCHICHTE
 
+Programme 0.11 (19.11.2026)
+  - Klassisches FFS speichert nur 30 Zeichen pro Name. amicloud get,
+    get und mget in der Shell und der Commander überspringen zu
+    lange Namen jetzt mit einer Meldung, statt sie still zu kürzen;
+    dabei konnte vorher eine andere Datei überschrieben werden.
+  - amicloud-sync überspringt und meldet Dateien, deren Namen auf
+    dem Amiga-Laufwerk zu lang sind; der Probelauf (-n) zeigt das
+    schon vorher.
+  - AMICLOUD: lehnt Namen über 106 Zeichen ab, statt sie gekürzt
+    anzulegen oder gekürzt anzuzeigen. Ist am Server der Amiga-Modus
+    an, meldet es einen zu langen neuen Namen gleich als ungültigen
+    Namen statt "Objekt nicht gefunden".
+  - Server: Amiga-Modus pro Konto, neue Namen höchstens 30 Zeichen
+    (Weboberfläche "Dateinamen"). Braucht die Datenbank-Migration
+    migrate_007, siehe UPDATE.md in der Schublade Server.
+  - Benötigt jetzt AmiSSL 5.27 oder neuer.
+
 Programme 0.10 (08.11.2026)
   - Alle Fenster der Amiga-Programme (Commander, AmiCloudPrefs)
     merken ihre Position.
@@ -1192,6 +1209,10 @@ Programme 0.1 (2026)
   - Für langsame Verbindungen: Timeouts nur bei Stillstand
     (timeout=), Fortsetzen abgebrochener Downloads, Ctrl-C bricht
     ab, AMICLOUD: bleibt während einer Übertragung bedienbar.
+
+Handbuch 1.6 (19.11.2026)
+  - Neuer Abschnitt "Lange Dateinamen" (FFS: 30 Zeichen) und
+    Amiga-Modus des Servers.
 
 Handbuch 1.5 (08.11.2026)
   - Quellen und Fehlerberichte auf GitHub verlinkt.

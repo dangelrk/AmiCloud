@@ -120,7 +120,7 @@
 ; Start des Stacks erzeugt.
 (set #fehlt "")
 (if (= 0 (exists "LIBS:amisslmaster.library" (noreq)))
-  (set #fehlt (cat #fehlt "AmiSSL 5 (LIBS:amisslmaster.library)\n")))
+  (set #fehlt (cat #fehlt "AmiSSL 5.27 (LIBS:amisslmaster.library)\n")))
 (if (= 0 (exists "LIBS:muimaster.library" (noreq)))
   (set #fehlt (cat #fehlt "MUI (für amicloud-commander)\n")))
 (if (= 0 (exists "LIBS:codesets.library" (noreq)))
@@ -129,7 +129,7 @@
 (message "\nAmiCloud @VERSION@ - eigener Cloud-Speicher\n\n"
          "Kommandozeile, Shell, Dateimanager und\n"
          "Laufwerk AMICLOUD: für einen AmiCloud-Server.\n"
-         "Benötigt TCP/IP-Stack und AmiSSL 5,\n"
+         "Benötigt TCP/IP-Stack und AmiSSL 5.27,\n"
          "der Dateimanager außerdem MUI 3.8."
          (if (> (strlen #fehlt) 0)
            (cat "\n\nNicht gefunden (Installation geht trotzdem):\n" #fehlt)

@@ -48,7 +48,7 @@ Set achandler 0
 Echo ""
 Echo "AmiCloud-Installation (Version @VERSION@)"
 Echo "========================================="
-Echo "Benötigt: AmigaOS 3.x, TCP/IP-Stack (bsdsocket.library), AmiSSL 5,"
+Echo "Benötigt: AmigaOS 3.x, TCP/IP-Stack (bsdsocket.library), AmiSSL 5.27,"
 Echo "für den Commander zusätzlich MUI 3.8."
 Echo "Antworten mit y (ja) oder n (nein)."
 Echo ""

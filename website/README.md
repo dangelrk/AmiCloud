@@ -31,8 +31,10 @@ Seite einmal wieder nur per Direktlink erreichbar sein soll.
 
 ## Hochladen
 
-Zuerst die Archive auf Aminet hochladen, sonst laufen die Download-Links ins Leere.
-Die Adressen stehen in `DOWNLOADS` (Aminet) und `GITHUB` in `build.py`.
+Zuerst die Archive auf Aminet hochladen und die Hauptseite mit den Direkt-Downloads
+(`PlanetRK/website`: `tools/ami_archive.py`, bauen, hochladen), sonst laufen die
+Download-Links ins Leere. Die Adressen stehen in `DOWNLOADS` (Aminet), `LHA`
+(direkt, `/files/ami/<Name>.lha`, immer die neueste Fassung) und `GITHUB` in `build.py`.
 
 Der Zählerstand liegt nur auf dem Server und darf nicht überschrieben werden:
 

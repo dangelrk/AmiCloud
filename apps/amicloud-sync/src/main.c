@@ -33,7 +33,7 @@ const char amiga_ver[] = "$VER: amicloud-sync " AC_VERSION " (" AC_DATE ")";
 static void usage(const char *prog)
 {
     fprintf(stderr,
-        "amicloud-sync v" AC_VERSION " — one-shot local<->cloud folder sync\n"
+        "amicloud-sync v" AC_VERSION " -- one-shot local<->cloud folder sync\n"
         "Usage: %s [options] <local-dir> <remote-dir>\n"
         "\n"
         "Options:\n"
@@ -42,7 +42,7 @@ static void usage(const char *prog)
         "  -p <pass>    Password\n"
         "  -c <file>    Config file (default: ~/.amicloudrc or ENV:amicloud.cfg)\n"
         "  -k           Disable TLS certificate verification (development only)\n"
-        "  -n           Dry run — show what would happen, change nothing\n"
+        "  -n           Dry run -- show what would happen, change nothing\n"
         "  -f, FORCE    Delete without asking, even many files at once (scripts)\n",
         prog);
     exit(1);

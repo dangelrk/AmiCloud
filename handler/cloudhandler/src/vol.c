@@ -51,6 +51,9 @@ static int   g_would_block = 0;
 static LONG g_quota_used_kb  = 0;
 static LONG g_quota_total_kb = 0;
 static int  g_quota_valid    = 0;
+/* Longest new name the account may create (Amiga mode: 30), from the same
+ * status report; 0 = unknown or no limit. */
+static LONG g_name_max       = 0;
 
 ULONG vol_next_seq(void)
 {
@@ -222,6 +225,12 @@ void vol_note_now(LONG server_now)
     if (server_now > g_now) g_now = server_now;
 }
 
+int vol_name_too_long(const char *leaf)
+{
+    if (g_name_max <= 0 || !leaf) return 0;
+    return (LONG)u_strlen(leaf) > g_name_max;   /* local codeset: one byte per character */
+}
+
 int vol_quota(LONG *used_kb, LONG *total_kb)
 {
     if (!g_quota_valid) return 0;
@@ -255,6 +264,7 @@ LONG vol_refresh(CNode *dir)
         g_quota_total_kb = reply->quota_total_kb;
         g_quota_valid    = 1;
     }
+    if (reply->name_max > 0) g_name_max = reply->name_max;
 
     for (c = dir->children; c; c = c->next) c->seen = 0;
 

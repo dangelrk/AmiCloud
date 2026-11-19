@@ -124,6 +124,10 @@ typedef struct WorkerMsg {
                                    * network round trip */
     LONG    quota_total_kb;
     BYTE    quota_valid;
+    LONG    name_max;            /* out: WREQ_LIST, from the same status
+                                   * call as the quota -- longest NEW name
+                                   * the account may create (30 = Amiga
+                                   * mode); 0 = not reported: no limit */
 
     LONG    result;               /* out: finished DOS error code, 0 = ok */
 } WorkerMsg;

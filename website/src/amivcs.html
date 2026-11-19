@@ -1,7 +1,7 @@
 <!-- titel:AmiVCS {{v:amivcs}} – Anleitung
 beschreibung:Schritt für Schritt zu AmiVCS {{v:amivcs}}: Installation, erstes Repository, Oberfläche, Server und Weboberfläche. -->
 <h1>AmiVCS</h1>
-<p><span class="versionsmarke">Version {{v:amivcs}}</span><span class="platforms">Amiga · Browser · Mac und PC</span> <a class="download" href="{{dl:amivcs}}">AmiVCS auf Aminet</a> <a class="download" href="{{gh:amivcs}}">Quellen und Releases auf GitHub</a></p>
+<p><span class="versionsmarke">Version {{v:amivcs}}</span><span class="platforms">Amiga · Browser · Mac und PC</span> <a class="download" href="{{lha:amivcs}}">AmiVCS {{v:amivcs}} direkt laden (LHA)</a> <a class="download" href="{{dl:amivcs}}">AmiVCS auf Aminet</a> <a class="download" href="{{gh:amivcs}}">Quellen und Releases auf GitHub</a></p>
 <p class="lead">Versionsverwaltung für den Amiga und den PC: Commits, Branches und Merges, dazu ein eigener Server mit Weboberfläche.</p>
 <p class="hinweis"><strong>Experimentell:</strong> Mit Hilfe von Claude (KI-Assistent von Anthropic) entwickelt, in erster Linie für den Eigengebrauch des Autors. Probiere es zuerst mit Kopien deiner Daten aus.</p>
 
@@ -16,7 +16,7 @@ beschreibung:Schritt für Schritt zu AmiVCS {{v:amivcs}}: Installation, erstes R
 
 <h2 id="amiga">Installieren</h2>
 <ol class="schritte">
-<li>Lade <code>AmiVCS.lha</code> <a href="{{dl:amivcs}}">von Aminet</a>, packe es aus und starte <strong>Install-AmiVCS</strong>. Du brauchst AmigaOS 3.x und mindestens einen 68020; für den Server-Betrieb außerdem einen TCP/IP-Stack und AmiSSL&nbsp;5, für die Oberfläche MUI.
+<li>Lade <code>AmiVCS.lha</code> <a href="{{lha:amivcs}}">direkt hier</a> oder <a href="{{dl:amivcs}}">von Aminet</a>, packe es aus und starte <strong>Install-AmiVCS</strong>. Du brauchst AmigaOS 3.x und mindestens einen 68020; für den Server-Betrieb außerdem einen TCP/IP-Stack und AmiSSL&nbsp;5.27 oder neuer, für die Oberfläche MUI.
 {{fig:vc-install|Der Installer von AmiVCS.}}</li>
 <li>Trage in <strong>AmiVCSConfig</strong> (in <code>SYS:Prefs</code>) deinen Namen und deine E-Mail ein. Sie stehen in jedem Commit, wie bei git. Gestartet in einem Repository, zeigt AmiVCSConfig auch dessen Remote-URL und Benutzer.
 {{fig:vc-config|AmiVCSConfig auf der Workbench.}}</li>

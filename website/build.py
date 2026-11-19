@@ -44,6 +44,16 @@ DOWNLOADS = {
     "amiowncloud": "https://aminet.net/package/comm/net/AmiOwnCloud",
     "amidevide": "https://aminet.net/package/dev/misc/AmiDevIDE",
 }
+# Direkt-Download des neuesten Amiga-Archivs auf planet-rk.de, feste Namen
+# ohne Version; {{lha:projekt}} in den Seiten. Die Dateien gehoeren zur
+# Hauptseite (PlanetRK/website, tools/ami_archive.py) und muessen dort vor
+# dieser Anleitung hochgeladen sein.
+LHA = {
+    "amicloud": "/files/ami/AmiCloud.lha",
+    "amivcs": "/files/ami/AmiVCS.lha",
+    "amiowncloud": "/files/ami/AmiOwnCloud.lha",
+    "amidevide": "/files/ami/AmiDevIDE.lha",
+}
 # Quellen und Releases (auch die Fassungen fuer Mac und PC) auf GitHub;
 # {{gh:projekt}} in den Seiten.
 GITHUB = {
@@ -198,6 +208,7 @@ def ersetze(text, versionen):
         return bild_html(m.group(1).strip(), m.group(2).strip())
     text = re.sub(r"\{\{fig:([^|}]+)\|([^}]*)\}\}", fig, text)
     text = re.sub(r"\{\{dl:(\w+)\}\}", lambda m: DOWNLOADS[m.group(1)], text)
+    text = re.sub(r"\{\{lha:(\w+)\}\}", lambda m: LHA[m.group(1)], text)
     text = re.sub(r"\{\{gh:(\w+)\}\}", lambda m: GITHUB[m.group(1)], text)
     return re.sub(r"\{\{v:(\w+)\}\}", lambda m: versionen[m.group(1)], text)
 
@@ -388,8 +399,8 @@ def baue_ide_handbuch(versionen):
             f'<h2 id="teil-bedienung">Bedienung von AmigaIDE</h2>{teil}'
             f'<h2 id="teil-installation">Installation</h2>'
             f'<p class="hinweis">Dieser Teil beschreibt den Aufbau der kompletten Entwicklungsumgebung aus den '
-            f'Quellen. Die Quellen werden später auf GitHub veröffentlicht. Das Amiga-Programm gibt es schon '
-            f'<a href="{DOWNLOADS["amidevide"]}">auf Aminet</a>.</p>{inst}</main>')
+            f'Quellen (<a href="{GITHUB["amidevide"]}">auf GitHub</a>). Das fertige Amiga-Programm gibt es '
+            f'<a href="{LHA["amidevide"]}">direkt hier</a> und <a href="{DOWNLOADS["amidevide"]}">auf Aminet</a>.</p>{inst}</main>')
     handbuch_seite("amidevide", "", body, versionen)
 
 

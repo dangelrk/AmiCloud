@@ -181,6 +181,11 @@ static LONG map_put_status(int status)
     case 413: return ERROR_DISK_FULL;
     case 507: return ERROR_DISK_FULL;          /* quota exceeded */
     case 422: return ERROR_DISK_FULL;
+    case 400: return ERROR_INVALID_COMPONENT_NAME; /* the only 400 a write
+                                         * gets in practice: a new name over
+                                         * the account's limit (Amiga mode),
+                                         * when the handler did not know the
+                                         * limit yet to refuse it itself */
     case 0:   return ERROR_NO_DISK;       /* transport failure, see map_get_status() */
     default:  return ERROR_INVALID_LOCK;
     }
@@ -269,10 +274,13 @@ static void dispatch(WorkerMsg *m)
             AcStatus st;
             g_quota_time  = m->server_now;
             g_quota_dirty = 0;
-            if (cmd_status_ex(&g_cfg, &st) && st.has_quota) {
-                m->quota_used_kb  = st.quota_used_kb;
-                m->quota_total_kb = st.quota_total_kb;
-                m->quota_valid    = 1;
+            if (cmd_status_ex(&g_cfg, &st)) {
+                if (st.has_quota) {
+                    m->quota_used_kb  = st.quota_used_kb;
+                    m->quota_total_kb = st.quota_total_kb;
+                    m->quota_valid    = 1;
+                }
+                m->name_max = st.name_max;
             }
         }
         break;

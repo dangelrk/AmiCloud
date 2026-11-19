@@ -138,6 +138,11 @@ void   vol_note_now(LONG server_now);
  * report arrives or if the server has no quota support. Never blocks. */
 int    vol_quota(LONG *used_kb, LONG *total_kb);
 
+/* 1 if leaf is longer than the account lets a NEW name be (server Amiga
+ * mode, reported with the quota); 0 while the limit is unknown. Existing
+ * names are never checked -- the server keeps those working too. */
+int    vol_name_too_long(const char *leaf);
+
 /* Refreshes dir (must be CN_DIR) via a synchronous WREQ_LIST + merge:
  * updates/creates/removes children to match the server, except any child
  * that's locked, exclusively locked, or open, which always survives

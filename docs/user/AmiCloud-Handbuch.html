@@ -127,7 +127,7 @@
 <div class="wrap">
 
 <h1>AmiCloud</h1>
-<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Stand 08.11.2026 (Programmversion 0.10)</p>
+<p class="subtitle">Handbuch — eigener Cloud-Speicher für AmigaOS 3.x und PC · Stand 19.11.2026 (Programmversion 0.11)</p>
 
 <div class="callout"><strong>Hinweis:</strong> Experimentelle Software, entwickelt mit Hilfe von Claude (KI-Assistent von Anthropic) und in erster Linie für den Eigengebrauch des Autors geschrieben. Bitte zuerst mit Kopien der Daten ausprobieren; Benutzung auf eigene Gefahr.</div>
 
@@ -1032,6 +1032,8 @@ AmiVCS (Versionsverwaltung).</p>
 <h2 id="historie">20. Versionsgeschichte</h2>
 
 <dl>
+<dt><strong>Programme 0.11 (19.11.2026)</strong></dt>
+<dd>Klassisches FFS speichert nur 30 Zeichen pro Name: <code>amicloud get</code>, <code>get</code> und <code>mget</code> in der Shell und der Commander überspringen zu lange Namen jetzt mit einer Meldung, statt sie still zu kürzen (dabei konnte vorher eine andere Datei überschrieben werden). <code>amicloud-sync</code> überspringt und meldet Dateien, deren Namen auf dem Amiga-Laufwerk zu lang sind; der Probelauf (<code>-n</code>) zeigt das schon vorher. <code>AMICLOUD:</code> lehnt Namen über 106 Zeichen ab, statt sie gekürzt anzulegen oder anzuzeigen; ist am Server der Amiga-Modus an, meldet es einen zu langen neuen Namen gleich als ungültigen Namen statt „Objekt nicht gefunden“. Server: Amiga-Modus pro Konto, neue Namen höchstens 30 Zeichen (Weboberfläche „Dateinamen“); braucht die Datenbank-Migration <code>migrate_007</code>, siehe <code>UPDATE.md</code> in der Schublade Server. Benötigt jetzt AmiSSL 5.27 oder neuer.</dd>
 <dt><strong>Programme 0.10 (08.11.2026)</strong></dt>
 <dd>Alle Fenster der Amiga-Programme (Commander, AmiCloudPrefs) merken ihre Position. Commander (MUI): die Auswahl im aktiven Panel ist wieder gut zu sehen. Scheitert TLS an einer falschen Amiga-Uhr (z.&nbsp;B. leere RTC-Batterie), nennt die Meldung die Uhrzeit und bittet, sie zu prüfen.</dd>
 <dt><strong>Programme 0.9 (07.11.2026)</strong></dt>

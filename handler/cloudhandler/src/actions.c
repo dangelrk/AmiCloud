@@ -349,6 +349,7 @@ void act_create_dir(struct DosPacket *pkt)
     if (err) { pkt->dp_Res1 = 0; pkt->dp_Res2 = err; return; }
     if (rp.leaf[0] == '\0') { pkt->dp_Res1 = 0; pkt->dp_Res2 = ERROR_OBJECT_NOT_FOUND; return; }
     if (rp.node) { pkt->dp_Res1 = 0; pkt->dp_Res2 = ERROR_OBJECT_EXISTS; return; }
+    if (vol_name_too_long(rp.leaf)) { pkt->dp_Res1 = 0; pkt->dp_Res2 = ERROR_INVALID_COMPONENT_NAME; return; }
 
     vol_child_path(rp.dir, rp.leaf, fullpath, sizeof(fullpath));
     err = backend_send(WREQ_MKDIR, fullpath, (const char *)0, (UBYTE *)0, 0, (const struct DateStamp *)0, 0, (const char *)0, (WorkerMsg **)0);
@@ -505,6 +506,7 @@ static void do_find(struct DosPacket *pkt, LONG mode)
             }
         } else {
             if (rp.leaf[0] == '\0') { pkt->dp_Res1 = DOSFALSE; pkt->dp_Res2 = ERROR_OBJECT_NOT_FOUND; return; }
+            if (vol_name_too_long(rp.leaf)) { pkt->dp_Res1 = DOSFALSE; pkt->dp_Res2 = ERROR_INVALID_COMPONENT_NAME; return; }
             node = vol_new_node(rp.dir, rp.leaf, CN_FILE, &g_boot_date);
             if (!node) { pkt->dp_Res1 = DOSFALSE; pkt->dp_Res2 = ERROR_NO_FREE_STORE; return; }
             created_now = 1;
@@ -516,6 +518,7 @@ static void do_find(struct DosPacket *pkt, LONG mode)
     } else if (!node) {
         if (mode != ACTION_FINDUPDATE) { pkt->dp_Res1 = DOSFALSE; pkt->dp_Res2 = ERROR_OBJECT_NOT_FOUND; return; }
         if (rp.leaf[0] == '\0') { pkt->dp_Res1 = DOSFALSE; pkt->dp_Res2 = ERROR_OBJECT_NOT_FOUND; return; }
+        if (vol_name_too_long(rp.leaf)) { pkt->dp_Res1 = DOSFALSE; pkt->dp_Res2 = ERROR_INVALID_COMPONENT_NAME; return; }
         node = vol_new_node(rp.dir, rp.leaf, CN_FILE, &g_boot_date);
         if (!node) { pkt->dp_Res1 = DOSFALSE; pkt->dp_Res2 = ERROR_NO_FREE_STORE; return; }
         created_now = 1;
@@ -965,6 +968,11 @@ void act_rename_object(struct DosPacket *pkt)
 
     if (src->type == CN_DIR && vol_is_ancestor(src, drp.dir)) {
         pkt->dp_Res1 = DOSFALSE; pkt->dp_Res2 = ERROR_OBJECT_IN_USE; return;
+    }
+    /* a new name over the account's limit -- moving under the old name
+     * (above) is always allowed, as on the server */
+    if (vol_name_too_long(drp.leaf) && u_stricmp_latin1(drp.leaf, src->name) != 0) {
+        pkt->dp_Res1 = DOSFALSE; pkt->dp_Res2 = ERROR_INVALID_COMPONENT_NAME; return;
     }
 
     vol_build_path(src, srcfull, sizeof(srcfull));
